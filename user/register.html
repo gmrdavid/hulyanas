@@ -4,62 +4,61 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Hulyanas Hill</title>
-    <link rel="stylesheet" href="../css/style.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* SAME MINIMAL BLACK & WHITE THEME + WIDENED */
+        /* EXACT ADMIN PANEL THEME */
         * {
-            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
             box-sizing: border-box;
         }
 
         body {
-            background: #000000;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #fafafa;
+            color: #1a1a1a;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
+            padding: 2rem;
             position: relative;
-            color: #ffffff;
+            overflow: hidden;
         }
 
+        /* BACKGROUND HERO IMAGE WITH OVERLAY */
         body::before {
             content: '';
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
-            width: 50%;
-            height: 50%;
-            background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 50%, rgba(255,255,255,0.02) 100%);
-            pointer-events: none;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(rgba(26, 26, 26, 0.85), rgba(26, 26, 26, 0.85)),
+                url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&fit=crop&w=2070&q=80') center/cover;
+            z-index: -1;
         }
 
         .auth-container {
-            min-height: 80vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 5px;
+            max-width: 550px;
+            width: 100%;
             position: relative;
             z-index: 2;
         }
 
+        /* ADMIN-STYLE AUTH CARD */
         .auth-card {
-            /* WIDENED: Perfect for register form */
-            background: rgba(255, 255, 255, 0.05);
+            background: #fff;
+            border: 1px solid #e5e5e5;
+            border-radius: 20px;
+            padding: 4rem 3.5rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
             backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 20px 50px;
-            border-radius: 24px;
-            box-shadow: 
-                0 25px 50px rgba(0,0,0,0.5),
-                0 0 0 1px rgba(255,255,255,0.05);
-            width: 500%;
-            max-width: 520px; /* Same as login */
             position: relative;
             overflow: hidden;
+            animation: slideUp 0.6s ease-out;
         }
 
         .auth-card::before {
@@ -68,169 +67,155 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 2px;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 54px 24px 0 0;
+            height: 4px;
+            background: linear-gradient(90deg, #1a1a1a, #333);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .auth-header {
             text-align: center;
-            margin-bottom: 0px;
+            margin-bottom: 3rem;
         }
 
-        .auth-header i {
-            font-size: 4rem;
-            color: #ffffff;
-            margin-bottom: 0px;
-            display: block;
-            opacity: 0.8;
+        .auth-logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 1.25rem;
         }
 
-        .auth-header h2 {
-            color: #ffffff;
-            font-size: 2.3rem;
-            font-weight: 200;
-            margin-bottom: 1px;
-            letter-spacing: -0.5px;
+        .auth-logo i {
+            font-size: 2rem;
+            color: #1a1a1a;
+            background: #f0f0f0;
+            padding: 0.75rem;
+            border-radius: 12px;
         }
 
-        /* Form Layout */
+        .auth-title {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 0.5rem;
+        }
+
+        .auth-subtitle {
+            color: #666;
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        /* FORM ROW - ADMIN GRID STYLE */
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 32px;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
         }
 
         .form-group {
-            margin-bottom: 0; /* Reset for grid */
+            margin-bottom: 0;
         }
 
         .form-group.full {
             grid-column: 1 / -1;
-            margin-bottom: 12px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 14px;
-            color: rgba(255,255,255,0.8);
-            font-weight: 400;
-            font-size: 0.95rem;
-            letter-spacing: 0.3px;
+            margin-bottom: 0.75rem;
+            color: #1a1a1a;
+            font-weight: 600;
+            font-size: 0.9rem;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .form-group input {
             width: 100%;
-            padding: 10px 18px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 24px;
-            font-size: 1.05rem;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
+            padding: 1.25rem 1.5rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 16px;
+            font-size: 1rem;
+            background: #fff;
+            font-weight: 400;
+            color: #1a1a1a;
             transition: all 0.3s ease;
-            font-weight: 300;
-            color: #ffffff;
+            font-family: inherit;
         }
 
         .form-group input::placeholder {
-            color: rgba(255,255,255,0.4);
+            color: #999;
         }
 
         .form-group input:focus {
             outline: none;
-            border-color: rgba(255, 255, 255, 0.5);
-            background: rgba(255, 255, 255, 0.1);
-            box-shadow: 0 0 0 4px rgba(255,255,255,0.1);
+            border-color: #1a1a1a;
+            box-shadow: 0 0 0 4px rgba(26,26,26,0.1);
+            background: #fafafa;
         }
 
+        /* ADMIN BUTTON STYLE */
         .btn {
             width: 100%;
-            padding: 10px 14px;
-            border-radius: 14px;
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 1.05rem;
-            transition: all 0.3s ease;
+            padding: 1.25rem 2rem;
+            background: #1a1a1a;
+            color: #fff;
+            border: none;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
-            position: relative;
-            border: none;
-            cursor: pointer;
+            gap: 0.75rem;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            background: rgba(255, 255, 255, 0.1);
-            color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 2rem;
         }
 
         .btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            border-color: rgba(255, 255, 255, 0.4);
+            background: #000;
             transform: translateY(-2px);
-            box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+            box-shadow: 0 15px 35px rgba(26,26,26,0.4);
         }
 
-        .btn-primary {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.3);
+        .btn:active {
+            transform: translateY(0);
         }
 
-        .btn-primary:hover {
-            background: rgba(255, 255, 255, 0.25);
-        }
-
-        .full-width {
-            grid-column: 1 / -1;
-        }
-
-        .auth-links {
-            text-align: center;
-            margin-top: 15px;
-            padding-top: 30px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .auth-links p {
-            margin-bottom: 18px;
-            color: rgba(255,255,255,0.5);
-            font-size: 0.95rem;
-        }
-
-        .auth-links a {
-            color: rgba(255,255,255,0.7);
-            text-decoration: none;
-            font-weight: 400;
-            transition: all 0.3s ease;
-            position: relative;
-            font-size: 0.95rem;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .auth-links a:hover {
-            color: #ffffff;
-        }
-
-        /* Loading */
-        .loading {
+        /* LOADING STATE */
+        .btn.loading {
             pointer-events: none;
         }
 
-        .loading .btn::after {
+        .btn.loading::after {
             content: '';
-            position: absolute;
             width: 20px;
             height: 20px;
             border: 2px solid rgba(255,255,255,0.3);
-            border-top-color: #ffffff;
+            border-top: 2px solid #fff;
             border-radius: 50%;
             animation: spin 1s linear infinite;
+            margin-left: 0.75rem;
         }
 
         @keyframes spin {
@@ -238,90 +223,173 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Responsive */
+        /* MESSAGES - ADMIN ALERT STYLE */
+        .message {
+            padding: 1.25rem 1.5rem;
+            border-radius: 16px;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+            font-size: 0.95rem;
+            display: none;
+            border-left: 4px solid;
+        }
+
+        .message.success {
+            background: #f0fdf4;
+            color: #166534;
+            border-color: #22c55e;
+        }
+
+        .message.error {
+            background: #fef2f2;
+            color: #dc2626;
+            border-color: #ef4444;
+        }
+
+        /* AUTH LINKS - ADMIN STYLE */
+        .auth-links {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid #e5e5e5;
+        }
+
+        .auth-links p {
+            margin-bottom: 1.25rem;
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        .auth-links a {
+            color: #1a1a1a;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            background: #f0f0f0;
+        }
+
+        .auth-links a:hover {
+            background: #1a1a1a;
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        /* RESPONSIVE */
         @media (max-width: 600px) {
             .form-row {
                 grid-template-columns: 1fr;
-                gap: 20px;
+                gap: 1.25rem;
             }
             
-            .auth-card {
-                padding: 50px 30px;
+            .auth-container {
                 max-width: 450px;
+            }
+
+            .auth-card {
+                padding: 3rem 2.5rem;
+                margin: 1rem;
             }
         }
 
         @media (max-width: 480px) {
+            body {
+                padding: 1rem;
+            }
+
             .auth-card {
-                padding: 40px 25px;
-                max-width: 380px;
+                padding: 2.5rem 2rem;
+            }
+
+            .auth-title {
+                font-size: 2rem;
             }
         }
 
-        /* Entrance animation */
-        .auth-card {
-            animation: fadeInUp 0.6s ease-out forwards;
-            opacity: 0;
-            transform: translateY(30px);
+        /* FLOATING LOGO */
+        .floating-logo {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            z-index: 1000;
+            opacity: 0.9;
+            animation: float 6s ease-in-out infinite;
         }
 
-        @keyframes fadeInUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
         }
     </style>
 </head>
 <body>
+    <!-- Floating Logo -->
+    <div class="floating-logo">
+        <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 1.5rem; font-weight: 700; color: #fff; background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 16px; backdrop-filter: blur(10px);">
+            <i class="fas fa-utensils" style="font-size: 1.8rem; color: #fff;"></i>
+            <span>Hulyanas Hill</span>
+        </div>
+    </div>
+
     <div class="auth-container">
         <div class="auth-card">
             <div class="auth-header">
-                <i class="fas fa-user-plus"></i>
-                <h2>Create Account</h2>
-                <p>Join Hulyanas Hill today</p>
+                <div class="auth-logo">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Create Account</span>
+                </div>
+                <h1 class="auth-title">Join Hulyanas Hill</h1>
+                <p class="auth-subtitle">Create your account to start ordering</p>
             </div>
+            
+            <div id="message" class="message"></div>
 
             <form id="registerForm">
                 <div class="form-row">
                     <div class="form-group">
                         <label>Full Name</label>
-                        <input type="text" id="fullName" placeholder="Enter your full name" required>
+                        <input type="text" id="fullName" placeholder="John Doe" required>
                     </div>
                     <div class="form-group">
                         <label>Phone</label>
-                        <input type="tel" id="phone" placeholder="Enter phone number">
+                        <input type="tel" id="phone" placeholder="+63 955 123 4567">
                     </div>
                 </div>
+                
                 <div class="form-group full">
                     <label>Username</label>
-                    <input type="text" id="username" placeholder="Choose a username" required>
+                    <input type="text" id="username" placeholder="johndoe" required>
                 </div>
+                
                 <div class="form-group full">
                     <label>Email</label>
-                    <input type="email" id="email" placeholder="Enter your email" required>
+                    <input type="email" id="email" placeholder="john.doe@email.com" required>
                 </div>
+                
                 <div class="form-row">
                     <div class="form-group">
                         <label>Password</label>
-                        <input type="password" id="password" placeholder="Create password" required>
+                        <input type="password" id="password" placeholder="••••••••" minlength="6" required>
                     </div>
                     <div class="form-group">
                         <label>Confirm Password</label>
-                        <input type="password" id="confirmPassword" placeholder="Confirm password" required>
+                        <input type="password" id="confirmPassword" placeholder="••••••••" minlength="6" required>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary full-width">
+                
+                <button type="submit" class="btn">
                     <i class="fas fa-user-plus"></i>
                     Create Account
                 </button>
             </form>
             
             <div class="auth-links">
-                <p>Already have an account? <a href="login.html">Sign in</a></p>
-                <a href="../index.html">
-                    <i class="fas fa-home"></i> Back to Home
-                </a>
+                <p>Already have an account? <a href="login.html"><i class="fas fa-sign-in-alt"></i> Sign In</a></p>
+                <a href="../index.html"><i class="fas fa-home"></i> Back to Home</a>
             </div>
         </div>
     </div>
@@ -329,48 +397,102 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('registerForm');
-            
+            const btn = form.querySelector('.btn');
+            const messageEl = document.getElementById('message');
+
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
-                const btn = form.querySelector('.btn');
-                const originalText = btn.innerHTML;
-                
-                // Simple validation
+
+                // Get form values
+                const fullName = document.getElementById('fullName').value.trim();
+                const phone = document.getElementById('phone').value.trim();
+                const username = document.getElementById('username').value.trim();
+                const email = document.getElementById('email').value.trim();
                 const password = document.getElementById('password').value;
                 const confirmPassword = document.getElementById('confirmPassword').value;
-                
-                if (password !== confirmPassword) {
-                    showMessage('Passwords do not match!', 'error');
+
+                // Validation
+                if (!fullName || !username || !email || !password) {
+                    showMessage('Please fill in all required fields', 'error');
                     return;
                 }
-                
+
+                if (password.length < 6) {
+                    showMessage('Password must be at least 6 characters', 'error');
+                    return;
+                }
+
+                if (password !== confirmPassword) {
+                    showMessage('Passwords do not match', 'error');
+                    return;
+                }
+
+                // Email validation
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    showMessage('Please enter a valid email address', 'error');
+                    return;
+                }
+
+                // Simulate API call
+                const originalText = btn.innerHTML;
                 btn.classList.add('loading');
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
-                
+
                 setTimeout(() => {
                     btn.classList.remove('loading');
                     btn.innerHTML = originalText;
-                    showMessage('Account created successfully!', 'success');
+
+                    // Save to localStorage (demo)
+                    const user = {
+                        id: Date.now(),
+                        fullName,
+                        phone: phone || 'Not provided',
+                        username,
+                        email,
+                        role: 'customer',
+                        joined: new Date().toISOString()
+                    };
+
+                    localStorage.setItem('tempUser', JSON.stringify(user));
+                    showMessage('Account created successfully! Redirecting to login...', 'success');
+
                     setTimeout(() => {
                         window.location.href = 'login.html';
                     }, 1500);
                 }, 2000);
             });
+
+            // Real-time password match check
+            document.getElementById('confirmPassword').addEventListener('input', function() {
+                const password = document.getElementById('password').value;
+                const confirmPassword = this.value;
+                
+                if (confirmPassword && password !== confirmPassword) {
+                    this.style.borderColor = '#ef4444';
+                } else {
+                    this.style.borderColor = '#e0e0e0';
+                }
+            });
         });
 
         function showMessage(text, type) {
-            // Create message element if doesn't exist
-            let msg = document.querySelector('.message');
-            if (!msg) {
-                msg = document.createElement('div');
-                msg.className = 'message';
-                form.parentNode.insertBefore(msg, form);
-            }
+            const msg = document.getElementById('message');
             msg.textContent = text;
             msg.className = `message ${type}`;
             msg.style.display = 'block';
-            setTimeout(() => msg.style.display = 'none', 4000);
+            
+            setTimeout(() => {
+                msg.style.display = 'none';
+            }, 5000);
         }
+
+        // Enter key support
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('registerForm').dispatchEvent(new Event('submit'));
+            }
+        });
     </script>
 </body>
 </html>
