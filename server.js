@@ -18,10 +18,14 @@ app.use('/user', express.static('user'));
 app.use('/admin', express.static('admin'));
 
 // MySQL Connection
-const db = mysql.createConnection({ host: 'hulyanas-gliamaeriodavid9-fb68.a.aivencloud.com', 
-                                   user: 'avnadmin', 
-                                   password: 'AVNS_Ia2vXDkmX_8zMXDFUUG', 
-                                   database: 'hulyanas' });
+require('dotenv').config();
+
+const db = mysql.createConnection({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
+});
 
 db.connect(err => {
     if (err) throw err;
