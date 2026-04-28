@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orders - Hulyanas Hill Admin</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #fafafa;
+            color: #1a1a1a;
+            line-height: 1.6;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border-bottom: 2px solid #1a1a1a;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            padding: 1rem 0;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            gap: 0.75rem;
+            text-decoration: none;
+        }
+
+        .nav-logo i {
+            color: #000;
+            font-size: 1.8rem;
+        }
+
+        .admin-logo i {
+            color: #1a1a1a;
+            background: #f0f0f0;
+            padding: 0.5rem;
+            border-radius: 12px;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: #4a4a4a;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
+        }
+
+        .nav-menu a:hover,
+        .nav-menu a.active {
+            background: #1a1a1a;
+            color: #fff;
+        }
+
+        .btn-logout {
+            background: #1a1a1a !important;
+            color: #fff !important;
+            padding: 0.75rem 2rem !important;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .btn-logout:hover {
+            background: #000 !important;
+            transform: translateY(-1px);
+        }
+
+        .admin-content {
+            max-width: 1400px;
+            margin: 140px auto 2rem;
+            padding: 0 2rem;
+        }
+
+        .orders-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: #fff;
+            border: 1px solid #e5e5e5;
+            padding: 2rem;
+            border-radius: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+        }
+
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #1a1a1a;
+            opacity: 0.8;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .content-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .filter-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-select,
+        .date-range {
+            padding: 1rem 1.5rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 16px;
+            font-size: 1rem;
+            background: #fff;
+            font-family: inherit;
+        }
+
+        .table-container {
+            background: #fff;
+            border: 1px solid #e5e5e5;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .orders-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .orders-table thead {
+            background: #f8f9fa;
+        }
+
+        .orders-table th {
+            padding: 1.5rem 2rem;
+            text-align: left;
+            font-weight: 600;
+            color: #1a1a1a;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #e5e5e5;
+        }
+
+        .orders-table td {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #f5f5f5;
+            vertical-align: middle;
+        }
+
+        .orders-table tr:hover {
+            background: #f8f8f8;
+        }
+
+        .order-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1a1a1a, #333);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-right: 1rem;
+        }
+
+        .customer-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .customer-name {
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .customer-email {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+
+        .order-total {
+            font-weight: 700;
+            color: #000;
+            font-size: 1.25rem;
+            font-feature-settings: 'tnum' 1;
+        }
+
+        .order-status {
+            padding: 0.75rem 1.5rem;
+            border-radius: 24px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: 1px solid transparent;
+        }
+
+        .status-pending { background: #fff3cd; color: #856404; border-color: #ffeaa7; }
+        .status-confirmed { background: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
+        .status-preparing { background: #fff3cd; color: #856404; border-color: #ffeaa7; }
+        .status-ready { background: #d4edda; color: #155724; border-color: #c3e6cb; }
+        .status-delivered { background: #f8f9fa; color: #1a1a1a; border-color: #dee2e6; }
+        .status-cancelled { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+
+        .table-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .action-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .action-view {
+            background: #1a1a1a;
+            color: #fff;
+        }
+
+        .action-view:hover {
+            background: #000;
+            transform: scale(1.05);
+        }
+
+        .action-status {
+            background: #f0f0f0;
+            color: #666;
+            border: 1px solid #e0e0e0;
+        }
+
+        .action-status:hover {
+            background: #e0e0e0;
+            color: #1a1a1a;
+            transform: scale(1.05);
+        }
+
+        .action-print {
+            background: #f8f9fa;
+            color: #666;
+            border: 1px solid #dee2e6;
+        }
+
+        .action-print:hover {
+            background: #e9ecef;
+            transform: scale(1.05);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+        }
+
+        .modal-content {
+            background: #fff;
+            margin: 2% auto;
+            padding: 3rem;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.3);
+            border: 1px solid #e5e5e5;
+        }
+
+        .close {
+            position: absolute;
+            right: 2rem;
+            top: 2rem;
+            font-size: 2.25rem;
+            font-weight: 400;
+            color: #999;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            border: 1px solid #e0e0e0;
+        }
+
+        .close:hover {
+            color: #1a1a1a;
+            background: #f0f0f0;
+        }
+
+        .modal h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 2rem;
+        }
+
+        .order-details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .detail-section {
+            background: #f8f9fa;
+            padding: 2rem;
+            border-radius: 16px;
+            border: 1px solid #e5e5e5;
+        }
+
+        .detail-section h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            color: #666;
+            font-weight: 500;
+        }
+
+        .detail-value {
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .items-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .order-item-detail {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            padding-top: 2rem;
+            border-top: 1px solid #e5e5e5;
+        }
+
+        @media (max-width: 768px) {
+            .admin-content {
+                padding: 0 1rem;
+                margin: 120px 1rem 2rem;
+            }
+
+            .content-header {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+
+            .filter-controls {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .orders-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .order-details-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .table-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="dashboard.html" class="nav-logo admin-logo">
+                <i class="fas fa-user-shield"></i>
+                <span>Admin Panel</span>
+            </a>
+            <ul class="nav-menu">
+                <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="menu-manage.html"><i class="fas fa-utensils"></i> Menu</a></li>
+                <li><a href="orders.html" class="active"><i class="fas fa-list"></i> Orders</a></li>
+                <li><a href="users.html"><i class="fas fa-users"></i> Users</a></li>
+                <li><a href="#" id="adminLogout" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="admin-content">
+        <div class="orders-stats">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-list"></i>
+                </div>
+                <div class="stat-number" data-target="127">0</div>
+                <div class="stat-label">Total Orders</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-truck"></i>
+                </div>
+                <div class="stat-number" data-target="89">0</div>
+                <div class="stat-label">Delivered</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-number" data-target="12">0</div>
+                <div class="stat-label">Pending Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+                <div class="stat-number" data-target="2456.75">$0.00</div>
+                <div class="stat-label">Revenue Today</div>
+            </div>
+        </div>
+
+        <div class="content-header">
+            <h1>Manage Orders</h1>
+            <div class="filter-controls">
+                <select id="statusFilter" class="filter-select">
+                    <option value="">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="preparing">Preparing</option>
+                    <option value="ready">Ready</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+                <input type="date" id="dateFilter" class="filter-select">
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="orders-table" id="ordersTable">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Date & Time</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Payment</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="ordersList">
+                    <!-- Dynamic content -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Order Details Modal -->
+    <div id="orderModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeOrderModal()">&times;</span>
+            <h2>Order Details <span id="modalOrderId"></span></h2>
+            <div class="order-details-grid">
+                <div class="detail-section">
+                    <h3>Customer Information</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">Name:</span>
+                        <span class="detail-value" id="modalCustomerName"></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Phone:</span>
+                        <span class="detail-value" id="modalCustomerPhone"></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Address:</span>
+                        <span class="detail-value" id="modalCustomerAddress"></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Payment:</span>
+                        <span class="detail-value" id="modalPaymentMethod"></span>
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <h3>Order Summary</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">Order ID:</span>
+                        <span class="detail-value" id="modalOrderNumber"></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Date:</span>
+                        <span class="detail-value" id="modalOrderDate"></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Status:</span>
+                        <span class="detail-value" id="modalOrderStatus"></span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Total:</span>
+                        <span class="detail-value" id="modalOrderTotal"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="detail-section">
+                <h3>Order Items</h3>
+                <div class="items-list" id="modalOrderItems"></div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="printInvoice()">Print Invoice</button>
+                <button class="btn btn-primary" onclick="updateOrderStatus()">Update Status</button>
+                <button class="btn btn-danger" onclick="cancelOrder()">Cancel Order</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample orders data synced with customer orders
+        let orders = JSON.parse(localStorage.getItem('orders')) || [
+            {
+                id: 123456,
+                customerName: 'John Doe',
+                customerEmail: 'john.doe@email.com',
+                phone: '+1 (555) 123-4567',
+                address: '123 Main St, City, State 12345',
+                payment: 'cash',
+                status: 'delivered',
+                total: 28.50,
+                date: '2024-01-20T14:30:00Z',
+                items: [
+                    { name: 'Margherita Pizza', quantity: 1, price: 12.99 },
+                    { name: 'Garlic Bread', quantity: 2, price: 6.99 },
+                    { name: 'Coke', quantity: 1, price: 2.50 }
+                ]
+            },
+            {
+                id: 123455,
+                customerName: 'Sarah Wilson',
+                customerEmail: 'sarah.wilson@email.com',
+                phone: '+1 (555) 987-6543',
+                address: '456 Oak Ave, City, State 12345',
+                payment: 'card',
+                status: 'pending',
+                total: 42.00,
+                date: '2024-01-20T13:15:00Z',
+                items: [
+                    { name: 'Truffle Pasta', quantity: 1, price: 18.50 },
+                    { name: 'Tiramisu', quantity: 2, price: 8.75 }
+                ]
+            },
+            {
+                id: 123454,
+                customerName: 'Mike Johnson',
+                customerEmail: 'mike.johnson@email.com',
+                phone: '+1 (555) 456-7890',
+                address: '789 Pine Rd, City, State 12345',
+                payment: 'cash',
+                status: 'delivered',
+                total: 19.99,
+                date: '2024-01-20T11:45:00Z',
+                items: [
+                    { name: 'Caesar Salad', quantity: 1, price: 9.99 },
+                    { name: 'Iced Tea', quantity: 1, price: 2.50 },
+                    { name: 'Garlic Bread', quantity: 1, price: 6.99 }
+                ]
+            }
+        ];
+
+        function animateCounters() {
+            const counters = document.querySelectorAll('.stat-number');
+            counters.forEach(counter => {
+                const target = parseFloat(counter.getAttribute('data-target'));
+                const isCurrency = counter.textContent.includes('$');
+                const increment = target / 100;
+                let current = 0;
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (isCurrency) {
+                        counter.textContent = `$${current.toFixed(2)}`;
+                    } else {
+                        counter.textContent = Math.floor(current);
+                    }
+                    if (current >= target) {
+                        clearInterval(timer);
+                    }
+                }, 20);
+            });
+        }
+
+        function renderOrdersTable(filteredOrders = orders) {
+            const tbody = document.getElementById('ordersList');
+            tbody.innerHTML = filteredOrders.map(order => {
+                const date = new Date(order.date).toLocaleString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                return `
+                    <tr onclick="openOrderModal(${order.id})" style="cursor: pointer;">
+                        <td>#${order.id.toString().padStart(6, '0')}</td>
+                        <td>
+                            <div class="customer-info">
+                                <div class="order-avatar">${order.customerName.charAt(0)}${order.customerName.charAt(order.customerName.indexOf(' ') + 1) || ''}</div>
+                                <div>
+                                    <div class="customer-name">${order.customerName}</div>
+                                    <div class="customer-email">${order.customerEmail}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${date}</td>
+                        <td><span class="order-total">$${order.total.toFixed(2)}</span></td>
+                        <td><span class="order-status status-${order.status}">${order.status}</span></td>
+                        <td>
+                            <span style="font-size: 0.9rem; font-weight: 500; color: ${order.payment === 'cash' ? '#666' : '#1976d2'};">
+                                ${order.payment === 'cash' ? '💰 Cash' : '💳 Card'}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="table-actions">
+                                <button class="action-btn action-view" onclick="openOrderModal(${order.id}); event.stopPropagation();" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="action-btn action-status" onclick="updateStatusQuick(${order.id}); event.stopPropagation();" title="Update Status">
+                                    <i class="fas fa-sync"></i>
+                                </button>
+                                <button class="action-btn action-print" onclick="printInvoiceQuick(${order.id}); event.stopPropagation();" title="Print">
+                                    <i class="fas fa-print"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        let currentOrderId = null;
+
+        function openOrderModal(id) {
+            currentOrderId = id;
+            const order = orders.find(o => o.id === id);
+            if (order) {
+                document.getElementById('modalOrderId').textContent = `#${order.id}`;
+                document.getElementById('modalCustomerName').textContent = order.customerName;
+                document.getElementById('modalCustomerPhone').textContent = order.phone;
+                document.getElementById('modalCustomerAddress').textContent = order.address;
+                document.getElementById('modalPaymentMethod').textContent = order.payment.toUpperCase();
+                document.getElementById('modalOrderNumber').textContent = `#${order.id}`;
+                document.getElementById('modalOrderDate').textContent = new Date(order.date).toLocaleString();
+                document.getElementById('modalOrderStatus').innerHTML = `<span class="order-status status-${order.status}">${order.status}</span>`;
+                document.getElementById('modalOrderTotal').textContent = `$${order.total.toFixed(2)}`;
+
+                const itemsHtml = order.items.map(item => `
+                    <div class="order-item-detail">
+                        <div>
+                            <strong>${item.name}</strong> × ${item.quantity}
+                        </div>
+                        <div>$${(item.price * item.quantity).toFixed(2)}</div>
+                    </div>
+                `).join('');
+                document.getElementById('modalOrderItems').innerHTML = itemsHtml;
+
+                document.getElementById('orderModal').style.display = 'block';
+            }
+        }
+
+        function closeOrderModal() {
+            document.getElementById('orderModal').style.display = 'none';
+        }
+
+        function updateOrderStatus() {
+            const statuses = ['pending', 'confirmed', 'preparing', 'ready', 'delivered', 'cancelled'];
+            const order = orders.find(o => o.id === currentOrderId);
+            if (order) {
+                const currentIndex = statuses.indexOf(order.status);
+                order.status = statuses[(currentIndex + 1) % statuses.length];
+                localStorage.setItem('orders', JSON.stringify(orders));
+                renderOrdersTable();
+                openOrderModal(currentOrderId); // Refresh modal
+            }
+        }
+
+        function cancelOrder() {
+            if (confirm('Are you sure you want to cancel this order?')) {
+                const order = orders.find(o => o.id === currentOrderId);
+                if (order) {
+                    order.status = 'cancelled';
+                    localStorage.setItem('orders', JSON.stringify(orders));
+                    renderOrdersTable();
+                    closeOrderModal();
+                }
+            }
+        }
+
+        function printInvoiceQuick(id) {
+            const order = orders.find(o => o.id === id);
+            if (order) {
+                openOrderModal(id);
+            }
+        }
+
+        function updateStatusQuick(id) {
+            const order = orders.find(o => o.id === id);
+            if (order) {
+                const statuses = ['pending', 'confirmed', 'preparing', 'ready', 'delivered'];
+                const currentIndex = statuses.indexOf(order.status);
+                if (currentIndex < statuses.length - 1) {
+                    order.status = statuses[currentIndex + 1];
+                    localStorage.setItem('orders', JSON.stringify(orders));
+                    renderOrdersTable();
+                }
+            }
+        }
+
+        function printInvoice() {
+            window.print();
+        }
+
+        // Filters
+        document.getElementById('statusFilter').addEventListener('change', (e) => {
+            const status = e.target.value;
+            const filtered = status ? orders.filter(order => order.status === status) : orders;
+            renderOrdersTable(filtered);
+        });
+
+        document.getElementById('dateFilter').addEventListener('change', (e) => {
+            const date = e.target.value;
+            if (date) {
+                const filtered = orders.filter(order => {
+                    const orderDate = new Date(order.date).toISOString().split('T')[0];
+                    return orderDate === date;
+                });
+                renderOrdersTable(filtered);
+            } else {
+                renderOrdersTable();
+            }
+        });
+
+        // Modal handlers
+        window.onclick = function(event) {
+            const modal = document.getElementById('orderModal');
+            if (event.target === modal) {
+                closeOrderModal();
+            }
+        }
+
+        // Admin logout
+        document.getElementById('adminLogout').addEventListener('click', (e) => {
+            e.preventDefault();
+            if (confirm('Are you sure you want to logout from admin panel?')) {
+                window.location.href = 'login.html';
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            animateCounters();
+            renderOrdersTable();
+        });
+    </script>
+</body>
+</html>

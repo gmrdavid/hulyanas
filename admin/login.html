@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Hulyanas Hill</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .admin-auth { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); }
+        .admin-logo { color: #ff6b6b !important; }
+    </style>
+</head>
+<body>
+    <div class="auth-container admin-auth">
+        <div class="auth-card">
+            <div class="auth-header">
+                <i class="fas fa-user-shield"></i>
+                <h2>Admin Login</h2>
+                <p>Restaurant Management System</p>
+            </div>
+            <form id="adminLoginForm">
+                <div class="form-group">
+                    <label>Username or Email</label>
+                    <input type="text" id="adminUsername" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="adminPassword" required>
+                </div>
+                <button type="submit" class="btn btn-primary full-width">Admin Login</button>
+            </form>
+            <div class="auth-links">
+                <a href="../../index.html">← Back to Website</a>
+            </div>
+        </div>
+    </div>
+    <script src="js/admin-auth.js"></script>
+</body>
+</html>
