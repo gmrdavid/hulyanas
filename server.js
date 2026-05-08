@@ -20,7 +20,12 @@ app.use('/user', express.static('user'));
 app.use('/admin', express.static('admin'));
 
 // MySQL Connection
-const mysql = require('mysql2');
+
+console.log(process.env.DB_HOST);
+console.log(process.env.DB_USER);
+console.log(process.env.DB_PASSWORD);
+console.log(process.env.DB_NAME);
+console.log(process.env.DB_PORT);
 
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
