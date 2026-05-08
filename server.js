@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const mysql = require('mysql2');
 const bcrypt = require('bcryptjs');
@@ -18,19 +20,25 @@ app.use('/user', express.static('user'));
 app.use('/admin', express.static('admin'));
 
 // MySQL Connection
-require('dotenv').config();
+const mysql = require('mysql2');
 
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    port: process.env.DB_PORT
+    port: process.env.DB_PORT,
+    ssl: {
+        rejectUnauthorized: false
+    }
 });
 
-db.connect(err => {
-    if (err) throw err;
-    console.log('MySQL Connected...');
+db.connect((err) => {
+    if (err) {
+        console.error('Database connection failed:', err);
+    } else {
+        console.log('Connected to Aiven MySQL');
+    }
 });
 
 // JWT Secret
