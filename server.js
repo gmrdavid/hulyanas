@@ -409,6 +409,35 @@ app.delete('/api/menu/:id', async (req, res) => {
     }
 });
 
+app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
+    try {
+
+        const conn = await pool.getConnection();
+
+        const [rows] = await conn.execute(`
+            SELECT 
+                action,
+                created_at
+            FROM activity_log
+            ORDER BY created_at DESC
+            LIMIT 10
+        `);
+
+        conn.release();
+
+        const formatted = rows.map(row => ({
+            type: 'menu',
+            message: row.action,
+            time: new Date(row.created_at).toLocaleString()
+        }));
+
+        res.json(formatted);
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // ===== ADMIN ROUTES =====
 app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
     try {
