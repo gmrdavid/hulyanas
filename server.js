@@ -19,7 +19,6 @@ app.use('/user', express.static('user'));
 app.use('/admin', express.static('admin'));
 
 // MySQL Connection
-
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -33,7 +32,7 @@ const db = mysql.createConnection({
 
 db.connect(err => {
     if (err) throw err;
-    console.log('MySQL Connected...');
+    console.log('✅ MySQL Connected to hulyanas database...');
 });
 
 // JWT Secret
@@ -100,9 +99,9 @@ app.post('/api/register', async (req, res) => {
 
 // Login
 app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
+    const { name, password } = req.body;
     
-    db.query('SELECT * FROM users WHERE username = ? OR email = ?', [username, username], async (err, results) => {
+    db.query('SELECT * FROM users WHERE name = ? OR email = ?', [name, username], async (err, results) => {
         if (err || results.length === 0) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
@@ -115,14 +114,14 @@ app.post('/api/login', (req, res) => {
         }
         
         const token = jwt.sign(
-            { id: user.id, username: user.username, role: user.role },
+            { id: user.id, name: user.name, role: user.role },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
         
         res.json({
             token,
-            user: { id: user.id, username: user.username, role: user.role, full_name: user.full_name }
+            user: { id: user.id, name: user.name, role: user.role, full_name: user.full_name }
         });
     });
 });
