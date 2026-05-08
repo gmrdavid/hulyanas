@@ -385,7 +385,7 @@
         }
     </style>
 </head>
-body>
+<body>
     <nav class="navbar">
         <div class="nav-container">
             <a href="admin-dashboard.html" class="nav-logo admin-logo">
@@ -471,62 +471,116 @@ body>
         // Sample users data
         let users = [];
 
-        function renderUsersTable(filteredUsers = users) {
-            const tbody = document.getElementById('usersList');
-            const totalUsersEl = document.getElementById('totalUsers');
-            const totalAdminsEl = document.getElementById('totalAdmins');
-            const newUsersTodayEl = document.getElementById('newUsersToday');
+        async function fetchUsers() {
+        try {
+            const response = await fetch('get_users.php');
+            users = await response.json();
 
-            // Update stats
-            totalUsersEl.textContent = users.length;
-            totalAdminsEl.textContent = users.filter(u => u.role === 'admin').length;
-            const today = new Date().toDateString();
-            newUsersTodayEl.textContent = users.filter(u => new Date(u.joined).toDateString() === today).length;
+            renderUsersTable(users);
 
-            tbody.innerHTML = filteredUsers.map(user => {
-                const joinedDate = new Date(user.joined).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
-                });
-                return `
-                    <tr>
-                        <td>#${user.id.toString().padStart(4, '0')}</td>
-                        <td>
-                            <div class="user-info">
-                                <div class="user-avatar">${user.avatar}</div>
-                                <div>
-                                    <div class="user-name">${user.username}</div>
-                                    <div class="user-email">${user.email}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>${user.email}</td>
-                        <td>${user.fullName}</td>
-                        <td>${user.phone || '—'}</td>
-                        <td><span class="user-role role-${user.role}">${user.role}</span></td>
-                        <td class="date-joined">${joinedDate}</td>
-                        <td>
-                            <div class="table-actions">
-                                <button class="action-btn action-view" onclick="viewUser(${user.id})" title="View Profile">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="action-btn action-edit" onclick="editUser(${user.id})" title="Edit User">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="action-btn action-promote" onclick="toggleRole(${user.id})" title="Toggle Role">
-                                    <i class="fas fa-user-shield"></i>
-                                </button>
-                                <button class="action-btn action-delete" onclick="deleteUser(${user.id})" title="Delete User">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+        } catch (error) {
+            console.error('Error fetching users:', error);
         }
+    }
 
+        function renderUsersTable(filteredUsers = users) {
+
+    const tbody = document.getElementById('usersList');
+
+    const totalUsersEl = document.getElementById('totalUsers');
+    const totalAdminsEl = document.getElementById('totalAdmins');
+    const newUsersTodayEl = document.getElementById('newUsersToday');
+
+    // Stats
+    totalUsersEl.textContent = users.length;
+
+    totalAdminsEl.textContent =
+        users.filter(u => u.role === 'admin').length;
+
+    const today = new Date().toDateString();
+
+    newUsersTodayEl.textContent =
+        users.filter(u =>
+            new Date(u.created_at).toDateString() === today
+        ).length;
+
+    tbody.innerHTML = filteredUsers.map(user => {
+
+        const initials =
+            (user.first_name?.charAt(0) || '') +
+            (user.last_name?.charAt(0) || '');
+
+        const joinedDate = new Date(user.created_at)
+            .toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+
+        return `
+            <tr>
+                <td>#${String(user.id).padStart(4, '0')}</td>
+
+                <td>
+                    <div class="user-info">
+                        <div class="user-avatar">
+                            ${initials || 'U'}
+                        </div>
+
+                        <div>
+                            <div class="user-name">
+                                ${user.username}
+                            </div>
+
+                            <div class="user-email">
+                                ${user.email}
+                            </div>
+                        </div>
+                    </div>
+                </td>
+
+                <td>${user.email}</td>
+
+                <td>
+                    ${user.first_name} ${user.last_name}
+                </td>
+
+                <td>${user.phone || '—'}</td>
+
+                <td>
+                    <span class="user-role role-${user.role}">
+                        ${user.role}
+                    </span>
+                </td>
+
+                <td class="date-joined">
+                    ${joinedDate}
+                </td>
+
+                <td>
+                    <div class="table-actions">
+
+                        <button class="action-btn action-view"
+                            onclick="viewUser(${user.id})">
+                            <i class="fas fa-eye"></i>
+                        </button>
+
+                        <button class="action-btn action-edit"
+                            onclick="editUser(${user.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+
+                        <button class="action-btn action-delete"
+                            onclick="deleteUser(${user.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
         function viewUser(id) {
             const user = users.find(u => u.id === id);
             if (user) {
@@ -593,7 +647,7 @@ body>
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            renderUsersTable();
+            fetchUsers();
         });
     </script>
 </body>
