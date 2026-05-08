@@ -346,72 +346,73 @@
         </div>
     </div>
 
-     <script>
+        <script>
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('loginForm');
 
             form.addEventListener('submit', async function(e) {
                 e.preventDefault();
 
-            const btn = form.querySelector('.btn');
-            const originalText = btn.innerHTML;
+                const btn = form.querySelector('.btn');
+                const originalText = btn.innerHTML;
 
-            const username = document.getElementById('loginUsername').value;
-            const password = document.getElementById('loginPassword').value;
+                // FIXED: Use admin email and admin login endpoint
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
 
-            btn.classList.add('loading');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
+                btn.classList.add('loading');
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
 
-            try {
-                const response = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ username, password })
-                });
+                try {
+                    // FIXED: Use /api/admin/login instead of /api/login
+                    const response = await fetch('/api/admin/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ 
+                            email,  // Admin login uses email
+                            password 
+                        })
+                    });
 
-                const data = await response.json();
+                    const data = await response.json();
 
-                btn.classList.remove('loading');
-                btn.innerHTML = originalText;
+                    btn.classList.remove('loading');
+                    btn.innerHTML = originalText;
 
-                if (!response.ok) {
-                    showMessage(data.error || 'Login failed', 'error');
-                    return;
-                }
-
-                // Save login data
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('user', JSON.stringify(data.user));
-
-                showMessage('Login successful!', 'success');
-
-                // ROLE-BASED REDIRECT
-                setTimeout(() => {
-                    if (data.user.role === 'admin') {
-                        window.location.href = '/admin/dashboard.html';
-                    } else {
-                        window.location.href = '/user/dashboard.html';
+                    if (!response.ok) {
+                        showMessage(data.error || 'Admin login failed', 'error');
+                        return;
                     }
-                }, 1000);
 
-            } catch (error) {
-                btn.classList.remove('loading');
-                btn.innerHTML = originalText;
-                showMessage('Server error', 'error');
-                console.error(error);
-            }
+                    // Save admin token
+                    localStorage.setItem('adminToken', data.token);
+                    localStorage.setItem('adminUser', JSON.stringify(data.user));
+
+                    showMessage('Admin access granted! Redirecting...', 'success');
+
+                    // Redirect to admin dashboard
+                    setTimeout(() => {
+                        window.location.href = '/admin/dashboard.html'; // Your admin dashboard
+                    }, 1200);
+
+                } catch (error) {
+                    btn.classList.remove('loading');
+                    btn.innerHTML = originalText;
+                    showMessage('Server connection error', 'error');
+                    console.error('Login error:', error);
+                }
+            });
         });
-    });
 
-    function showMessage(text, type) {
-        const msg = document.getElementById('message');
-        msg.textContent = text;
-        msg.className = `message ${type}`;
-        msg.style.display = 'block';
-        setTimeout(() => msg.style.display = 'none', 4000);
-    }
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = `message ${type}`;
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 5000);
+        }
     </script>
 </body>
 </html> 
