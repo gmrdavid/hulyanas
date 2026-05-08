@@ -469,58 +469,7 @@ body>
 
     <script>
         // Sample users data
-        let users = JSON.parse(localStorage.getItem('users')) || [
-            {
-                id: 1,
-                username: 'johndoe',
-                email: 'john.doe@email.com',
-                fullName: 'John Doe',
-                phone: '+1 (555) 123-4567',
-                role: 'customer',
-                joined: '2024-01-15T10:30:00Z',
-                avatar: 'JD'
-            },
-            {
-                id: 2,
-                username: 'sarahwilson',
-                email: 'sarah.wilson@email.com',
-                fullName: 'Sarah Wilson',
-                phone: '+1 (555) 987-6543',
-                role: 'customer',
-                joined: '2024-01-14T14:22:00Z',
-                avatar: 'SW'
-            },
-            {
-                id: 3,
-                username: 'admin',
-                email: 'admin@hulyanashill.com',
-                fullName: 'Admin User',
-                phone: '+1 (555) 000-0000',
-                role: 'admin',
-                joined: '2023-12-01T09:00:00Z',
-                avatar: 'A'
-            },
-            {
-                id: 4,
-                username: 'mikejohnson',
-                email: 'mike.johnson@email.com',
-                fullName: 'Mike Johnson',
-                phone: '+1 (555) 456-7890',
-                role: 'staff',
-                joined: '2024-01-10T16:45:00Z',
-                avatar: 'MJ'
-            },
-            {
-                id: 5,
-                username: 'emilybrown',
-                email: 'emily.brown@email.com',
-                fullName: 'Emily Brown',
-                phone: '+1 (555) 321-0987',
-                role: 'customer',
-                joined: '2024-01-13T11:20:00Z',
-                avatar: 'EB'
-            }
-        ];
+        let users = [];
 
         function renderUsersTable(filteredUsers = users) {
             const tbody = document.getElementById('usersList');
