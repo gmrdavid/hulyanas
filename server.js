@@ -487,6 +487,105 @@ app.get('/api/admin/recent-orders', authenticateToken, isAdmin, async (req, res)
     }
 });
 
+// ADMIN ORDERS API
+app.get('/api/admin/orders', authenticateToken, isAdmin, async (req, res) => {
+
+    try {
+
+        const conn = await pool.getConnection();
+
+        const [rows] = await conn.execute(`
+            SELECT
+                o.*,
+                CONCAT(u.first_name, ' ', u.last_name)
+                AS customer_name
+            FROM orders o
+            LEFT JOIN users u
+            ON o.user_id = u.id
+            ORDER BY o.created_at DESC
+        `);
+
+        conn.release();
+
+        res.json(rows);
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+            error: error.message
+        });
+    }
+});
+
+// UPDATE ORDER STATUS
+app.put('/api/admin/orders/:id/status',
+authenticateToken,
+isAdmin,
+async (req, res) => {
+
+    try {
+
+        const { status } = req.body;
+
+        const conn = await pool.getConnection();
+
+        await conn.execute(
+            `UPDATE orders
+             SET status = ?
+             WHERE id = ?`,
+            [status, req.params.id]
+        );
+
+        conn.release();
+
+        res.json({
+            message: 'Order status updated'
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+            error: error.message
+        });
+    }
+});
+
+// DELETE ORDER
+app.delete('/api/admin/orders/:id',
+authenticateToken,
+isAdmin,
+async (req, res) => {
+
+    try {
+
+        const conn = await pool.getConnection();
+
+        await conn.execute(
+            `DELETE FROM orders
+             WHERE id = ?`,
+            [req.params.id]
+        );
+
+        conn.release();
+
+        res.json({
+            message: 'Order deleted successfully'
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+            error: error.message
+        });
+    }
+});
+
 // Start server
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
