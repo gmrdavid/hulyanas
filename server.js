@@ -586,6 +586,46 @@ async (req, res) => {
     }
 });
 
+// ===== ADMIN USERS API =====
+app.get('/api/admin/users',
+authenticateToken,
+isAdmin,
+async (req, res) => {
+
+    try {
+
+        const conn = await pool.getConnection();
+
+        const [rows] = await conn.execute(`
+            SELECT
+                id,
+                username,
+                email,
+                first_name,
+                last_name,
+                phone,
+                role,
+                is_active,
+                created_at,
+                updated_at
+            FROM users
+            ORDER BY id DESC
+        `);
+
+        conn.release();
+
+        res.json(rows);
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+            error: error.message
+        });
+    }
+});
+
 // Start server
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);

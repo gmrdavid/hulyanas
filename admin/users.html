@@ -472,16 +472,35 @@
         let users = [];
 
         async function fetchUsers() {
-        try {
-            const response = await fetch('get_users.php');
-            users = await response.json();
 
-            renderUsersTable(users);
+    try {
 
-        } catch (error) {
-            console.error('Error fetching users:', error);
+        const token = localStorage.getItem('token');
+
+        const response = await fetch(
+            'http://localhost:3000/api/admin/users',
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch users');
         }
+
+        users = await response.json();
+
+        renderUsersTable(users);
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert('Error loading users');
     }
+}
 
         function renderUsersTable(filteredUsers = users) {
 
