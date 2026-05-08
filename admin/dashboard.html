@@ -437,117 +437,206 @@
         </div>
     </div>
 
-    <script>
-        // Animated counters
-        function animateCounters() {
-            const counters = document.querySelectorAll('.stat-number');
-            counters.forEach(counter => {
-                const target = parseFloat(counter.getAttribute('data-target'));
-                const isCurrency = counter.textContent.includes('$');
-                const updateCounter = () => {
-                    const increment = target / 100;
-                    let current = 0;
-                    const timer = setInterval(() => {
-                        current += increment;
-                        if (isCurrency) {
-                            counter.textContent = `$${current.toFixed(2)}`;
-                        } else {
-                            counter.textContent = Math.floor(current);
-                        }
-                        if (current >= target) {
-                            clearInterval(timer);
-                            counter.textContent = isCurrency ? `$${target.toFixed(2)}` : Math.floor(target);
-                        }
-                    }, 20);
-                };
-                const observer = new IntersectionObserver((entries) => {
-                    if (entries[0].isIntersecting) {
-                        updateCounter();
-                        observer.unobserve(counter);
+   <script>
+    // Animate dashboard counters
+    function animateCounters() {
+        const counters = document.querySelectorAll('.stat-number');
+
+        counters.forEach(counter => {
+            const target = parseFloat(counter.getAttribute('data-target')) || 0;
+            const isCurrency = counter.dataset.type === 'currency';
+
+            let current = 0;
+            const increment = target / 100;
+
+            const updateCounter = () => {
+                const timer = setInterval(() => {
+                    current += increment;
+
+                    if (current >= target) {
+                        current = target;
+                        clearInterval(timer);
                     }
-                });
-                observer.observe(counter);
+
+                    counter.textContent = isCurrency
+                        ? `₱${current.toFixed(2)}`
+                        : Math.floor(current);
+                }, 20);
+            };
+
+            const observer = new IntersectionObserver(entries => {
+                if (entries[0].isIntersecting) {
+                    updateCounter();
+                    observer.unobserve(counter);
+                }
             });
+
+            observer.observe(counter);
+        });
+    }
+
+    // Fetch dashboard statistics from database
+    async function loadDashboardStats() {
+        try {
+            const response = await fetch('/api/admin/stats');
+            const data = await response.json();
+
+            // Example expected response:
+            // {
+            //   totalOrders: 120,
+            //   totalUsers: 55,
+            //   totalRevenue: 15000,
+            //   totalProducts: 20
+            // }
+
+            document.getElementById('totalOrders').setAttribute('data-target', data.totalOrders || 0);
+            document.getElementById('totalUsers').setAttribute('data-target', data.totalUsers || 0);
+            document.getElementById('totalRevenue').setAttribute('data-target', data.totalRevenue || 0);
+            document.getElementById('totalProducts').setAttribute('data-target', data.totalProducts || 0);
+
+            animateCounters();
+
+        } catch (error) {
+            console.error('Error loading dashboard stats:', error);
         }
+    }
 
-        // Sample data
-        const recentOrders = [
-            { id: '#123456', customer: 'John Doe', status: 'delivered', total: 28.50, date: '2 min ago' },
-            { id: '#123455', customer: 'Sarah Wilson', status: 'pending', total: 42.00, date: '15 min ago' },
-            { id: '#123454', customer: 'Mike Johnson', status: 'delivered', total: 19.99, date: '1 hr ago' },
-            { id: '#123453', customer: 'Emily Brown', status: 'cancelled', total: 35.75, date: '2 hrs ago' },
-            { id: '#123452', customer: 'David Lee', status: 'delivered', total: 52.25, date: '3 hrs ago' }
-        ];
+    // Fetch recent orders from database
+    async function loadRecentOrders() {
+        try {
+            const response = await fetch('/api/admin/orders');
+            const orders = await response.json();
 
-        const activityData = [
-            { type: 'order', text: 'New order #123456 placed', time: '2 min ago' },
-            { type: 'user', text: 'Sarah Wilson registered', time: '15 min ago' },
-            { type: 'order', text: 'Order #123454 delivered', time: '1 hr ago' },
-            { type: 'menu', text: 'New menu item added: Truffle Pasta', time: '2 hrs ago' },
-            { type: 'order', text: 'Order #123453 cancelled', time: '3 hrs ago' }
-        ];
-
-        function renderRecentOrders() {
             const tbody = document.getElementById('recentOrders');
-            tbody.innerHTML = recentOrders.map(order => `
+
+            tbody.innerHTML = orders.map(order => `
                 <tr>
-                    <td>${order.id}</td>
-                    <td>${order.customer}</td>
-                    <td><span class="order-status status-${order.status}">${order.status}</span></td>
-                    <td>$${order.total}</td>
-                    <td>${order.date}</td>
+                    <td>#${order.order_id}</td>
+                    <td>${order.customer_name}</td>
+                    <td>
+                        <span class="order-status status-${order.status}">
+                            ${order.status}
+                        </span>
+                    </td>
+                    <td>₱${parseFloat(order.total_amount).toFixed(2)}</td>
+                    <td>${order.created_at}</td>
                     <td>
                         <div class="quick-actions">
-                            <button class="btn btn-primary"><i class="fas fa-eye"></i></button>
-                            <button class="btn btn-secondary"><i class="fas fa-edit"></i></button>
-                            <button class="btn btn-danger"><i class="fas fa-trash"></i></button>
+                            <button class="btn btn-primary" onclick="viewOrder(${order.order_id})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+
+                            <button class="btn btn-secondary" onclick="editOrder(${order.order_id})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+
+                            <button class="btn btn-danger" onclick="deleteOrder(${order.order_id})">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </div>
                     </td>
                 </tr>
             `).join('');
-        }
 
-        function renderActivityFeed() {
+        } catch (error) {
+            console.error('Error loading recent orders:', error);
+        }
+    }
+
+    // Fetch activity logs from database
+    async function loadActivityFeed() {
+        try {
+            const response = await fetch('/api/admin/activity');
+            const activities = await response.json();
+
             const feed = document.getElementById('activityFeed');
-            feed.innerHTML = activityData.map(activity => `
+
+            feed.innerHTML = activities.map(activity => `
                 <div class="activity-item">
                     <div class="activity-icon ${activity.type}">
-                        <i class="fas fa-${activity.type === 'order' ? 'shopping-cart' : activity.type === 'user' ? 'user-plus' : 'utensils'}"></i>
+                        <i class="fas fa-${
+                            activity.type === 'order'
+                                ? 'shopping-cart'
+                                : activity.type === 'user'
+                                ? 'user-plus'
+                                : 'utensils'
+                        }"></i>
                     </div>
+
                     <div class="activity-content">
-                        <h4>${activity.text}</h4>
+                        <h4>${activity.message}</h4>
                         <p>${activity.time}</p>
                     </div>
                 </div>
             `).join('');
+
+        } catch (error) {
+            console.error('Error loading activity feed:', error);
         }
+    }
 
-        // Navbar scroll effect
-        window.addEventListener('scroll', () => {
-            const navbar = document.querySelector('.navbar');
-            if (window.scrollY > 50) {
-                navbar.style.background = 'rgba(255, 255, 255, 1)';
-                navbar.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.1)';
+    // Navbar scroll effect
+    window.addEventListener('scroll', () => {
+        const navbar = document.querySelector('.navbar');
+
+        if (window.scrollY > 50) {
+            navbar.style.background = 'rgba(255, 255, 255, 1)';
+            navbar.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.1)';
+        } else {
+            navbar.style.background = 'rgba(255, 255, 255, 0.98)';
+            navbar.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.05)';
+        }
+    });
+
+    // Logout
+    document.getElementById('adminLogout').addEventListener('click', (e) => {
+        e.preventDefault();
+
+        if (confirm('Are you sure you want to logout from admin panel?')) {
+            localStorage.removeItem('token');
+            window.location.href = '/index.html';
+        }
+    });
+
+    // Action handlers
+    function viewOrder(orderId) {
+        window.location.href = `/admin/order-details.html?id=${orderId}`;
+    }
+
+    function editOrder(orderId) {
+        window.location.href = `/admin/edit-order.html?id=${orderId}`;
+    }
+
+    async function deleteOrder(orderId) {
+        const confirmDelete = confirm('Are you sure you want to delete this order?');
+
+        if (!confirmDelete) return;
+
+        try {
+            const response = await fetch(`/api/admin/orders/${orderId}`, {
+                method: 'DELETE'
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                alert(result.message || 'Order deleted successfully');
+                loadRecentOrders();
             } else {
-                navbar.style.background = 'rgba(255, 255, 255, 0.98)';
-                navbar.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.05)';
+                alert(result.message || 'Failed to delete order');
             }
-        });
 
-        // Admin logout
-        document.getElementById('adminLogout').addEventListener('click', (e) => {
-            e.preventDefault();
-            if (confirm('Are you sure you want to logout from admin panel?')) {
-                window.location.href = '/index.html';
-            }
-        });
+        } catch (error) {
+            console.error('Delete error:', error);
+        }
+    }
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            animateCounters();
-            renderRecentOrders();
-            renderActivityFeed();
-        });
-    </script>
+    // Initialize dashboard
+    document.addEventListener('DOMContentLoaded', async () => {
+        await loadDashboardStats();
+        await loadRecentOrders();
+        await loadActivityFeed();
+    });
+</script>
 </body>
 </html>
