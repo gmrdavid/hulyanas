@@ -477,20 +477,35 @@
 
         const token = localStorage.getItem('token');
 
+        if (!token) {
+            alert('Please login first');
+            window.location.href = '/login.html';
+            return;
+        }
+
         const response = await fetch(
             'http://localhost:3000/api/admin/users',
             {
+                method: 'GET',
                 headers: {
+                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 }
             }
         );
 
+        // Debug response
+        const text = await response.text();
+
+        console.log('SERVER RESPONSE:', text);
+
+        const data = JSON.parse(text);
+
         if (!response.ok) {
-            throw new Error('Failed to fetch users');
+            throw new Error(data.error || 'Failed to fetch users');
         }
 
-        users = await response.json();
+        users = data;
 
         renderUsersTable(users);
 
@@ -498,7 +513,7 @@
 
         console.error(error);
 
-        alert('Error loading users');
+        alert(error.message);
     }
 }
 
