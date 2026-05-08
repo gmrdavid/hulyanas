@@ -314,19 +314,19 @@
         <div class="auth-card">
             <div class="auth-header">
                 <div class="auth-logo">
-                    <i class="fas fa-user-shield"></i> <!-- Changed to admin icon -->
-                    <span>Admin Panel</span>
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Sign In</span>
                 </div>
-                <h1 class="auth-title">Admin Login</h1>
-                <p class="auth-subtitle">Enter admin credentials to access dashboard</p>
+                <h1 class="auth-title">Welcome Back</h1>
+                <p class="auth-subtitle">Enter your credentials to access your account</p>
             </div>
             
             <div id="message" class="message"></div>
 
             <form id="loginForm">
                 <div class="form-group">
-                    <label>Email</label> <!-- Changed label -->
-                    <input type="email" id="loginEmail" placeholder="admin@hulyanas.com" required>
+                    <label>Username or Email</label>
+                    <input type="text" id="loginUsername" placeholder="john.doe@email.com" required>
                 </div>
                 <div class="form-group">
                     <label>Password</label>
@@ -335,77 +335,83 @@
                 
                 <button type="submit" class="btn">
                     <i class="fas fa-arrow-right"></i>
-                    Enter Admin Dashboard
+                    Sign In
                 </button>
             </form>
             
             <div class="auth-links">
-                <p><strong>Demo Admin:</strong> admin@hulyanas.com / admin123</p>
-                <p><a href="../index.html"><i class="fas fa-home"></i> Back to Home</a></p>
+                <p>Don't have an account? <a href="register.html"><i class="fas fa-user-plus"></i> Create Account</a></p>
+                <a href="../index.html"><i class="fas fa-home"></i> Back to Home</a>
             </div>
         </div>
     </div>
 
-        <script>
-    document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('loginForm');
+     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('loginForm');
 
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
 
-        const btn = form.querySelector('.btn');
-        const originalText = btn.innerHTML;
+            const btn = form.querySelector('.btn');
+            const originalText = btn.innerHTML;
 
-        const email = document.getElementById('loginEmail').value;      // EMAIL for admin
-        const password = document.getElementById('loginPassword').value;
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
 
-        btn.classList.add('loading');
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Admin Login...';
+            btn.classList.add('loading');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
 
-        try {
-            const response = await fetch('/api/admin/login', {  // ADMIN ENDPOINT
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })  // EMAIL + PASSWORD
-            });
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
 
-            const data = await response.json();
+                const data = await response.json();
 
-            btn.classList.remove('loading');
-            btn.innerHTML = originalText;
+                btn.classList.remove('loading');
+                btn.innerHTML = originalText;
 
-            if (!data.success) {
-                showMessage(data.error || 'Admin login failed', 'error');
-                return;
+                if (!response.ok) {
+                    showMessage(data.error || 'Login failed', 'error');
+                    return;
+                }
+
+                // Save login data
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.user));
+
+                showMessage('Login successful!', 'success');
+
+                // ROLE-BASED REDIRECT
+                setTimeout(() => {
+                    if (data.user.role === 'admin') {
+                        window.location.href = '/admin/dashboard.html';
+                    } else {
+                        window.location.href = '/user/dashboard.html';
+                    }
+                }, 1000);
+
+            } catch (error) {
+                btn.classList.remove('loading');
+                btn.innerHTML = originalText;
+                showMessage('Server error', 'error');
+                console.error(error);
             }
-
-            // Store ADMIN token separately
-            localStorage.setItem('adminToken', data.token);
-            localStorage.setItem('adminUser', JSON.stringify(data.user));
-
-            showMessage('✅ Admin access granted!', 'success');
-
-            // Redirect to admin dashboard
-            setTimeout(() => {
-                window.location.href = '/admin/dashboard.html';
-            }, 1500);
-
-        } catch (error) {
-            btn.classList.remove('loading');
-            btn.innerHTML = originalText;
-            showMessage('Network error - check server', 'error');
-            console.error(error);
-        }
+        });
     });
-});
 
-function showMessage(text, type) {
-    const msg = document.getElementById('message');
-    msg.textContent = text;
-    msg.className = `message ${type}`;
-    msg.style.display = 'block';
-    setTimeout(() => msg.style.display = 'none', 5000);
-}
-</script>
+    function showMessage(text, type) {
+        const msg = document.getElementById('message');
+        msg.textContent = text;
+        msg.className = `message ${type}`;
+        msg.style.display = 'block';
+        setTimeout(() => msg.style.display = 'none', 4000);
+    }
+    </script>
 </body>
 </html> 
