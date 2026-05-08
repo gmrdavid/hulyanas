@@ -581,51 +581,6 @@
                 card.style.transform = 'translateY(0)';
             });
         });
-
-                // PROTECT ADMIN DASHBOARD
-        document.addEventListener('DOMContentLoaded', async function() {
-            const adminToken = localStorage.getItem('adminToken');
-            
-            if (!adminToken) {
-                window.location.href = '/admin/login.html';
-                return;
-            }
-
-            // Verify token is valid
-            try {
-                const response = await fetch('/api/admin/stats', {
-                    headers: { 'Authorization': `Bearer ${adminToken}` }
-                });
-                
-                if (!response.ok) {
-                    localStorage.removeItem('adminToken');
-                    window.location.href = '/admin/login.html';
-                    return;
-                }
-                
-                // Load dashboard data
-                loadDashboardData(adminToken);
-                
-            } catch (error) {
-                localStorage.removeItem('adminToken');
-                window.location.href = '/admin/login.html';
-            }
-        });
-
-        async function loadDashboardData(token) {
-            const headers = { 'Authorization': `Bearer ${token}` };
-            
-            const [stats, orders, activity] = await Promise.all([
-                fetch('/api/admin/stats', { headers }).then(r => r.json()),
-                fetch('/api/admin/recent-orders', { headers }).then(r => r.json()),
-                fetch('/api/admin/activity', { headers }).then(r => r.json())
-            ]);
-            
-            // Update your UI with real data
-            document.querySelector('.stat-number[data-target="menu"]').textContent = stats.menuItems;
-            // ... update other stats, orders, activity
-        }
-
     </script>
 </body>
 </html>

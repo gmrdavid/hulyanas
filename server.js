@@ -1,5 +1,4 @@
 require('dotenv').config();
-
 const express = require('express');
 const mysql = require('mysql2');
 const bcrypt = require('bcryptjs');
@@ -13,18 +12,13 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors({ credentials: true, origin: true }));
+app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 app.use('/user', express.static('user'));
 app.use('/admin', express.static('admin'));
 
 // MySQL Connection
-console.log(process.env.DB_HOST);
-console.log(process.env.DB_USER);
-console.log(process.env.DB_PASSWORD);
-console.log(process.env.DB_NAME);
-console.log(process.env.DB_PORT);
 
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
@@ -37,12 +31,9 @@ const db = mysql.createConnection({
     }
 });
 
-db.connect((err) => {
-    if (err) {
-        console.error('Database connection failed:', err);
-    } else {
-        console.log('✅ Connected to Aiven MySQL');
-    }
+db.connect(err => {
+    if (err) throw err;
+    console.log('MySQL Connected...');
 });
 
 // JWT Secret
@@ -82,98 +73,7 @@ const isAdmin = (req, res, next) => {
     next();
 };
 
-// ==================== ADMIN DASHBOARD ROUTES ====================
-
-// Admin Login (separate from user login)
-app.post('/api/admin/login', (req, res) => {
-    const { email, password } = req.body;
-    
-    db.query('SELECT * FROM users WHERE email = ? AND role = "admin"', [email], async (err, results) => {
-        if (err || results.length === 0) {
-            return res.status(401).json({ error: 'Invalid admin credentials' });
-        }
-        
-        const user = results[0];
-        const isMatch = await bcrypt.compare(password, user.password);
-        
-        if (!isMatch) {
-            return res.status(401).json({ error: 'Invalid admin credentials' });
-        }
-        
-        const token = jwt.sign(
-            { id: user.id, email: user.email, role: user.role },
-            JWT_SECRET,
-            { expiresIn: '24h' }
-        );
-        
-        res.json({
-            token,
-            user: { id: user.id, email: user.email, role: user.role }
-        });
-    });
-});
-
-// Admin Dashboard Stats (PROTECTED)
-app.get('/api/admin/stats', authenticateToken, isAdmin, (req, res) => {
-    db.query(`
-        SELECT 
-            (SELECT COUNT(*) FROM menu_items) as menuItems,
-            (SELECT COUNT(*) FROM orders) as totalOrders,
-            (SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE status != 'cancelled') as revenue,
-            (SELECT COUNT(*) FROM users) as totalUsers
-    `, (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        const stats = results[0];
-        res.json({
-            menuItems: parseInt(stats.menuItems),
-            totalOrders: parseInt(stats.totalOrders),
-            revenue: parseFloat(stats.revenue),
-            totalUsers: parseInt(stats.totalUsers)
-        });
-    });
-});
-
-// Recent Orders for Dashboard (PROTECTED)
-app.get('/api/admin/recent-orders', authenticateToken, isAdmin, (req, res) => {
-    db.query(`
-        SELECT id, order_number, customer_name, status, total_amount, created_at,
-               CASE 
-                 WHEN TIMESTAMPDIFF(MINUTE, created_at, NOW()) < 60 
-                 THEN CONCAT(TIMESTAMPDIFF(MINUTE, created_at, NOW()), ' min ago')
-                 WHEN TIMESTAMPDIFF(HOUR, created_at, NOW()) < 24 
-                 THEN CONCAT(TIMESTAMPDIFF(HOUR, created_at, NOW()), ' hr ago')
-                 ELSE DATE_FORMAT(created_at, '%b %d')
-               END as relative_time
-        FROM orders 
-        ORDER BY created_at DESC 
-        LIMIT 5
-    `, (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
-    });
-});
-
-// Activity Feed (PROTECTED)
-app.get('/api/admin/activity', authenticateToken, isAdmin, (req, res) => {
-    db.query(`
-        SELECT 'order' as type, 
-               CONCAT('New order #', order_number, ' placed') as text,
-               CASE 
-                 WHEN TIMESTAMPDIFF(MINUTE, created_at, NOW()) < 60 
-                 THEN CONCAT(TIMESTAMPDIFF(MINUTE, created_at, NOW()), ' min ago')
-                 ELSE CONCAT(FLOOR(TIMESTAMPDIFF(HOUR, created_at, NOW())/24), ' days ago')
-               END as time
-        FROM orders 
-        WHERE created_at > DATE_SUB(NOW(), INTERVAL 2 DAY)
-        ORDER BY created_at DESC 
-        LIMIT 5
-    `, (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
-    });
-});
-
-// ==================== EXISTING ROUTES (UNCHANGED) ====================
+// Routes
 
 // Register
 app.post('/api/register', async (req, res) => {
@@ -198,7 +98,7 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// Login (user login - unchanged)
+// Login
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
     
@@ -415,7 +315,5 @@ app.get('/api/admin/users', authenticateToken, isAdmin, (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`🔐 Admin Login: POST /api/admin/login`);
-    console.log(`📊 Admin Dashboard: GET /api/admin/stats, /api/admin/recent-orders, /api/admin/activity`);
+    console.log(`Server running on port ${PORT}`);
 });
