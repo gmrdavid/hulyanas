@@ -1,11 +1,11 @@
 const express = require('express');
-const mysql = require('mysql2');
+const mysql = require('mysql2/promise'); // Use promise version for better async/await
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
-const fs = require('fs');
+const fs = require('fs').promises;
 
 const app = express();
 const PORT = 3000;
@@ -17,47 +17,62 @@ app.use(express.static('public'));
 app.use('/user', express.static('user'));
 app.use('/admin', express.static('admin'));
 
-// MySQL Connection
-const db = mysql.createConnection({
+// MySQL Connection Pool (better than single connection)
+const dbConfig = {
     host: 'localhost',
     user: 'root',
     password: '',
-    database: 'hulyanas'
-});
-
-db.connect(err => {
-    if (err) throw err;
-    console.log('MySQL Connected...');
-});
+    database: 'hulyanas',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+};
 
 // JWT Secret
-const JWT_SECRET = 'hulyanas_secret_key_2024';
+const JWT_SECRET = 'hulyanas_secret_key_2024_secure_change_this';
 
 // Multer for file uploads
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'public/images/');
+    destination: async (req, file, cb) => {
+        try {
+            await fs.mkdir('public/images', { recursive: true });
+            cb(null, 'public/images/');
+        } catch (err) {
+            cb(err, '');
+        }
     },
     filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + file.originalname);
+        cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname));
     }
 });
-const upload = multer({ storage });
+const upload = multer({ 
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files are allowed'), false);
+        }
+    }
+});
 
 // Auth middleware
-const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+const authenticateToken = async (req, res, next) => {
+    try {
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
 
-    if (!token) {
-        return res.status(401).json({ error: 'Access token required' });
-    }
+        if (!token) {
+            return res.status(401).json({ error: 'Access token required' });
+        }
 
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.status(403).json({ error: 'Invalid token' });
-        req.user = user;
+        const decoded = jwt.verify(token, JWT_SECRET);
+        req.user = decoded;
         next();
-    });
+    } catch (err) {
+        return res.status(403).json({ error: 'Invalid token' });
+    }
 };
 
 const isAdmin = (req, res, next) => {
@@ -67,41 +82,69 @@ const isAdmin = (req, res, next) => {
     next();
 };
 
+// Create connection pool
+const pool = mysql.createPool(dbConfig);
+
+// Test connection
+pool.getConnection().then(conn => {
+    console.log('MySQL Connected...');
+    conn.release();
+}).catch(err => {
+    console.error('Database connection failed:', err);
+});
+
 // Routes
 
-// Register
+// Register (Customer only)
 app.post('/api/register', async (req, res) => {
     try {
-        const { username, email, password, full_name, phone, address } = req.body;
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const { username, email, password, first_name, last_name, phone } = req.body;
         
-        db.query('INSERT INTO users (username, email, password, full_name, phone, address) VALUES (?, ?, ?, ?, ?, ?)',
-            [username, email, hashedPassword, full_name, phone, address],
-            (err, result) => {
-                if (err) {
-                    if (err.code === 'ER_DUP_ENTRY') {
-                        return res.status(400).json({ error: 'Username or email already exists' });
-                    }
-                    return res.status(500).json({ error: err.message });
-                }
-                res.status(201).json({ message: 'User registered successfully' });
+        const hashedPassword = await bcrypt.hash(password, 12);
+        const connection = await pool.getConnection();
+        
+        try {
+            await connection.beginTransaction();
+            
+            const [result] = await connection.execute(
+                'INSERT INTO users (username, email, password_hash, first_name, last_name, phone, role) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [username, email, hashedPassword, first_name, last_name, phone, 'customer']
+            );
+            
+            await connection.commit();
+            res.status(201).json({ message: 'User registered successfully' });
+        } catch (err) {
+            await connection.rollback();
+            if (err.code === 'ER_DUP_ENTRY') {
+                return res.status(400).json({ error: 'Username or email already exists' });
             }
-        );
+            throw err;
+        } finally {
+            connection.release();
+        }
     } catch (error) {
+        console.error('Register error:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
 // Login
-app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
-    
-    db.query('SELECT * FROM users WHERE username = ? OR email = ?', [username, username], async (err, results) => {
-        if (err || results.length === 0) {
+app.post('/api/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        
+        const connection = await pool.getConnection();
+        const [rows] = await connection.execute(
+            'SELECT id, username, email, password_hash as password, role, first_name, last_name FROM users WHERE username = ? OR email = ?',
+            [username, username]
+        );
+        connection.release();
+        
+        if (rows.length === 0) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
         
-        const user = results[0];
+        const user = rows[0];
         const isMatch = await bcrypt.compare(password, user.password);
         
         if (!isMatch) {
@@ -109,205 +152,215 @@ app.post('/api/login', (req, res) => {
         }
         
         const token = jwt.sign(
-            { id: user.id, username: user.username, role: user.role },
+            { 
+                id: user.id, 
+                username: user.username, 
+                role: user.role,
+                full_name: `${user.first_name} ${user.last_name}`
+            },
             JWT_SECRET,
             { expiresIn: '24h' }
         );
         
         res.json({
             token,
-            user: { id: user.id, username: user.username, role: user.role, full_name: user.full_name }
+            user: { 
+                id: user.id, 
+                username: user.username, 
+                role: user.role, 
+                full_name: `${user.first_name} ${user.last_name}`
+            }
         });
-    });
+    } catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
 });
 
 // Get user profile
-app.get('/api/profile', authenticateToken, (req, res) => {
-    db.query('SELECT id, username, email, full_name, phone, address FROM users WHERE id = ?', [req.user.id], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results[0]);
-    });
+app.get('/api/profile', authenticateToken, async (req, res) => {
+    try {
+        const connection = await pool.getConnection();
+        const [rows] = await connection.execute(
+            'SELECT id, username, email, first_name, last_name, phone FROM users WHERE id = ?',
+            [req.user.id]
+        );
+        connection.release();
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        res.json({
+            ...rows[0],
+            full_name: `${rows[0].first_name} ${rows[0].last_name}`
+        });
+    } catch (error) {
+        console.error('Profile error:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // Update profile
-app.put('/api/profile', authenticateToken, (req, res) => {
-    const { full_name, phone, address } = req.body;
-    db.query('UPDATE users SET full_name = ?, phone = ?, address = ? WHERE id = ?',
-        [full_name, phone, address, req.user.id],
-        (err) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ message: 'Profile updated successfully' });
-        }
-    );
-});
-
-// Change password
-app.put('/api/change-password', authenticateToken, async (req, res) => {
-    const { currentPassword, newPassword } = req.body;
-    
-    db.query('SELECT password FROM users WHERE id = ?', [req.user.id], async (err, results) => {
-        if (err || !results.length) return res.status(500).json({ error: 'User not found' });
+app.put('/api/profile', authenticateToken, async (req, res) => {
+    try {
+        const { first_name, last_name, phone } = req.body;
         
-        const isMatch = await bcrypt.compare(currentPassword, results[0].password);
-        if (!isMatch) return res.status(400).json({ error: 'Current password is incorrect' });
+        const connection = await pool.getConnection();
+        await connection.execute(
+            'UPDATE users SET first_name = ?, last_name = ?, phone = ? WHERE id = ?',
+            [first_name, last_name, phone, req.user.id]
+        );
+        connection.release();
         
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        
-        db.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, req.user.id], (err) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ message: 'Password changed successfully' });
-        });
-    });
-});
-
-// Delete account
-app.delete('/api/delete-account', authenticateToken, (req, res) => {
-    db.query('DELETE FROM users WHERE id = ?', [req.user.id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ message: 'Account deleted successfully' });
-    });
-});
-
-// Menu items
-app.get('/api/menu', (req, res) => {
-    db.query('SELECT * FROM menu_items WHERE status = "available" ORDER BY created_at DESC', (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
-    });
-});
-
-// Admin: Manage menu items
-app.get('/api/admin/menu', authenticateToken, isAdmin, (req, res) => {
-    db.query('SELECT * FROM menu_items ORDER BY created_at DESC', (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
-    });
-});
-
-app.post('/api/admin/menu', authenticateToken, isAdmin, upload.single('image'), (req, res) => {
-    const { name, description, price, category } = req.body;
-    const image = req.file ? req.file.filename : null;
-    
-    db.query('INSERT INTO menu_items (name, description, price, image, category) VALUES (?, ?, ?, ?, ?)',
-        [name, description, price, image, category],
-        (err) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.status(201).json({ message: 'Menu item added successfully' });
-        }
-    );
-});
-
-app.put('/api/admin/menu/:id', authenticateToken, isAdmin, upload.single('image'), (req, res) => {
-    const { id } = req.params;
-    const { name, description, price, category, status } = req.body;
-    const image = req.file ? req.file.filename : null;
-    
-    let query = 'UPDATE menu_items SET name = ?, description = ?, price = ?, category = ?, status = ?';
-    let params = [name, description, price, category, status];
-    
-    if (image) {
-        query += ', image = ?';
-        params.push(image);
+        res.json({ message: 'Profile updated successfully' });
+    } catch (error) {
+        console.error('Profile update error:', error);
+        res.status(500).json({ error: error.message });
     }
-    params.push(id);
-    
-    db.query(query, params, (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ message: 'Menu item updated successfully' });
-    });
 });
 
-app.delete('/api/admin/menu/:id', authenticateToken, isAdmin, (req, res) => {
-    const { id } = req.params;
-    db.query('DELETE FROM menu_items WHERE id = ?', [id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ message: 'Menu item deleted successfully' });
-    });
+// Dashboard Stats (Admin only)
+app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const connection = await pool.getConnection();
+        
+        const [
+            [menuItems],
+            [totalOrders],
+            [revenue],
+            [totalUsers]
+        ] = await Promise.all([
+            connection.execute('SELECT COUNT(*) as count FROM menu_items WHERE is_available = TRUE'),
+            connection.execute('SELECT COUNT(*) as count FROM orders'),
+            connection.execute('SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders WHERE status != "cancelled"'),
+            connection.execute('SELECT COUNT(*) as count FROM users WHERE role = "customer"')
+        ]);
+        
+        connection.release();
+        
+        res.json({
+            menuItems: menuItems[0].count,
+            totalOrders: totalOrders[0].count,
+            revenue: parseFloat(revenue[0].revenue).toFixed(2),
+            totalUsers: totalUsers[0].count
+        });
+    } catch (error) {
+        console.error('Stats error:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
-// Orders
-app.post('/api/orders', authenticateToken, (req, res) => {
-    const { cartItems, delivery_address, phone, total_amount } = req.body;
-    
-    db.query('INSERT INTO orders (user_id, total_amount, delivery_address, phone) VALUES (?, ?, ?, ?)',
-        [req.user.id, total_amount, delivery_address, phone],
-        (err, result) => {
-            if (err) return res.status(500).json({ error: err.message });
-            
-            const orderId = result.insertId;
-            const orderItems = cartItems.map(item => [
-                orderId,
-                item.id,
-                item.quantity,
-                item.price
-            ]);
-            
-            db.query('INSERT INTO order_items (order_id, menu_item_id, quantity, price) VALUES ?', [orderItems], (err) => {
-                if (err) return res.status(500).json({ error: err.message });
-                res.status(201).json({ orderId, message: 'Order placed successfully' });
-            });
-        }
-    );
+// Recent Orders (Admin dashboard)
+app.get('/api/admin/recent-orders', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const connection = await pool.getConnection();
+        const [rows] = await connection.execute(`
+            SELECT 
+                o.id,
+                CONCAT('#ORD-', LPAD(o.id, 6, '0')) as order_number,
+                CONCAT(u.first_name, ' ', u.last_name) as customer,
+                o.status,
+                o.total_amount,
+                CASE 
+                    WHEN TIMESTAMPDIFF(HOUR, o.created_at, NOW()) < 1 THEN 
+                        CONCAT(TIMESTAMPDIFF(MINUTE, o.created_at, NOW()), ' min ago')
+                    WHEN TIMESTAMPDIFF(DAY, o.created_at, NOW()) < 1 THEN 
+                        CONCAT(TIMESTAMPDIFF(HOUR, o.created_at, NOW()), ' hr ago')
+                    ELSE 
+                        DATE_FORMAT(o.created_at, '%b %d')
+                END as time_ago
+            FROM orders o
+            JOIN users u ON o.user_id = u.id
+            ORDER BY o.created_at DESC 
+            LIMIT 10
+        `);
+        connection.release();
+        res.json(rows);
+    } catch (error) {
+        console.error('Recent orders error:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
-app.get('/api/orders', authenticateToken, (req, res) => {
-    db.query(`
-        SELECT o.*, COUNT(oi.id) as items_count 
-        FROM orders o 
-        LEFT JOIN order_items oi ON o.id = oi.order_id 
-        WHERE o.user_id = ? 
-        GROUP BY o.id 
-        ORDER BY o.created_at DESC
-    `, [req.user.id], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
-    });
+// Activity Feed (Admin dashboard)
+app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const connection = await pool.getConnection();
+        const [rows] = await connection.execute(`
+            SELECT 
+                al.type,
+                al.action as text,
+                CASE 
+                    WHEN TIMESTAMPDIFF(HOUR, al.created_at, NOW()) < 1 THEN 
+                        CONCAT(TIMESTAMPDIFF(MINUTE, al.created_at, NOW()), ' min ago')
+                    WHEN TIMESTAMPDIFF(DAY, al.created_at, NOW()) < 1 THEN 
+                        CONCAT(TIMESTAMPDIFF(HOUR, al.created_at, NOW()), ' hr ago')
+                    ELSE 
+                        DATE_FORMAT(al.created_at, '%b %d')
+                END as time_ago
+            FROM activity_log al 
+            ORDER BY al.created_at DESC 
+            LIMIT 10
+        `);
+        connection.release();
+        res.json(rows);
+    } catch (error) {
+        console.error('Activity error:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
-app.get('/api/orders/:id', authenticateToken, (req, res) => {
-    const { id } = req.params;
-    db.query(`
-        SELECT o.*, oi.quantity, oi.price, mi.name, mi.image as item_image 
-        FROM orders o 
-        JOIN order_items oi ON o.id = oi.order_id 
-        JOIN menu_items mi ON oi.menu_item_id = mi.id 
-        WHERE o.id = ? AND o.user_id = ?
-    `, [id, req.user.id], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
-    });
+// Menu items (Public)
+app.get('/api/menu', async (req, res) => {
+    try {
+        const connection = await pool.getConnection();
+        const [rows] = await connection.execute(
+            'SELECT * FROM menu_items WHERE is_available = TRUE ORDER BY category, name'
+        );
+        connection.release();
+        res.json(rows);
+    } catch (error) {
+        console.error('Menu error:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
-// Admin: View all orders
-app.get('/api/admin/orders', authenticateToken, isAdmin, (req, res) => {
-    db.query(`
-        SELECT o.*, u.username, u.full_name 
-        FROM orders o 
-        JOIN users u ON o.user_id = u.id 
-        ORDER BY o.created_at DESC
-    `, (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
-    });
+// Admin: All menu items
+app.get('/api/admin/menu', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const connection = await pool.getConnection();
+        const [rows] = await connection.execute('SELECT * FROM menu_items ORDER BY created_at DESC');
+        connection.release();
+        res.json(rows);
+    } catch (error) {
+        console.error('Admin menu error:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
-app.put('/api/admin/orders/:id/status', authenticateToken, isAdmin, (req, res) => {
-    const { id } = req.params;
-    const { status } = req.body;
-    db.query('UPDATE orders SET status = ? WHERE id = ?', [status, id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ message: 'Order status updated' });
-    });
+// Admin: Add menu item
+app.post('/api/admin/menu', authenticateToken, isAdmin, upload.single('image'), async (req, res) => {
+    try {
+        const { name, description, price, category } = req.body;
+        const image_url = req.file ? `/images/${req.file.filename}` : null;
+        
+        const connection = await pool.getConnection();
+        await connection.execute(
+            'INSERT INTO menu_items (name, description, price, category, image_url, is_available) VALUES (?, ?, ?, ?, ?, TRUE)',
+            [name, description, price, category, image_url]
+        );
+        connection.release();
+        
+        res.status(201).json({ message: 'Menu item added successfully' });
+    } catch (error) {
+        console.error('Add menu error:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
-// Admin: View users
-app.get('/api/admin/users', authenticateToken, isAdmin, (req, res) => {
-    db.query('SELECT id, username, email, full_name, phone, role, created_at FROM users ORDER BY created_at DESC', (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
-    });
-});
+// ... (Add other admin routes similarly)
 
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
