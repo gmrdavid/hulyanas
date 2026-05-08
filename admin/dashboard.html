@@ -490,17 +490,41 @@
 
                 const data = await response.json();
 
-                document.getElementById('totalOrders').textContent =
-                    data.totalOrders || 0;
+                <div class="stats-grid">
 
-                document.getElementById('totalRevenue').textContent =
-                    `₱${data.revenue || 0}`;
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-utensils"></i>
+                    </div>
+                    <div class="stat-number" id="totalProducts">0</div>
+                    <div class="stat-label">Menu Items</div>
+                </div>
 
-                document.getElementById('totalUsers').textContent =
-                    data.totalUsers || 0;
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-list"></i>
+                    </div>
+                    <div class="stat-number" id="totalOrders">0</div>
+                    <div class="stat-label">Total Orders</div>
+                </div>
 
-                document.getElementById('totalProducts').textContent =
-                    data.menuItems || 0;
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="stat-number" id="totalRevenue">₱0</div>
+                    <div class="stat-label">Revenue</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-number" id="totalUsers">0</div>
+                    <div class="stat-label">Users</div>
+                </div>
+
+            </div>
 
             } catch (error) {
 
