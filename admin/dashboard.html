@@ -476,30 +476,37 @@
     }
 
     // Fetch dashboard statistics from database
-    async function loadDashboardStats() {
-        try {
-            const response = await fetch('/api/admin/stats');
-            const data = await response.json();
+        async function loadAdminStats() {
 
-            // Example expected response:
-            // {
-            //   totalOrders: 120,
-            //   totalUsers: 55,
-            //   totalRevenue: 15000,
-            //   totalProducts: 20
-            // }
+            try {
 
-            document.getElementById('totalOrders').setAttribute('data-target', data.totalOrders || 0);
-            document.getElementById('totalUsers').setAttribute('data-target', data.totalUsers || 0);
-            document.getElementById('totalRevenue').setAttribute('data-target', data.totalRevenue || 0);
-            document.getElementById('totalProducts').setAttribute('data-target', data.totalProducts || 0);
+                const token = localStorage.getItem('token');
 
-            animateCounters();
+                const response = await fetch('/api/admin/stats', {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                });
 
-        } catch (error) {
-            console.error('Error loading dashboard stats:', error);
+                const data = await response.json();
+
+                document.getElementById('totalOrders').textContent =
+                    data.totalOrders || 0;
+
+                document.getElementById('totalRevenue').textContent =
+                    `₱${data.revenue || 0}`;
+
+                document.getElementById('totalUsers').textContent =
+                    data.totalUsers || 0;
+
+                document.getElementById('totalProducts').textContent =
+                    data.menuItems || 0;
+
+            } catch (error) {
+
+                console.error(error);
+            }
         }
-    }
 
     // Fetch recent orders from database
     async function loadRecentOrders() {
