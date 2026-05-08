@@ -626,6 +626,36 @@ async (req, res) => {
     }
 });
 
+app.delete('/api/admin/users/:id',
+authenticateToken,
+isAdmin,
+async (req, res) => {
+
+    try {
+
+        const conn = await pool.getConnection();
+
+        await conn.execute(
+            `DELETE FROM users WHERE id = ?`,
+            [req.params.id]
+        );
+
+        conn.release();
+
+        res.json({
+            message: 'User deleted successfully'
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+            error: error.message
+        });
+    }
+});
+
 // Start server
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
