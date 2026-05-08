@@ -502,13 +502,18 @@
     }
 }
 
-        function renderUsersTable(filteredUsers = users) {
+function renderUsersTable(filteredUsers = users) {
 
     const tbody = document.getElementById('usersList');
 
-    const totalUsersEl = document.getElementById('totalUsers');
-    const totalAdminsEl = document.getElementById('totalAdmins');
-    const newUsersTodayEl = document.getElementById('newUsersToday');
+    const totalUsersEl =
+        document.getElementById('totalUsers');
+
+    const totalAdminsEl =
+        document.getElementById('totalAdmins');
+
+    const newUsersTodayEl =
+        document.getElementById('newUsersToday');
 
     // Stats
     totalUsersEl.textContent = users.length;
@@ -520,16 +525,17 @@
 
     newUsersTodayEl.textContent =
         users.filter(u =>
-            new Date(u.created_at).toDateString() === today
+            new Date(u.created_at)
+                .toDateString() === today
         ).length;
 
     tbody.innerHTML = filteredUsers.map(user => {
 
         const initials =
-            (user.first_name?.charAt(0) || '') +
-            (user.last_name?.charAt(0) || '');
+            `${user.first_name?.charAt(0) || ''}${user.last_name?.charAt(0) || ''}`;
 
-        const joinedDate = new Date(user.created_at)
+        const joinedDate =
+            new Date(user.created_at)
             .toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
@@ -538,15 +544,20 @@
 
         return `
             <tr>
-                <td>#${String(user.id).padStart(4, '0')}</td>
+
+                <td>
+                    #${String(user.id).padStart(4, '0')}
+                </td>
 
                 <td>
                     <div class="user-info">
+
                         <div class="user-avatar">
                             ${initials || 'U'}
                         </div>
 
                         <div>
+
                             <div class="user-name">
                                 ${user.username}
                             </div>
@@ -554,17 +565,21 @@
                             <div class="user-email">
                                 ${user.email}
                             </div>
+
                         </div>
+
                     </div>
                 </td>
 
                 <td>${user.email}</td>
 
                 <td>
-                    ${user.first_name} ${user.last_name}
+                    ${user.first_name || ''} ${user.last_name || ''}
                 </td>
 
-                <td>${user.phone || '—'}</td>
+                <td>
+                    ${user.phone || '—'}
+                </td>
 
                 <td>
                     <span class="user-role role-${user.role}">
@@ -577,27 +592,40 @@
                 </td>
 
                 <td>
+
                     <div class="table-actions">
 
-                        <button class="action-btn action-view"
+                        <button
+                            class="action-btn action-view"
                             onclick="viewUser(${user.id})">
+
                             <i class="fas fa-eye"></i>
+
                         </button>
 
-                        <button class="action-btn action-edit"
+                        <button
+                            class="action-btn action-edit"
                             onclick="editUser(${user.id})">
+
                             <i class="fas fa-edit"></i>
+
                         </button>
 
-                        <button class="action-btn action-delete"
+                        <button
+                            class="action-btn action-delete"
                             onclick="deleteUser(${user.id})">
+
                             <i class="fas fa-trash"></i>
+
                         </button>
 
                     </div>
+
                 </td>
+
             </tr>
         `;
+
     }).join('');
 }
         function viewUser(id) {
