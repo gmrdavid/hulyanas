@@ -1,329 +1,206 @@
 require('dotenv').config();
-
 const express = require('express');
-const mysql = require('mysql2');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const mysql = require('mysql2/promise');
 const cors = require('cors');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
-const multer = require('multer');
-const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'hulyanas-super-secret-key-change-in-production';
 
 // Middleware
-app.use(cors());
+app.use(cors({ credentials: true, origin: 'http://localhost:3000' }));
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.static('public'));
-app.use('/user', express.static('user'));
-app.use('/admin', express.static('admin'));
 
-// MySQL Connection
-
-console.log(process.env.DB_HOST);
-console.log(process.env.DB_USER);
-console.log(process.env.DB_PASSWORD);
-console.log(process.env.DB_NAME);
-console.log(process.env.DB_PORT);
-
-const db = mysql.createConnection({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    port: process.env.DB_PORT,
-    ssl: {
-        rejectUnauthorized: false
-    }
+// Rate limiting for login
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 attempts per window
+  message: 'Too many login attempts, try again later'
 });
 
-db.connect((err) => {
-    if (err) {
-        console.error('Database connection failed:', err);
-    } else {
-        console.log('Connected to Aiven MySQL');
-    }
+// Database pool
+const pool = mysql.createPool({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  waitForConnections: true,
+  connectionLimit: 10
 });
 
-// JWT Secret
-const JWT_SECRET = 'hulyanas_secret_key_2024';
-
-// Multer for file uploads
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'public/images/');
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + file.originalname);
-    }
-});
-const upload = multer({ storage });
-
-// Auth middleware
+// Middleware to verify JWT
 const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+  const token = req.cookies.token || req.headers['authorization']?.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Access denied. No token provided.' });
+  }
 
-    if (!token) {
-        return res.status(401).json({ error: 'Access token required' });
+  jwt.verify(token, JWT_SECRET, async (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid or expired token.' });
     }
-
-    jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) return res.status(403).json({ error: 'Invalid token' });
-        req.user = user;
-        next();
-    });
-};
-
-const isAdmin = (req, res, next) => {
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Admin access required' });
-    }
-    next();
-};
-
-// Routes
-
-// Register
-app.post('/api/register', async (req, res) => {
+    
+    // Check if user is admin
     try {
-        const { username, email, password, full_name, phone, address } = req.body;
-        const hashedPassword = await bcrypt.hash(password, 10);
-        
-        db.query('INSERT INTO users (username, email, password, full_name, phone, address) VALUES (?, ?, ?, ?, ?, ?)',
-            [username, email, hashedPassword, full_name, phone, address],
-            (err, result) => {
-                if (err) {
-                    if (err.code === 'ER_DUP_ENTRY') {
-                        return res.status(400).json({ error: 'Username or email already exists' });
-                    }
-                    return res.status(500).json({ error: err.message });
-                }
-                res.status(201).json({ message: 'User registered successfully' });
-            }
-        );
+      const [users] = await pool.execute('SELECT id, role FROM users WHERE id = ?', [user.id]);
+      if (users.length === 0 || users[0].role !== 'admin') {
+        return res.status(403).json({ error: 'Admin access required.' });
+      }
+      req.user = users[0];
+      next();
     } catch (error) {
-        res.status(500).json({ error: error.message });
+      res.status(500).json({ error: 'Database error' });
     }
-});
+  });
+};
 
-// Login
-app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
-    
-    db.query('SELECT * FROM users WHERE username = ? OR email = ?', [username, username], async (err, results) => {
-        if (err || results.length === 0) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-        
-        const user = results[0];
-        const isMatch = await bcrypt.compare(password, user.password);
-        
-        if (!isMatch) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-        
-        const token = jwt.sign(
-            { id: user.id, username: user.username, role: user.role },
-            JWT_SECRET,
-            { expiresIn: '24h' }
-        );
-        
-        res.json({
-            token,
-            user: { id: user.id, username: user.username, role: user.role, full_name: user.full_name }
-        });
-    });
-});
+// Login route
+app.post('/api/login', loginLimiter, async (req, res) => {
+  const { email, password } = req.body;
 
-// Get user profile
-app.get('/api/profile', authenticateToken, (req, res) => {
-    db.query('SELECT id, username, email, full_name, phone, address FROM users WHERE id = ?', [req.user.id], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results[0]);
-    });
-});
-
-// Update profile
-app.put('/api/profile', authenticateToken, (req, res) => {
-    const { full_name, phone, address } = req.body;
-    db.query('UPDATE users SET full_name = ?, phone = ?, address = ? WHERE id = ?',
-        [full_name, phone, address, req.user.id],
-        (err) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ message: 'Profile updated successfully' });
-        }
+  try {
+    const [users] = await pool.execute(
+      'SELECT id, email, password, role FROM users WHERE email = ?', 
+      [email]
     );
-});
 
-// Change password
-app.put('/api/change-password', authenticateToken, async (req, res) => {
-    const { currentPassword, newPassword } = req.body;
-    
-    db.query('SELECT password FROM users WHERE id = ?', [req.user.id], async (err, results) => {
-        if (err || !results.length) return res.status(500).json({ error: 'User not found' });
-        
-        const isMatch = await bcrypt.compare(currentPassword, results[0].password);
-        if (!isMatch) return res.status(400).json({ error: 'Current password is incorrect' });
-        
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        
-        db.query('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, req.user.id], (err) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ message: 'Password changed successfully' });
-        });
-    });
-});
-
-// Delete account
-app.delete('/api/delete-account', authenticateToken, (req, res) => {
-    db.query('DELETE FROM users WHERE id = ?', [req.user.id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ message: 'Account deleted successfully' });
-    });
-});
-
-// Menu items
-app.get('/api/menu', (req, res) => {
-    db.query('SELECT * FROM menu_items WHERE status = "available" ORDER BY created_at DESC', (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
-    });
-});
-
-// Admin: Manage menu items
-app.get('/api/admin/menu', authenticateToken, isAdmin, (req, res) => {
-    db.query('SELECT * FROM menu_items ORDER BY created_at DESC', (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
-    });
-});
-
-app.post('/api/admin/menu', authenticateToken, isAdmin, upload.single('image'), (req, res) => {
-    const { name, description, price, category } = req.body;
-    const image = req.file ? req.file.filename : null;
-    
-    db.query('INSERT INTO menu_items (name, description, price, image, category) VALUES (?, ?, ?, ?, ?)',
-        [name, description, price, image, category],
-        (err) => {
-            if (err) return res.status(500).json({ error: err.message });
-            res.status(201).json({ message: 'Menu item added successfully' });
-        }
-    );
-});
-
-app.put('/api/admin/menu/:id', authenticateToken, isAdmin, upload.single('image'), (req, res) => {
-    const { id } = req.params;
-    const { name, description, price, category, status } = req.body;
-    const image = req.file ? req.file.filename : null;
-    
-    let query = 'UPDATE menu_items SET name = ?, description = ?, price = ?, category = ?, status = ?';
-    let params = [name, description, price, category, status];
-    
-    if (image) {
-        query += ', image = ?';
-        params.push(image);
+    if (users.length === 0) {
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
-    params.push(id);
-    
-    db.query(query, params, (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ message: 'Menu item updated successfully' });
-    });
-});
 
-app.delete('/api/admin/menu/:id', authenticateToken, isAdmin, (req, res) => {
-    const { id } = req.params;
-    db.query('DELETE FROM menu_items WHERE id = ?', [id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ message: 'Menu item deleted successfully' });
-    });
-});
+    const user = users[0];
+    const validPassword = await bcrypt.compare(password, user.password);
 
-// Orders
-app.post('/api/orders', authenticateToken, (req, res) => {
-    const { cartItems, delivery_address, phone, total_amount } = req.body;
-    
-    db.query('INSERT INTO orders (user_id, total_amount, delivery_address, phone) VALUES (?, ?, ?, ?)',
-        [req.user.id, total_amount, delivery_address, phone],
-        (err, result) => {
-            if (err) return res.status(500).json({ error: err.message });
-            
-            const orderId = result.insertId;
-            const orderItems = cartItems.map(item => [
-                orderId,
-                item.id,
-                item.quantity,
-                item.price
-            ]);
-            
-            db.query('INSERT INTO order_items (order_id, menu_item_id, quantity, price) VALUES ?', [orderItems], (err) => {
-                if (err) return res.status(500).json({ error: err.message });
-                res.status(201).json({ orderId, message: 'Order placed successfully' });
-            });
-        }
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    if (user.role !== 'admin') {
+      return res.status(403).json({ error: 'Admin access only' });
+    }
+
+    // Create JWT token
+    const token = jwt.sign(
+      { id: user.id, role: user.role }, 
+      JWT_SECRET, 
+      { expiresIn: '24h' }
     );
+
+    // Set secure cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
+
+    res.json({ 
+      success: true, 
+      message: 'Login successful',
+      user: { id: user.id, email: user.email, role: user.role }
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
 });
 
-app.get('/api/orders', authenticateToken, (req, res) => {
-    db.query(`
-        SELECT o.*, COUNT(oi.id) as items_count 
-        FROM orders o 
-        LEFT JOIN order_items oi ON o.id = oi.order_id 
-        WHERE o.user_id = ? 
-        GROUP BY o.id 
-        ORDER BY o.created_at DESC
-    `, [req.user.id], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
-    });
+// Logout route
+app.post('/api/logout', (req, res) => {
+  res.clearCookie('token');
+  res.json({ success: true, message: 'Logged out successfully' });
 });
 
-app.get('/api/orders/:id', authenticateToken, (req, res) => {
-    const { id } = req.params;
-    db.query(`
-        SELECT o.*, oi.quantity, oi.price, mi.name, mi.image as item_image 
-        FROM orders o 
-        JOIN order_items oi ON o.id = oi.order_id 
-        JOIN menu_items mi ON oi.menu_item_id = mi.id 
-        WHERE o.id = ? AND o.user_id = ?
-    `, [id, req.user.id], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
+// Protected API routes
+app.get('/api/stats', authenticateToken, async (req, res) => {
+  try {
+    const [[menu], [orders], [revenue], [users]] = await Promise.all([
+      pool.execute('SELECT COUNT(*) as count FROM menu_items'),
+      pool.execute('SELECT COUNT(*) as count FROM orders'),
+      pool.execute("SELECT COALESCE(SUM(total_amount), 0) as total FROM orders WHERE status != 'cancelled'"),
+      pool.execute('SELECT COUNT(*) as count FROM users')
+    ]);
+
+    res.json({
+      menuItems: Number(menu.count),
+      totalOrders: Number(orders.count),
+      revenue: parseFloat(revenue.total),
+      totalUsers: Number(users.count)
     });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-// Admin: View all orders
-app.get('/api/admin/orders', authenticateToken, isAdmin, (req, res) => {
-    db.query(`
-        SELECT o.*, u.username, u.full_name 
-        FROM orders o 
-        JOIN users u ON o.user_id = u.id 
-        ORDER BY o.created_at DESC
-    `, (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
-    });
+app.get('/api/recent-orders', authenticateToken, async (req, res) => {
+  try {
+    const [orders] = await pool.execute(`
+      SELECT id, order_number, customer_name, status, total_amount, created_at,
+             CASE 
+               WHEN TIMESTAMPDIFF(MINUTE, created_at, NOW()) < 60 
+               THEN CONCAT(TIMESTAMPDIFF(MINUTE, created_at, NOW()), ' min ago')
+               WHEN TIMESTAMPDIFF(HOUR, created_at, NOW()) < 24 
+               THEN CONCAT(TIMESTAMPDIFF(HOUR, created_at, NOW()), ' hr ago')
+               ELSE DATE_FORMAT(created_at, '%b %d')
+             END as relative_time
+      FROM orders ORDER BY created_at DESC LIMIT 5
+    `);
+    res.json(orders);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-app.put('/api/admin/orders/:id/status', authenticateToken, isAdmin, (req, res) => {
-    const { id } = req.params;
-    const { status } = req.body;
-    db.query('UPDATE orders SET status = ? WHERE id = ?', [status, id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ message: 'Order status updated' });
-    });
+app.get('/api/activity', authenticateToken, async (req, res) => {
+  try {
+    const [activity] = await pool.execute(`
+      SELECT 'order' as type, CONCAT('New order #', order_number, ' placed') as text,
+             CASE 
+               WHEN TIMESTAMPDIFF(MINUTE, created_at, NOW()) < 60 
+               THEN CONCAT(TIMESTAMPDIFF(MINUTE, created_at, NOW()), ' min ago')
+               ELSE CONCAT(FLOOR(TIMESTAMPDIFF(HOUR, created_at, NOW())/24), ' days ago')
+             END as time
+      FROM orders WHERE created_at > DATE_SUB(NOW(), INTERVAL 2 DAY)
+      ORDER BY created_at DESC LIMIT 5
+    `);
+    res.json(activity);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-// Admin: View users
-app.get('/api/admin/users', authenticateToken, isAdmin, (req, res) => {
-    db.query('SELECT id, username, email, full_name, phone, role, created_at FROM users ORDER BY created_at DESC', (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
-    });
+// Check auth status
+app.get('/api/auth/status', authenticateToken, async (req, res) => {
+  res.json({ authenticated: true, user: req.user });
+});
+
+// Serve login page if not authenticated
+app.get('/', async (req, res) => {
+  try {
+    // Check if user has valid token
+    const token = req.cookies.token;
+    if (token) {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      const [users] = await pool.execute('SELECT id, role FROM users WHERE id = ?', [decoded.id]);
+      if (users.length > 0 && users[0].role === 'admin') {
+        return res.sendFile(path.join(__dirname, 'public', 'index.html'));
+      }
+    }
+    // Redirect to login if not authenticated
+    res.sendFile(path.join(__dirname, 'public', 'login.html'));
+  } catch (error) {
+    res.sendFile(path.join(__dirname, 'public', 'login.html'));
+  }
 });
 
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`👤 Admin Login: admin@hulyanas.com / admin123`);
 });
