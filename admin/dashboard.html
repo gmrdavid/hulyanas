@@ -526,7 +526,7 @@
 
             </div>
 
-            } catch (error) {
+            } catch (error) {   
 
                 console.error(error);
             }
@@ -535,7 +535,11 @@
     // Fetch recent orders from database
     async function loadRecentOrders() {
         try {
-            const response = await fetch('/api/admin/orders');
+            const response = await fetch('/api/admin/recent-orders', {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
+            });
             const orders = await response.json();
 
             const tbody = document.getElementById('recentOrders');
