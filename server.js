@@ -383,15 +383,20 @@ app.delete('/api/menu/:id', async (req, res) => {
 
         const conn = await pool.getConnection();
 
+        // Soft delete instead of actual delete
         await conn.execute(
-            `DELETE FROM menu_items WHERE id=?`,
+            `
+            UPDATE menu_items
+            SET is_available = 0
+            WHERE id = ?
+            `,
             [id]
         );
 
         conn.release();
 
         res.json({
-            message: 'Menu item deleted successfully'
+            message: 'Menu item marked as unavailable'
         });
 
     } catch (error) {
