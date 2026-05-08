@@ -1,5 +1,5 @@
 const express = require('express');
-const mysql = require('mysql2/promise'); // Use promise version for better async/await
+const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
@@ -17,8 +17,8 @@ app.use(express.static('public'));
 app.use('/user', express.static('user'));
 app.use('/admin', express.static('admin'));
 
-// MySQL Connection Pool (better than single connection)
-const dbConfig = {
+// MySQL Connection Pool
+const pool = mysql.createPool({
     host: 'localhost',
     user: 'root',
     password: '',
@@ -26,12 +26,12 @@ const dbConfig = {
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
-};
+});
 
 // JWT Secret
 const JWT_SECRET = 'hulyanas_secret_key_2024_secure_change_this';
 
-// Multer for file uploads
+// Multer setup
 const storage = multer.diskStorage({
     destination: async (req, file, cb) => {
         try {
@@ -47,13 +47,10 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ 
     storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) {
-            cb(null, true);
-        } else {
-            cb(new Error('Only image files are allowed'), false);
-        }
+        if (file.mimetype.startsWith('image/')) cb(null, true);
+        else cb(new Error('Only image files'), false);
     }
 });
 
@@ -62,68 +59,54 @@ const authenticateToken = async (req, res, next) => {
     try {
         const authHeader = req.headers['authorization'];
         const token = authHeader && authHeader.split(' ')[1];
-
-        if (!token) {
-            return res.status(401).json({ error: 'Access token required' });
-        }
-
+        if (!token) return res.status(401).json({ error: 'Access token required' });
+        
         const decoded = jwt.verify(token, JWT_SECRET);
         req.user = decoded;
         next();
     } catch (err) {
-        return res.status(403).json({ error: 'Invalid token' });
+        res.status(403).json({ error: 'Invalid token' });
     }
 };
 
 const isAdmin = (req, res, next) => {
-    if (req.user.role !== 'admin') {
-        return res.status(403).json({ error: 'Admin access required' });
-    }
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admin access required' });
     next();
 };
 
-// Create connection pool
-const pool = mysql.createPool(dbConfig);
+// Test DB connection
+pool.getConnection().then(() => {
+    console.log('✅ MySQL Connected!');
+}).catch(err => console.error('❌ DB Error:', err));
 
-// Test connection
-pool.getConnection().then(conn => {
-    console.log('MySQL Connected...');
-    conn.release();
-}).catch(err => {
-    console.error('Database connection failed:', err);
-});
+// ===== CUSTOMER ROUTES =====
 
-// Routes
-
-// Register (Customer only)
+// Register
 app.post('/api/register', async (req, res) => {
     try {
         const { username, email, password, first_name, last_name, phone } = req.body;
-        
         const hashedPassword = await bcrypt.hash(password, 12);
-        const connection = await pool.getConnection();
         
+        const conn = await pool.getConnection();
         try {
-            await connection.beginTransaction();
-            
-            const [result] = await connection.execute(
-                'INSERT INTO users (username, email, password_hash, first_name, last_name, phone, role) VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [username, email, hashedPassword, first_name, last_name, phone, 'customer']
+            await conn.beginTransaction();
+            const [result] = await conn.execute(
+                `INSERT INTO users (username, email, password_hash, first_name, last_name, phone, role) 
+                 VALUES (?, ?, ?, ?, ?, ?, 'customer')`,
+                [username, email, hashedPassword, first_name, last_name, phone]
             );
-            
-            await connection.commit();
-            res.status(201).json({ message: 'User registered successfully' });
+            await conn.commit();
+            res.status(201).json({ message: 'Registered successfully' });
         } catch (err) {
-            await connection.rollback();
+            await conn.rollback();
             if (err.code === 'ER_DUP_ENTRY') {
-                return res.status(400).json({ error: 'Username or email already exists' });
+                return res.status(400).json({ error: 'Username or email exists' });
             }
             throw err;
         } finally {
-            connection.release();
+            conn.release();
         }
     } catch (error) {
-        console.error('Register error:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -132,71 +115,56 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/login', async (req, res) => {
     try {
         const { username, password } = req.body;
+        const conn = await pool.getConnection();
         
-        const connection = await pool.getConnection();
-        const [rows] = await connection.execute(
-            'SELECT id, username, email, password_hash as password, role, first_name, last_name FROM users WHERE username = ? OR email = ?',
+        const [rows] = await conn.execute(
+            `SELECT id, username, email, password_hash, role, first_name, last_name 
+             FROM users WHERE username = ? OR email = ?`,
             [username, username]
         );
-        connection.release();
+        conn.release();
         
-        if (rows.length === 0) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
+        if (rows.length === 0) return res.status(401).json({ error: 'Invalid credentials' });
         
         const user = rows[0];
-        const isMatch = await bcrypt.compare(password, user.password);
+        const valid = await bcrypt.compare(password, user.password_hash);
+        if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
         
-        if (!isMatch) {
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-        
-        const token = jwt.sign(
-            { 
-                id: user.id, 
-                username: user.username, 
-                role: user.role,
-                full_name: `${user.first_name} ${user.last_name}`
-            },
-            JWT_SECRET,
-            { expiresIn: '24h' }
-        );
+        const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
         
         res.json({
             token,
-            user: { 
-                id: user.id, 
-                username: user.username, 
-                role: user.role, 
+            user: {
+                id: user.id,
+                username: user.username,
+                role: user.role,
                 full_name: `${user.first_name} ${user.last_name}`
             }
         });
     } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Login failed' });
     }
 });
 
-// Get user profile
+// Profile
 app.get('/api/profile', authenticateToken, async (req, res) => {
     try {
-        const connection = await pool.getConnection();
-        const [rows] = await connection.execute(
-            'SELECT id, username, email, first_name, last_name, phone FROM users WHERE id = ?',
+        const conn = await pool.getConnection();
+        const [rows] = await conn.execute(
+            `SELECT id, username, email, first_name, last_name, phone, created_at 
+             FROM users WHERE id = ?`,
             [req.user.id]
         );
-        connection.release();
+        conn.release();
         
-        if (rows.length === 0) {
-            return res.status(404).json({ error: 'User not found' });
-        }
+        if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
         
+        const user = rows[0];
         res.json({
-            ...rows[0],
-            full_name: `${rows[0].first_name} ${rows[0].last_name}`
+            ...user,
+            full_name: `${user.first_name} ${user.last_name}`
         });
     } catch (error) {
-        console.error('Profile error:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -205,45 +173,57 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
 app.put('/api/profile', authenticateToken, async (req, res) => {
     try {
         const { first_name, last_name, phone } = req.body;
+        const conn = await pool.getConnection();
         
-        const connection = await pool.getConnection();
-        await connection.execute(
-            'UPDATE users SET first_name = ?, last_name = ?, phone = ? WHERE id = ?',
+        await conn.execute(
+            `UPDATE users SET first_name = ?, last_name = ?, phone = ? WHERE id = ?`,
             [first_name, last_name, phone, req.user.id]
         );
-        connection.release();
+        conn.release();
         
-        res.json({ message: 'Profile updated successfully' });
+        res.json({ message: 'Profile updated' });
     } catch (error) {
-        console.error('Profile update error:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// Dashboard Stats (Admin only)
-app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
+// ===== ORDERS ROUTES =====
+app.get('/api/orders', authenticateToken, async (req, res) => {
     try {
-        const connection = await pool.getConnection();
+        const conn = await pool.getConnection();
+        const [rows] = await conn.execute(
+            `SELECT o.*, 
+                    TIME_FORMAT(TIMEDIFF(NOW(), o.created_at), '%i min ago') as time_ago
+             FROM orders o 
+             WHERE o.user_id = ? 
+             ORDER BY o.created_at DESC`,
+            [req.user.id]
+        );
+        conn.release();
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ===== DASHBOARD STATS (NEW!) =====
+app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
+    try {
+        const conn = await pool.getConnection();
         
-        const [
-            [menuItems],
-            [totalOrders],
-            [revenue],
-            [totalUsers]
-        ] = await Promise.all([
-            connection.execute('SELECT COUNT(*) as count FROM menu_items WHERE is_available = TRUE'),
-            connection.execute('SELECT COUNT(*) as count FROM orders'),
-            connection.execute('SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders WHERE status != "cancelled"'),
-            connection.execute('SELECT COUNT(*) as count FROM users WHERE role = "customer"')
+        const [[totalOrders], [totalSpent], [activeOrders]] = await Promise.all([
+            conn.execute(`SELECT COUNT(*) as count FROM orders WHERE user_id = ?`, [req.user.id]),
+            conn.execute(`SELECT COALESCE(SUM(total_amount), 0) as total FROM orders WHERE user_id = ? AND status != 'cancelled'`, [req.user.id]),
+            conn.execute(`SELECT COUNT(*) as count FROM orders WHERE user_id = ? AND status IN ('pending', 'preparing')`, [req.user.id])
         ]);
         
-        connection.release();
+        conn.release();
         
         res.json({
-            menuItems: menuItems[0].count,
-            totalOrders: totalOrders[0].count,
-            revenue: parseFloat(revenue[0].revenue).toFixed(2),
-            totalUsers: totalUsers[0].count
+            totalOrders: parseInt(totalOrders[0].count),
+            totalSpent: parseFloat(totalSpent[0].total).toFixed(2),
+            avgRating: 4.8, // Add ratings table later
+            activeItems: parseInt(activeOrders[0].count)
         });
     } catch (error) {
         console.error('Stats error:', error);
@@ -251,116 +231,73 @@ app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
     }
 });
 
-// Recent Orders (Admin dashboard)
+// ===== MENU ROUTES =====
+app.get('/api/menu', async (req, res) => {
+    try {
+        const conn = await pool.getConnection();
+        const [rows] = await conn.execute(
+            `SELECT id, name, description, price, category, image_url, is_available 
+             FROM menu_items WHERE is_available = TRUE ORDER BY category, name`
+        );
+        conn.release();
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ===== ADMIN ROUTES =====
+app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const conn = await pool.getConnection();
+        const [[menuItems], [totalOrders], [revenue], [totalUsers]] = await Promise.all([
+            conn.execute(`SELECT COUNT(*) as count FROM menu_items WHERE is_available = TRUE`),
+            conn.execute(`SELECT COUNT(*) as count FROM orders`),
+            conn.execute(`SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders WHERE status != 'cancelled'`),
+            conn.execute(`SELECT COUNT(*) as count FROM users WHERE role = 'customer'`)
+        ]);
+        conn.release();
+        
+        res.json({
+            menuItems: parseInt(menuItems[0].count),
+            totalOrders: parseInt(totalOrders[0].count),
+            revenue: parseFloat(revenue[0].revenue).toFixed(2),
+            totalUsers: parseInt(totalUsers[0].count)
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.get('/api/admin/recent-orders', authenticateToken, isAdmin, async (req, res) => {
     try {
-        const connection = await pool.getConnection();
-        const [rows] = await connection.execute(`
-            SELECT 
+        const conn = await pool.getConnection();
+        const [rows] = await conn.execute(
+            `SELECT 
                 o.id,
                 CONCAT('#ORD-', LPAD(o.id, 6, '0')) as order_number,
                 CONCAT(u.first_name, ' ', u.last_name) as customer,
                 o.status,
                 o.total_amount,
                 CASE 
-                    WHEN TIMESTAMPDIFF(HOUR, o.created_at, NOW()) < 1 THEN 
+                    WHEN TIMESTAMPDIFF(MINUTE, o.created_at, NOW()) < 60 THEN 
                         CONCAT(TIMESTAMPDIFF(MINUTE, o.created_at, NOW()), ' min ago')
-                    WHEN TIMESTAMPDIFF(DAY, o.created_at, NOW()) < 1 THEN 
-                        CONCAT(TIMESTAMPDIFF(HOUR, o.created_at, NOW()), ' hr ago')
                     ELSE 
-                        DATE_FORMAT(o.created_at, '%b %d')
+                        CONCAT(FLOOR(TIMESTAMPDIFF(HOUR, o.created_at, NOW()) / 60), ' hr ago')
                 END as time_ago
-            FROM orders o
-            JOIN users u ON o.user_id = u.id
-            ORDER BY o.created_at DESC 
-            LIMIT 10
-        `);
-        connection.release();
-        res.json(rows);
-    } catch (error) {
-        console.error('Recent orders error:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Activity Feed (Admin dashboard)
-app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
-    try {
-        const connection = await pool.getConnection();
-        const [rows] = await connection.execute(`
-            SELECT 
-                al.type,
-                al.action as text,
-                CASE 
-                    WHEN TIMESTAMPDIFF(HOUR, al.created_at, NOW()) < 1 THEN 
-                        CONCAT(TIMESTAMPDIFF(MINUTE, al.created_at, NOW()), ' min ago')
-                    WHEN TIMESTAMPDIFF(DAY, al.created_at, NOW()) < 1 THEN 
-                        CONCAT(TIMESTAMPDIFF(HOUR, al.created_at, NOW()), ' hr ago')
-                    ELSE 
-                        DATE_FORMAT(al.created_at, '%b %d')
-                END as time_ago
-            FROM activity_log al 
-            ORDER BY al.created_at DESC 
-            LIMIT 10
-        `);
-        connection.release();
-        res.json(rows);
-    } catch (error) {
-        console.error('Activity error:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Menu items (Public)
-app.get('/api/menu', async (req, res) => {
-    try {
-        const connection = await pool.getConnection();
-        const [rows] = await connection.execute(
-            'SELECT * FROM menu_items WHERE is_available = TRUE ORDER BY category, name'
+             FROM orders o JOIN users u ON o.user_id = u.id 
+             ORDER BY o.created_at DESC LIMIT 10`
         );
-        connection.release();
+        conn.release();
         res.json(rows);
     } catch (error) {
-        console.error('Menu error:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// Admin: All menu items
-app.get('/api/admin/menu', authenticateToken, isAdmin, async (req, res) => {
-    try {
-        const connection = await pool.getConnection();
-        const [rows] = await connection.execute('SELECT * FROM menu_items ORDER BY created_at DESC');
-        connection.release();
-        res.json(rows);
-    } catch (error) {
-        console.error('Admin menu error:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Admin: Add menu item
-app.post('/api/admin/menu', authenticateToken, isAdmin, upload.single('image'), async (req, res) => {
-    try {
-        const { name, description, price, category } = req.body;
-        const image_url = req.file ? `/images/${req.file.filename}` : null;
-        
-        const connection = await pool.getConnection();
-        await connection.execute(
-            'INSERT INTO menu_items (name, description, price, category, image_url, is_available) VALUES (?, ?, ?, ?, ?, TRUE)',
-            [name, description, price, category, image_url]
-        );
-        connection.release();
-        
-        res.status(201).json({ message: 'Menu item added successfully' });
-    } catch (error) {
-        console.error('Add menu error:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// ... (Add other admin routes similarly)
-
+// Start server
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`📊 Customer Dashboard: http://localhost:${PORT}/user/dashboard.html`);
+    console.log(`👑 Admin Dashboard: http://localhost:${PORT}/admin/dashboard.html`);
 });
