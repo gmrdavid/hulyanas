@@ -246,6 +246,164 @@ app.get('/api/menu', async (req, res) => {
     }
 });
 
+// ===== ADD MENU ITEM =====
+app.post('/api/menu', upload.single('image'), async (req, res) => {
+    try {
+
+        const {
+            name,
+            description,
+            price,
+            category,
+            is_available
+        } = req.body;
+
+        const image_url = req.file
+            ? `/images/${req.file.filename}`
+            : '';
+
+        const conn = await pool.getConnection();
+
+        await conn.execute(
+            `
+            INSERT INTO menu_items
+            (
+                name,
+                description,
+                price,
+                category,
+                image_url,
+                is_available
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+            `,
+            [
+                name,
+                description,
+                price,
+                category,
+                image_url,
+                is_available
+            ]
+        );
+
+        conn.release();
+
+        res.json({
+            message: 'Menu item added successfully'
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+            error: error.message
+        });
+    }
+});
+
+
+// ===== UPDATE MENU ITEM =====
+app.put('/api/menu/:id', upload.single('image'), async (req, res) => {
+
+    try {
+
+        const { id } = req.params;
+
+        const {
+            name,
+            description,
+            price,
+            category,
+            is_available
+        } = req.body;
+
+        const conn = await pool.getConnection();
+
+        // Get old image
+        const [oldItem] = await conn.execute(
+            `SELECT image_url FROM menu_items WHERE id=?`,
+            [id]
+        );
+
+        let image_url = oldItem[0]?.image_url || '';
+
+        // If new image uploaded
+        if (req.file) {
+            image_url = `/images/${req.file.filename}`;
+        }
+
+        await conn.execute(
+            `
+            UPDATE menu_items
+            SET
+                name=?,
+                description=?,
+                price=?,
+                category=?,
+                image_url=?,
+                is_available=?
+            WHERE id=?
+            `,
+            [
+                name,
+                description,
+                price,
+                category,
+                image_url,
+                is_available,
+                id
+            ]
+        );
+
+        conn.release();
+
+        res.json({
+            message: 'Menu item updated successfully'
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+            error: error.message
+        });
+    }
+});
+
+
+// ===== DELETE MENU ITEM =====
+app.delete('/api/menu/:id', async (req, res) => {
+
+    try {
+
+        const { id } = req.params;
+
+        const conn = await pool.getConnection();
+
+        await conn.execute(
+            `DELETE FROM menu_items WHERE id=?`,
+            [id]
+        );
+
+        conn.release();
+
+        res.json({
+            message: 'Menu item deleted successfully'
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+            error: error.message
+        });
+    }
+});
+
 // ===== ADMIN ROUTES =====
 app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
     try {
