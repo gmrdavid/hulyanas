@@ -8,7 +8,7 @@ const multer = require('multer');
 const fs = require('fs').promises;
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT;
 
 // Middleware
 app.use(cors());
@@ -77,15 +77,6 @@ const isAdmin = (req, res, next) => {
     if (req.user.role !== 'admin') return res.status(403).json({ error: 'Admin access required' });
     next();
 };
-
-// Test DB connection
-db.connect((err) => {
-    if (err) {
-        console.error('❌ DB Error:', err);
-    } else {
-        console.log('✅ MySQL Connected!');
-    }
-});
 
 // ===== CUSTOMER ROUTES =====
 
