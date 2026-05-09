@@ -18,14 +18,15 @@ app.use('/user', express.static('user'));
 app.use('/admin', express.static('admin'));
 
 // MySQL Connection Pool
-const pool = mysql.createPool({
-    host: 'localhost',
-    user: 'root',
-    password: '',
-    database: 'hulyanas',
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
+const db = mysql.createConnection({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT,
+  ssl: {
+    rejectUnauthorized: false
+  }
 });
 
 // JWT Secret
@@ -75,9 +76,13 @@ const isAdmin = (req, res, next) => {
 };
 
 // Test DB connection
-pool.getConnection().then(() => {
-    console.log('✅ MySQL Connected!');
-}).catch(err => console.error('❌ DB Error:', err));
+db.connect((err) => {
+    if (err) {
+        console.error('❌ DB Error:', err);
+    } else {
+        console.log('✅ MySQL Connected!');
+    }
+});
 
 // ===== CUSTOMER ROUTES =====
 
