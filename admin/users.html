@@ -484,7 +484,7 @@
         }
 
         const response = await fetch(
-            'http://localhost:3000/api/admin/users',
+            'http://hulyanas.onrender.com/api/admin/users',
             {
                 method: 'GET',
                 headers: {
@@ -687,7 +687,7 @@ function renderUsersTable(filteredUsers = users) {
             const token = localStorage.getItem('token');
 
             const response = await fetch(
-                `http://localhost:3000/api/admin/users/${id}`,
+                `http://hulyanas.onrender.com/api/admin/users/${id}`,
                 {
                     method: 'DELETE',
                     headers: {
