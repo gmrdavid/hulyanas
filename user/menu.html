@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Menu - Hulyanas Hill</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -13,21 +14,22 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: #fafafa;
             color: #1a1a1a;
+            min-height: 100vh;
             line-height: 1.6;
-            overflow-x: hidden;
         }
 
-        /* Navbar */
         .navbar {
-            background: #000;
-            padding: 1rem 2rem;
-            position: sticky;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid #e5e5e5;
+            position: fixed;
             top: 0;
-            z-index: 100;
-            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            width: 100%;
+            z-index: 1000;
+            padding: 1rem 0;
         }
 
         .nav-container {
@@ -36,155 +38,209 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 0 2rem;
         }
 
-        .logo {
+        .nav-logo {
+            display: flex;
+            align-items: center;
             font-size: 1.5rem;
             font-weight: 700;
-            color: #fff;
+            color: #1a1a1a;
+            gap: 0.75rem;
             text-decoration: none;
         }
 
-        .nav-links {
+        .nav-logo i {
+            color: #000;
+            font-size: 1.8rem;
+        }
+
+        .nav-menu {
             display: flex;
             list-style: none;
             gap: 2rem;
+            align-items: center;
         }
 
-        .nav-links a {
-            color: #fff;
+        .nav-menu a {
             text-decoration: none;
+            color: #4a4a4a;
             font-weight: 500;
-            transition: opacity 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
         }
 
-        .nav-links a:hover {
-            opacity: 0.8;
+        .nav-menu a:hover {
+            background: #f0f0f0;
+            color: #1a1a1a;
+            transform: translateY(-1px);
+        }
+
+        .nav-menu a.active {
+            background: #1a1a1a;
+            color: #fff;
+        }
+
+        .cart-badge {
+            position: relative;
+        }
+
+        .cart-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #000;
+            color: #fff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .menu-container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 2rem;
+            padding: 140px 2rem 2rem;
         }
 
         .page-header {
             text-align: center;
-            margin-bottom: 3rem;
-            position: relative;
-        }
-
-        .page-header::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: #e0e0e0;
-            z-index: 1;
+            margin-bottom: 4rem;
         }
 
         .page-header h1 {
-            font-size: clamp(2.5rem, 5vw, 4rem);
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            background: #fafafa;
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #1a1a1a;
             position: relative;
-            z-index: 2;
-            padding: 0 2rem;
-            display: inline-block;
+        }
+
+        .page-header h1::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 3px;
+            background: #1a1a1a;
+            border-radius: 2px;
         }
 
         .cart-summary {
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            background: #000;
-            color: #fff;
-            padding: 0.75rem 1.5rem;
+            gap: 0.75rem;
+            background: #fff;
+            border: 2px solid #e5e5e5;
+            color: #1a1a1a;
+            padding: 1rem 1.75rem;
             border-radius: 50px;
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 1rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            cursor: pointer;
             margin-top: 1rem;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-            transition: all 0.2s;
         }
 
         .cart-summary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+            border-color: #1a1a1a;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            transform: translateY(-2px);
         }
 
-        #cartCount {
-            font-weight: 800;
-            font-size: 1.1rem;
-            min-width: 1.5rem;
-            text-align: center;
+        .categories-container {
+            margin-bottom: 4rem;
+            overflow: hidden;
         }
 
-        .menu-categories {
+        .categories-header {
             display: flex;
-            overflow-x: auto;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .categories-header h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .categories-list {
+            display: flex;
             gap: 1rem;
-            margin-bottom: 3rem;
+            overflow-x: auto;
             padding-bottom: 1rem;
             scrollbar-width: none;
             -ms-overflow-style: none;
+            scroll-behavior: smooth;
         }
 
-        .menu-categories::-webkit-scrollbar {
+        .categories-list::-webkit-scrollbar {
             display: none;
         }
 
         .category-btn {
-            background: #f5f5f5;
-            border: 2px solid #e0e0e0;
-            color: #333;
-            padding: 0.75rem 1.5rem;
+            background: #f8f8f8;
+            border: 2px solid #e5e5e5;
+            color: #666;
+            padding: 0.875rem 1.75rem;
             border-radius: 50px;
             font-weight: 600;
             font-size: 0.9rem;
             white-space: nowrap;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
             flex-shrink: 0;
         }
 
-        .category-btn.active,
-        .category-btn:hover {
-            background: #000;
+        .category-btn:hover,
+        .category-btn.active {
+            background: #1a1a1a;
             color: #fff;
-            border-color: #000;
-            transform: translateY(-1px);
+            border-color: #1a1a1a;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
         }
 
         .menu-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
             gap: 2rem;
-            margin-bottom: 3rem;
         }
 
         .menu-card {
             background: #fff;
+            border: 1px solid #e5e5e5;
             border-radius: 20px;
             overflow: hidden;
-            box-shadow: 0 8px 40px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
-            border: 1px solid #f0f0f0;
+            transition: all 0.4s ease;
             position: relative;
+            cursor: pointer;
         }
 
         .menu-card:hover {
+            border-color: #d0d0d0;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.12);
             transform: translateY(-8px);
-            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
         }
 
         .menu-image {
-            width: 100%;
-            height: 200px;
-            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            height: 220px;
+            background: linear-gradient(135deg, #f8f8f8 0%, #f0f0f0 100%);
             position: relative;
             overflow: hidden;
         }
@@ -192,66 +248,85 @@
         .menu-image::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-            animation: shimmer 2s infinite;
+            inset: 0;
+            background: linear-gradient(135deg, 
+                rgba(26,26,26,0.05) 0%, 
+                rgba(26,26,26,0.1) 50%, 
+                rgba(26,26,26,0.05) 100%);
         }
 
-        @keyframes shimmer {
-            0% { left: -100%; }
-            100% { left: 100%; }
+        .menu-image i {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
+            color: #ccc;
+            z-index: 1;
         }
 
-        .menu-info {
-            padding: 1.5rem;
+        .menu-content {
+            padding: 2rem;
         }
 
         .menu-name {
-            font-size: 1.3rem;
+            font-size: 1.4rem;
             font-weight: 700;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
+            color: #1a1a1a;
             line-height: 1.3;
         }
 
         .menu-description {
             color: #666;
             font-size: 0.95rem;
-            margin-bottom: 1rem;
-            line-height: 1.5;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .menu-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 1.25rem;
+            border-top: 1px solid #f0f0f0;
         }
 
         .menu-price {
-            font-size: 1.5rem;
+            font-size: 1.6rem;
             font-weight: 800;
             color: #000;
-            margin-bottom: 1rem;
+            font-feature-settings: 'tnum' 1;
         }
 
-        .menu-actions {
-            display: flex;
-            gap: 0.75rem;
-            align-items: center;
+        .add-to-cart-container {
+            position: relative;
         }
 
         .add-to-cart {
-            flex: 1;
-            background: #000;
+            background: #1a1a1a;
             color: #fff;
             border: none;
-            padding: 0.875rem 1.5rem;
+            padding: 0.875rem 1.75rem;
             border-radius: 12px;
             font-weight: 600;
             font-size: 0.95rem;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            width: 140px;
         }
 
-        .add-to-cart:hover {
-            background: #333;
-            transform: translateY(-1px);
+        .add-to-cart:hover:not(.loading) {
+            background: #000;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .add-to-cart.loading {
+            pointer-events: none;
         }
 
         .quantity-controls {
@@ -259,18 +334,19 @@
             align-items: center;
             gap: 0.5rem;
             background: #f8f8f8;
-            padding: 0.5rem;
-            border-radius: 10px;
+            padding: 0.625rem 1rem;
+            border-radius: 12px;
             border: 1px solid #e5e5e5;
+            min-width: 140px;
         }
 
         .qty-btn {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             border: none;
             background: #fff;
             border-radius: 8px;
-            font-size: 1rem;
+            font-size: 1.1rem;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
@@ -280,47 +356,52 @@
         }
 
         .qty-btn:hover {
-            background: #000;
+            background: #1a1a1a;
             color: #fff;
+            transform: scale(1.05);
         }
 
         .quantity {
-            font-weight: 600;
-            min-width: 20px;
+            font-weight: 700;
+            min-width: 24px;
             text-align: center;
+            font-size: 1.1rem;
         }
 
-        /* Empty state */
         .empty-state {
             text-align: center;
-            padding: 4rem 2rem;
             grid-column: 1 / -1;
+            padding: 6rem 2rem;
         }
 
         .empty-state i {
-            font-size: 4rem;
-            color: #e0e0e0;
-            margin-bottom: 1rem;
+            font-size: 5rem;
+            color: #e5e5e5;
+            margin-bottom: 2rem;
         }
 
         .empty-state h3 {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
+            font-size: 1.75rem;
             font-weight: 600;
+            color: #666;
+            margin-bottom: 1rem;
         }
 
-        /* Responsive */
         @media (max-width: 768px) {
-            .navbar {
-                padding: 1rem;
+            .nav-menu {
+                gap: 1rem;
             }
 
-            .nav-links {
-                display: none;
+            .nav-container {
+                padding: 0 1.5rem;
             }
 
             .menu-container {
-                padding: 1rem;
+                padding: 120px 1rem 2rem;
+            }
+
+            .page-header h1 {
+                font-size: 2.75rem;
             }
 
             .menu-grid {
@@ -328,8 +409,18 @@
                 gap: 1.5rem;
             }
 
-            .menu-actions {
+            .categories-list {
+                gap: 0.75rem;
+            }
+
+            .category-btn {
+                padding: 0.75rem 1.25rem;
+                font-size: 0.85rem;
+            }
+
+            .menu-footer {
                 flex-direction: column;
+                gap: 1rem;
             }
 
             .add-to-cart {
@@ -337,113 +428,163 @@
             }
         }
 
-        /* Loading animation */
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid #f3f3f3;
-            border-top: 2px solid #000;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .fade-in-up {
+            opacity: 0;
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            transform: translateX(400px);
+            transition: all 0.3s ease;
+            z-index: 3000;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            background: #16a34a;
         }
     </style>
 </head>
 <body>
     <nav class="navbar">
         <div class="nav-container">
-            <a href="#" class="logo">Hulyanas Hill</a>
-            <ul class="nav-links">
-                <li><a href="#">Home</a></li>
-                <li><a href="#">Menu</a></li>
-                <li><a href="#">About</a></li>
-                <li><a href="#">Contact</a></li>
+            <a href="dashboard.html" class="nav-logo">
+                <i class="fas fa-utensils"></i>
+                <span>Hulyanas Hill</span>
+            </a>
+            <ul class="nav-menu">
+                <li><a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
+                <li><a href="menu.html" class="active"><i class="fas fa-utensils"></i> Menu</a></li>
+                <li><a href="cart.html" class="cart-badge">
+                    <i class="fas fa-shopping-cart"></i> Cart
+                    <span class="cart-count" id="cartCount">0</span>
+                </a></li>
+                <li><a href="orders.html"><i class="fas fa-list"></i> Orders</a></li>
+                <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
             </ul>
         </div>
     </nav>
 
     <div class="menu-container">
-        <div class="page-header">
+        <div class="page-header fade-in-up">
             <h1>Our Menu</h1>
             <div class="cart-summary" id="cartSummary">
                 <i class="fas fa-shopping-cart"></i>
-                <span id="cartCount">0</span> items
+                <span id="cartTotal">0</span> items in cart • $<span id="cartSubtotal">0.00</span>
             </div>
         </div>
 
-        <div class="menu-categories" id="menuCategories">
-            <button class="category-btn active" data-category="all">All</button>
-            <!-- Dynamic categories will be added here -->
+        <div class="categories-container fade-in-up">
+            <div class="categories-header">
+                <h3>Explore Menu</h3>
+            </div>
+            <div class="categories-list" id="menuCategories">
+                <button class="category-btn active" data-category="all">All</button>
+            </div>
         </div>
 
         <div class="menu-grid" id="menuItems">
-            <!-- Menu items will be loaded here -->
+            <!-- Menu items will be dynamically loaded -->
         </div>
     </div>
 
+    <!-- Toast notification -->
+    <div class="toast" id="toast"></div>
+
     <script>
-        // Sample data for demo
-        const menuData = [
+        // Load menu from admin or use sample data
+        let menuData = JSON.parse(localStorage.getItem('adminMenuItems'))?.filter(item => item.status === 'active') || [
             {
                 id: 1,
                 name: "Truffle Mushroom Pizza",
-                description: "Hand-stretched dough with wild mushrooms, truffle oil, mozzarella, and parmesan.",
+                description: "Hand-stretched dough topped with wild mushrooms, truffle oil, fresh mozzarella, and aged parmesan.",
                 price: 18.99,
-                category: "pizza",
-                image: ""
+                category: "pizza"
             },
             {
                 id: 2,
-                name: "Grilled Octopus",
-                description: "Tender octopus with smoked paprika, lemon, and fresh herbs.",
-                price: 24.50,
-                category: "appetizers",
-                image: ""
+                name: "Wagyu Beef Burger",
+                description: "Premium wagyu patty with aged cheddar, caramelized onions, house sauce, brioche bun.",
+                price: 22.50,
+                category: "burgers"
             },
             {
                 id: 3,
-                name: "Wagyu Burger",
-                description: "Premium wagyu patty, aged cheddar, caramelized onions, brioche bun.",
-                price: 22.00,
-                category: "mains",
-                image: ""
+                name: "Grilled Octopus",
+                description: "Tender octopus with smoked paprika, lemon zest, fresh herbs, and olive oil.",
+                price: 24.00,
+                category: "seafood"
             },
             {
                 id: 4,
                 name: "Caesar Salad",
-                description: "Romaine, house dressing, parmesan crisps, anchovy breadcrumbs.",
+                description: "Romaine hearts, house Caesar dressing, parmesan crisps, anchovy breadcrumbs.",
                 price: 14.50,
-                category: "salads",
-                image: ""
+                category: "salads"
+            },
+            {
+                id: 5,
+                name: "Truffle Pasta",
+                description: "Fresh tagliatelle with black truffle cream, mushrooms, and pecorino romano.",
+                price: 26.99,
+                category: "pasta"
+            },
+            {
+                id: 6,
+                name: "Classic Margherita",
+                description: "San Marzano tomatoes, fresh basil, buffalo mozzarella, extra virgin olive oil.",
+                price: 16.99,
+                category: "pizza"
             }
         ];
 
         let cart = JSON.parse(localStorage.getItem('cart')) || [];
-        let quantities = {};
+        let currentCategory = 'all';
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            updateCartSummary();
+            updateCartDisplay();
             renderCategories();
             renderMenuItems(menuData);
+            staggerAnimations();
             setupEventListeners();
         });
 
         function renderCategories() {
-            const categories = ['all', ...new Set(menuData.map(item => item.category))];
+            const categories = ['all', ...Array.from(new Set(menuData.map(item => item.category)))];
             const container = document.getElementById('menuCategories');
+            
             container.innerHTML = '<button class="category-btn active" data-category="all">All</button>';
             
-            categories.slice(1).forEach(cat => {
+            categories.slice(1).forEach(category => {
                 const btn = document.createElement('button');
                 btn.className = 'category-btn';
-                btn.dataset.category = cat;
-                btn.textContent = cat.charAt(0).toUpperCase() + cat.slice(1);
+                btn.dataset.category = category;
+                btn.textContent = category.charAt(0).toUpperCase() + category.slice(1);
                 container.appendChild(btn);
             });
         }
@@ -454,41 +595,51 @@
 
             if (items.length === 0) {
                 container.innerHTML = `
-                    <div class="empty-state">
+                    <div class="empty-state fade-in-up">
                         <i class="fas fa-utensils"></i>
-                        <h3>No items found</h3>
-                        <p>Try adjusting your filters</p>
+                        <h3>No items available</h3>
+                        <p>Check back soon for our delicious menu</p>
                     </div>
                 `;
                 return;
             }
 
-            items.forEach(item => {
+            items.forEach((item, index) => {
                 const card = createMenuCard(item);
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.classList.add('fade-in-up');
                 container.appendChild(card);
             });
         }
 
         function createMenuCard(item) {
+            const cartItem = cart.find(c => c.id === item.id);
+            const quantity = cartItem ? cartItem.quantity : 0;
+
             const card = document.createElement('div');
             card.className = 'menu-card';
             card.innerHTML = `
-                <div class="menu-image"></div>
-                <div class="menu-info">
+                <div class="menu-image">
+                    <i class="fas fa-utensils"></i>
+                </div>
+                <div class="menu-content">
                     <h3 class="menu-name">${item.name}</h3>
                     <p class="menu-description">${item.description}</p>
-                    <div class="menu-price">$${item.price.toFixed(2)}</div>
-                    <div class="menu-actions">
-                        ${quantities[item.id] ? `
-                            <div class="quantity-controls">
-                                <button class="qty-btn" data-action="decrease" data-id="${item.id}">-</button>
-                                <span class="quantity">${quantities[item.id]}</span>
-                                <button class="qty-btn" data-action="increase" data-id="${item.id}">+</button>
-                            </div>
-                        ` : ''}
-                        <button class="add-to-cart" data-id="${item.id}">
-                            ${quantities[item.id] ? 'Update' : 'Add to Cart'}
-                        </button>
+                    <div class="menu-footer">
+                        <div class="menu-price">$${item.price.toFixed(2)}</div>
+                        <div class="add-to-cart-container">
+                            ${quantity > 0 ? `
+                                <div class="quantity-controls">
+                                    <button class="qty-btn" data-action="decrease" data-id="${item.id}">-</button>
+                                    <span class="quantity">${quantity}</span>
+                                    <button class="qty-btn" data-action="increase" data-id="${item.id}">+</button>
+                                </div>
+                            ` : `
+                                <button class="add-to-cart" data-id="${item.id}">
+                                    <i class="fas fa-plus"></i> Add
+                                </button>
+                            `}
+                        </div>
                     </div>
                 </div>
             `;
@@ -496,64 +647,123 @@
         }
 
         function setupEventListeners() {
-            // Category filters
+            // Category filtering
             document.getElementById('menuCategories').addEventListener('click', (e) => {
                 if (e.target.classList.contains('category-btn')) {
                     document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
                     e.target.classList.add('active');
                     
-                    const category = e.target.dataset.category;
-                    const filteredItems = category === 'all' 
+                    currentCategory = e.target.dataset.category;
+                    const filteredItems = currentCategory === 'all' 
                         ? menuData 
-                        : menuData.filter(item => item.category === category);
+                        : menuData.filter(item => item.category === currentCategory);
+                    
                     renderMenuItems(filteredItems);
                 }
             });
 
-            // Cart actions
+            // Cart actions (delegated)
             document.addEventListener('click', (e) => {
                 if (e.target.classList.contains('add-to-cart')) {
-                    addToCart(parseInt(e.target.dataset.id));
+                    addToCart(parseInt(e.target.dataset.id), e.target);
                 } else if (e.target.classList.contains('qty-btn')) {
-                    handleQuantityChange(e.target.dataset.id, e.target.dataset.action);
+                    handleQuantityChange(parseInt(e.target.dataset.id), e.target.dataset.action);
                 }
+            });
+
+            // Cart summary click
+            document.getElementById('cartSummary').addEventListener('click', () => {
+                window.location.href = 'cart.html';
             });
         }
 
-        function addToCart(itemId) {
+        function addToCart(itemId, button) {
             const item = menuData.find(i => i.id === itemId);
-            quantities[itemId] = (quantities[itemId] || 0) + 1;
+            const existingItem = cart.find(c => c.id === itemId);
             
-            cart = cart.filter(c => c.id !== itemId);
-            cart.push({ ...item, quantity: quantities[itemId] });
-            
-            localStorage.setItem('cart', JSON.stringify(cart));
-            updateCartSummary();
-            renderMenuItems(document.querySelector('.category-btn.active').dataset.category === 'all' ? menuData : 
-                menuData.filter(item => item.category === document.querySelector('.category-btn.active').dataset.category));
-        }
-
-        function handleQuantityChange(itemId, action) {
-            const currentQty = quantities[itemId] || 0;
-            if (action === 'increase') {
-                quantities[itemId] = currentQty + 1;
-            } else if (action === 'decrease' && currentQty > 1) {
-                quantities[itemId] = currentQty - 1;
-            } else if (action === 'decrease' && currentQty === 1) {
-                delete quantities[itemId];
-                cart = cart.filter(c => c.id !== parseInt(itemId));
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({ ...item, quantity: 1 });
             }
             
             localStorage.setItem('cart', JSON.stringify(cart));
-            updateCartSummary();
-            renderMenuItems(document.querySelector('.category-btn.active').dataset.category === 'all' ? menuData : 
-                menuData.filter(item => item.category === document.querySelector('.category-btn.active').dataset.category));
+            updateCartDisplay();
+            showToast('Item added to cart!');
+            
+            // Re-render current view
+            const filteredItems = currentCategory === 'all' 
+                ? menuData 
+                : menuData.filter(item => item.category === currentCategory);
+            renderMenuItems(filteredItems);
         }
 
-        function updateCartSummary() {
-            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-            document.getElementById('cartCount').textContent = totalItems;
+        function handleQuantityChange(itemId, action) {
+            const cartItem = cart.find(c => c.id === itemId);
+            if (!cartItem) return;
+
+            if (action === 'increase') {
+                cartItem.quantity += 1;
+            } else if (action === 'decrease' && cartItem.quantity > 1) {
+                cartItem.quantity -= 1;
+            } else if (action === 'decrease' && cartItem.quantity === 1) {
+                cart = cart.filter(c => c.id !== itemId);
+            }
+            
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartDisplay();
+            
+            // Re-render current view
+            const filteredItems = currentCategory === 'all' 
+                ? menuData 
+                : menuData.filter(item => item.category === currentCategory);
+            renderMenuItems(filteredItems);
         }
+
+        function updateCartDisplay() {
+            const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
+            const subtotal = cart.reduce((sum, item) => sum + (item.price * (item.quantity || 0)), 0);
+            
+            document.getElementById('cartCount').textContent = totalItems;
+            document.getElementById('cartTotal').textContent = totalItems;
+            document.getElementById('cartSubtotal').textContent = subtotal.toFixed(2);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show', 'success');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function staggerAnimations() {
+            const elements = document.querySelectorAll('.fade-in-up');
+            elements.forEach((el, index) => {
+                el.style.animationDelay = `${index * 0.1}s`;
+            });
+        }
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.style.background = 'rgba(255, 255, 255, 1)';
+                navbar.style.boxShadow = '0 2px 20px rgba(0, 0, 0, 0.08)';
+            } else {
+                navbar.style.background = 'rgba(255, 255, 255, 0.98)';
+                navbar.style.boxShadow = '0 1px 10px rgba(0, 0, 0, 0.05)';
+            }
+        });
+
+        // Sync with admin menu changes
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'adminMenuItems') {
+                location.reload();
+            }
+        });
     </script>
 </body>
 </html>
