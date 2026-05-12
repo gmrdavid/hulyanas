@@ -483,6 +483,58 @@
                 </div>
             </div>
         </div>
+            <!-- NEW: EMBEDDED EDIT MODAL -->
+    <div class="edit-modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">
+                    <i class="fas fa-edit" style="color:#666;margin-right:0.5rem;"></i>
+                    Edit Order #<span id="modalOrderNumber">Loading...</span>
+                </h2>
+                <button class="modal-close" id="modalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="editOrderForm">
+                    <input type="hidden" id="modalOrderId" name="id">
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Customer Name</label>
+                            <input type="text" id="modalCustomerName" name="customer_name" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            <select id="modalOrderStatus" name="status" class="form-select" required>
+                                <option value="pending">Pending</option>
+                                <option value="preparing">Preparing</option>
+                                <option value="delivered">Delivered</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Total Amount</label>
+                            <input type="number" id="modalTotalAmount" name="total_amount" step="0.01" class="form-input" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Notes</label>
+                        <textarea id="modalOrderNotes" name="notes" class="form-textarea" rows="3" placeholder="Any special instructions..."></textarea>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-secondary" id="modalCancel">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Update Order
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 
