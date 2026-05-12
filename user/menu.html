@@ -4,25 +4,381 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Menu - Hulyanas Hill</title>
-    <link rel="stylesheet" href="../css/style.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fafafa;
+            color: #1a1a1a;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Navbar */
+        .navbar {
+            background: #000;
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+
+        .nav-links a:hover {
+            opacity: 0.8;
+        }
+
+        .menu-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .page-header::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e0e0e0;
+            z-index: 1;
+        }
+
+        .page-header h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: #fafafa;
+            position: relative;
+            z-index: 2;
+            padding: 0 2rem;
+            display: inline-block;
+        }
+
+        .cart-summary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #000;
+            color: #fff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-top: 1rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+
+        .cart-summary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+
+        #cartCount {
+            font-weight: 800;
+            font-size: 1.1rem;
+            min-width: 1.5rem;
+            text-align: center;
+        }
+
+        .menu-categories {
+            display: flex;
+            overflow-x: auto;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            padding-bottom: 1rem;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .menu-categories::-webkit-scrollbar {
+            display: none;
+        }
+
+        .category-btn {
+            background: #f5f5f5;
+            border: 2px solid #e0e0e0;
+            color: #333;
+            padding: 0.75rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .category-btn.active,
+        .category-btn:hover {
+            background: #000;
+            color: #fff;
+            border-color: #000;
+            transform: translateY(-1px);
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .menu-card {
+            background: #fff;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            border: 1px solid #f0f0f0;
+            position: relative;
+        }
+
+        .menu-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+        }
+
+        .menu-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .menu-image::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .menu-info {
+            padding: 1.5rem;
+        }
+
+        .menu-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            line-height: 1.3;
+        }
+
+        .menu-description {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .menu-price {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #000;
+            margin-bottom: 1rem;
+        }
+
+        .menu-actions {
+            display: flex;
+            gap: 0.75rem;
+            align-items: center;
+        }
+
+        .add-to-cart {
+            flex: 1;
+            background: #000;
+            color: #fff;
+            border: none;
+            padding: 0.875rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .add-to-cart:hover {
+            background: #333;
+            transform: translateY(-1px);
+        }
+
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #f8f8f8;
+            padding: 0.5rem;
+            border-radius: 10px;
+            border: 1px solid #e5e5e5;
+        }
+
+        .qty-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: #fff;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .qty-btn:hover {
+            background: #000;
+            color: #fff;
+        }
+
+        .quantity {
+            font-weight: 600;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            grid-column: 1 / -1;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            color: #e0e0e0;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 1rem;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .menu-container {
+                padding: 1rem;
+            }
+
+            .menu-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .menu-actions {
+                flex-direction: column;
+            }
+
+            .add-to-cart {
+                width: 100%;
+            }
+        }
+
+        /* Loading animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #000;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
-    <!-- Same navbar as dashboard -->
     <nav class="navbar">
-        <!-- ... same as dashboard.html ... -->
+        <div class="nav-container">
+            <a href="#" class="logo">Hulyanas Hill</a>
+            <ul class="nav-links">
+                <li><a href="#">Home</a></li>
+                <li><a href="#">Menu</a></li>
+                <li><a href="#">About</a></li>
+                <li><a href="#">Contact</a></li>
+            </ul>
+        </div>
     </nav>
 
     <div class="menu-container">
         <div class="page-header">
             <h1>Our Menu</h1>
             <div class="cart-summary" id="cartSummary">
-                <span id="cartCount">0</span> items in cart
+                <i class="fas fa-shopping-cart"></i>
+                <span id="cartCount">0</span> items
             </div>
         </div>
 
         <div class="menu-categories" id="menuCategories">
-            <!-- Categories will be loaded here -->
+            <button class="category-btn active" data-category="all">All</button>
+            <!-- Dynamic categories will be added here -->
         </div>
 
         <div class="menu-grid" id="menuItems">
@@ -30,6 +386,174 @@
         </div>
     </div>
 
-    <script src="js/menu.js"></script>
+    <script>
+        // Sample data for demo
+        const menuData = [
+            {
+                id: 1,
+                name: "Truffle Mushroom Pizza",
+                description: "Hand-stretched dough with wild mushrooms, truffle oil, mozzarella, and parmesan.",
+                price: 18.99,
+                category: "pizza",
+                image: ""
+            },
+            {
+                id: 2,
+                name: "Grilled Octopus",
+                description: "Tender octopus with smoked paprika, lemon, and fresh herbs.",
+                price: 24.50,
+                category: "appetizers",
+                image: ""
+            },
+            {
+                id: 3,
+                name: "Wagyu Burger",
+                description: "Premium wagyu patty, aged cheddar, caramelized onions, brioche bun.",
+                price: 22.00,
+                category: "mains",
+                image: ""
+            },
+            {
+                id: 4,
+                name: "Caesar Salad",
+                description: "Romaine, house dressing, parmesan crisps, anchovy breadcrumbs.",
+                price: 14.50,
+                category: "salads",
+                image: ""
+            }
+        ];
+
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        let quantities = {};
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCartSummary();
+            renderCategories();
+            renderMenuItems(menuData);
+            setupEventListeners();
+        });
+
+        function renderCategories() {
+            const categories = ['all', ...new Set(menuData.map(item => item.category))];
+            const container = document.getElementById('menuCategories');
+            container.innerHTML = '<button class="category-btn active" data-category="all">All</button>';
+            
+            categories.slice(1).forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = 'category-btn';
+                btn.dataset.category = cat;
+                btn.textContent = cat.charAt(0).toUpperCase() + cat.slice(1);
+                container.appendChild(btn);
+            });
+        }
+
+        function renderMenuItems(items) {
+            const container = document.getElementById('menuItems');
+            container.innerHTML = '';
+
+            if (items.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-utensils"></i>
+                        <h3>No items found</h3>
+                        <p>Try adjusting your filters</p>
+                    </div>
+                `;
+                return;
+            }
+
+            items.forEach(item => {
+                const card = createMenuCard(item);
+                container.appendChild(card);
+            });
+        }
+
+        function createMenuCard(item) {
+            const card = document.createElement('div');
+            card.className = 'menu-card';
+            card.innerHTML = `
+                <div class="menu-image"></div>
+                <div class="menu-info">
+                    <h3 class="menu-name">${item.name}</h3>
+                    <p class="menu-description">${item.description}</p>
+                    <div class="menu-price">$${item.price.toFixed(2)}</div>
+                    <div class="menu-actions">
+                        ${quantities[item.id] ? `
+                            <div class="quantity-controls">
+                                <button class="qty-btn" data-action="decrease" data-id="${item.id}">-</button>
+                                <span class="quantity">${quantities[item.id]}</span>
+                                <button class="qty-btn" data-action="increase" data-id="${item.id}">+</button>
+                            </div>
+                        ` : ''}
+                        <button class="add-to-cart" data-id="${item.id}">
+                            ${quantities[item.id] ? 'Update' : 'Add to Cart'}
+                        </button>
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
+        function setupEventListeners() {
+            // Category filters
+            document.getElementById('menuCategories').addEventListener('click', (e) => {
+                if (e.target.classList.contains('category-btn')) {
+                    document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
+                    e.target.classList.add('active');
+                    
+                    const category = e.target.dataset.category;
+                    const filteredItems = category === 'all' 
+                        ? menuData 
+                        : menuData.filter(item => item.category === category);
+                    renderMenuItems(filteredItems);
+                }
+            });
+
+            // Cart actions
+            document.addEventListener('click', (e) => {
+                if (e.target.classList.contains('add-to-cart')) {
+                    addToCart(parseInt(e.target.dataset.id));
+                } else if (e.target.classList.contains('qty-btn')) {
+                    handleQuantityChange(e.target.dataset.id, e.target.dataset.action);
+                }
+            });
+        }
+
+        function addToCart(itemId) {
+            const item = menuData.find(i => i.id === itemId);
+            quantities[itemId] = (quantities[itemId] || 0) + 1;
+            
+            cart = cart.filter(c => c.id !== itemId);
+            cart.push({ ...item, quantity: quantities[itemId] });
+            
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartSummary();
+            renderMenuItems(document.querySelector('.category-btn.active').dataset.category === 'all' ? menuData : 
+                menuData.filter(item => item.category === document.querySelector('.category-btn.active').dataset.category));
+        }
+
+        function handleQuantityChange(itemId, action) {
+            const currentQty = quantities[itemId] || 0;
+            if (action === 'increase') {
+                quantities[itemId] = currentQty + 1;
+            } else if (action === 'decrease' && currentQty > 1) {
+                quantities[itemId] = currentQty - 1;
+            } else if (action === 'decrease' && currentQty === 1) {
+                delete quantities[itemId];
+                cart = cart.filter(c => c.id !== parseInt(itemId));
+            }
+            
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartSummary();
+            renderMenuItems(document.querySelector('.category-btn.active').dataset.category === 'all' ? menuData : 
+                menuData.filter(item => item.category === document.querySelector('.category-btn.active').dataset.category));
+        }
+
+        function updateCartSummary() {
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            document.getElementById('cartCount').textContent = totalItems;
+        }
+    </script>
 </body>
 </html>
