@@ -453,7 +453,7 @@
                 <div class="stat-label">Users</div>
             </div>
         </div>
-    </div>
+    
 
           <!-- FIXED: Moved admin-content INSIDE admin-dashboard -->
         <div class="admin-content">
@@ -740,6 +740,59 @@
                     deleteOrder(orderId);
                 }
             });
+        }
+
+                // Modal event listeners
+        document.getElementById('modalClose').onclick = closeEditModal;
+        document.getElementById('modalCancel').onclick = closeEditModal;
+        editModal.onclick = (e) => { if (e.target === editModal) closeEditModal(); };
+
+        // Form submit
+        document.getElementById('editOrderForm').onsubmit = async (e) => {
+            e.preventDefault();
+            if (!currentEditingOrderId) return;
+            
+            const formData = new FormData(e.target);
+            const updateData = Object.fromEntries(formData);
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/admin/orders/${currentEditingOrderId}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updateData)
+                });
+                
+                if (response.ok) {
+                    closeEditModal();
+                    loadRecentOrders(); // Refresh table
+                    loadAdminStats();   // Refresh stats
+                    showToast('✅ Order updated successfully!');
+                } else {
+                    const errorData = await response.json();
+                    alert('❌ Update failed: ' + (errorData.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Update error:', error);
+                alert('❌ Update failed: ' + error.message);
+            }
+        };
+
+        // Toast notification
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position:fixed;top:20px;right:20px;background:#d4edda;color:#155724;
+                padding:1rem 2rem;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.1);
+                z-index:3000;transform:translateX(400px);transition:all 0.3s ease;font-weight:500;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.style.transform = 'translateX(0)', 100);
+            setTimeout(() => toast.remove(), 3000);
         }
 
         // FIXED: Robust deleteOrder function
