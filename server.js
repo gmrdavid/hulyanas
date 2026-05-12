@@ -410,32 +410,37 @@ app.delete('/api/menu/:id', async (req, res) => {
 
 app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
     try {
-
         const conn = await pool.getConnection();
-
         const [rows] = await conn.execute(`
-            SELECT 
-                action,
-                created_at
-            FROM activity_log
-            ORDER BY created_at DESC
-            LIMIT 10
+            SELECT type, action as message, created_at 
+            FROM activity_log 
+            ORDER BY created_at DESC LIMIT 10
         `);
-
         conn.release();
 
+        // Format time_ago like dashboard expects
         const formatted = rows.map(row => ({
-            type: 'menu',
-            message: row.action,
-            time: new Date(row.created_at).toLocaleString()
+            type: row.type || 'system',
+            message: row.message,
+            time: formatTimeAgo(row.created_at)
         }));
 
         res.json(formatted);
-
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
+
+// Add this helper function at the bottom (before app.listen)
+function formatTimeAgo(date) {
+    const now = new Date();
+    const orderDate = new Date(date);
+    const diff = Math.floor((now - orderDate) / 1000 / 60);
+    if (diff < 1) return 'Just now';
+    if (diff < 60) return `${diff}m ago`;
+    const hours = Math.floor(diff / 60);
+    return `${hours}h ago`;
+}
 
 // ===== ADMIN ROUTES =====
 app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
@@ -466,7 +471,7 @@ app.get('/api/admin/recent-orders', authenticateToken, isAdmin, async (req, res)
         const [rows] = await conn.execute(
             `SELECT 
                 o.id,
-                CONCAT('#ORD-', LPAD(o.id, 6, '0')) as order_number,
+                o.order_number as order_number,
                 CONCAT(u.first_name, ' ', u.last_name) as customer,
                 o.status,
                 o.total_amount,
