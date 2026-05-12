@@ -648,6 +648,45 @@
             }
         }
 
+        / NEW: Edit modal functions
+        const editModal = document.getElementById('editModal');
+        let currentEditingOrderId = null;
+
+        function openEditModal(orderId) {
+            currentEditingOrderId = orderId;
+            editModal.classList.add('active');
+            document.body.style.overflow = 'hidden'; // Prevent background scroll
+            loadOrderForEdit(orderId);
+        }
+
+        function closeEditModal() {
+            editModal.classList.remove('active');
+            document.body.style.overflow = '';
+            currentEditingOrderId = null;
+        }
+
+        async function loadOrderForEdit(orderId) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/admin/orders/${orderId}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const order = await response.json();
+                
+                document.getElementById('modalOrderId').value = order.id;
+                document.getElementById('modalOrderNumber').textContent = order.order_number;
+                document.getElementById('modalCustomerName').value = order.customer || '';
+                document.getElementById('modalOrderStatus').value = order.status || 'pending';
+                document.getElementById('modalTotalAmount').value = order.total_amount || 0;
+                document.getElementById('modalOrderNotes').value = order.notes || '';
+                
+            } catch (error) {
+                console.error('Load order error:', error);
+                alert('Failed to load order data');
+                closeEditModal();
+            }
+        }
+
         // Activity feed
         async function loadActivityFeed() {
             try {
