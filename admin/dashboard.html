@@ -750,23 +750,37 @@
         async function loadOrderForEdit(orderId) {
             try {
                 const token = localStorage.getItem('token');
+                document.body.classList.add('loading');
+                
                 const response = await fetch(`/api/admin/orders/${orderId}`, {
-                    headers: { Authorization: `Bearer ${token}` }
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
                 });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
                 const order = await response.json();
                 
+                // ✅ Populate with REAL database data
                 document.getElementById('modalOrderId').value = order.id;
                 document.getElementById('modalOrderNumber').textContent = order.order_number;
-                document.getElementById('modalOrderNumberField').value = order.order_number || 'N/A';
+                document.getElementById('modalOrderNumberField').value = order.order_number;
                 document.getElementById('modalCustomerName').value = order.customer || 'Unknown';
                 document.getElementById('modalTotalAmount').value = `₱${parseFloat(order.total_amount || 0).toFixed(2)}`;
                 document.getElementById('modalOrderStatus').value = order.status || 'pending';
                 
-                console.log('✅ Order loaded for edit:', order.order_number);
+                console.log('✅ Real DB order loaded:', order);
+                
             } catch (error) {
-                console.error('Load order error:', error);
-                alert('Failed to load order data');
+                console.error('❌ Load order error:', error);
+                showToast('❌ Failed to load order');
                 closeEditModal();
+            } finally {
+                document.body.classList.remove('loading');
             }
         }
 
