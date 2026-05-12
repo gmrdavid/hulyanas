@@ -436,15 +436,6 @@
             padding: 1rem 0;
             border-bottom: 1px solid #f0f0f0;
         }
-
-        .modal-actions {
-            display: flex;
-            gap: 1rem;
-            justify-content: flex-end;
-            padding-top: 2rem;
-            border-top: 1px solid #e5e5e5;
-        }
-
         @media (max-width: 768px) {
             .admin-content {
                 padding: 0 1rem;
@@ -610,11 +601,7 @@
                 <h3>Order Items</h3>
                 <div class="items-list" id="modalOrderItems"></div>
             </div>
-            <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="printInvoice()">Print Invoice</button>
-                <button class="btn btn-primary" onclick="updateOrderStatus()">Update Status</button>
-                <button class="btn btn-danger" onclick="cancelOrder()">Cancel Order</button>
-            </div>
+            
         </div>
     </div>
 
