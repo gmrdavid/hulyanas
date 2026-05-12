@@ -379,34 +379,27 @@
     <div class="admin-dashboard">
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fas fa-utensils"></i>
-                </div>
-                <div class="stat-number" data-target="24">0</div>
+                <div class="stat-icon"><i class="fas fa-utensils"></i></div>
+                <div class="stat-number" id="menuCount" data-target="0">0</div>
                 <div class="stat-label">Menu Items</div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fas fa-list"></i>
-                </div>
-                <div class="stat-number" data-target="127">0</div>
+                <div class="stat-icon"><i class="fas fa-list"></i></div>
+                <div class="stat-number" id="orderCount" data-target="0">0</div>
                 <div class="stat-label">Total Orders</div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fas fa-dollar-sign"></i>
-                </div>
-                <div class="stat-number" data-target="2456.75">$0</div>
+                <div class="stat-icon"><i class="fas fa-dollar-sign"></i></div>
+                <div class="stat-number" id="revenueCount" data-target="0">₱0</div>
                 <div class="stat-label">Revenue</div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fas fa-users"></i>
-                </div>
-                <div class="stat-number" data-target="89">0</div>
+                <div class="stat-icon"><i class="fas fa-users"></i></div>
+                <div class="stat-number" id="userCount" data-target="0">0</div>
                 <div class="stat-label">Users</div>
             </div>
         </div>
+    </div>
 
         <div class="admin-content">
             <div class="recent-orders-section">
@@ -438,184 +431,190 @@
     </div>
 
    <script>
-    // Counter animation
-    function animateCounters() {
-        const counters = document.querySelectorAll('.stat-number');
-        counters.forEach(counter => {
-            const target = parseFloat(counter.getAttribute('data-target')) || 0;
-            let current = 0;
-            const duration = 2000;
-            const increment = target / (duration / 16);
+// Animate counters
+function animateCounters(data) {
+    const menuEl = document.getElementById('menuCount');
+    const orderEl = document.getElementById('orderCount');
+    const revenueEl = document.getElementById('revenueCount');
+    const userEl = document.getElementById('userCount');
 
-            const update = () => {
-                current += increment;
-                if (current >= target) {
-                    counter.textContent = target.toLocaleString();
-                    return;
-                }
-                counter.textContent = Math.floor(current).toLocaleString();
-                requestAnimationFrame(update);
-            };
-            update();
+    [menuEl, orderEl, userEl].forEach((el, i) => {
+        const targets = [data.menuItems, data.totalOrders, data.totalUsers];
+        let current = 0;
+        const target = targets[i];
+        const increment = target / 50;
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= target) {
+                el.textContent = Math.floor(target).toLocaleString();
+                clearInterval(timer);
+                return;
+            }
+            el.textContent = Math.floor(current).toLocaleString();
+        }, 20);
+    });
+
+    // Revenue animation
+    let currentRev = 0;
+    const targetRev = data.revenue;
+    const revIncrement = targetRev / 50;
+    const revTimer = setInterval(() => {
+        currentRev += revIncrement;
+        if (currentRev >= targetRev) {
+            revenueEl.textContent = `₱${targetRev.toFixed(2)}`;
+            clearInterval(revTimer);
+            return;
+        }
+        revenueEl.textContent = `₱${currentRev.toFixed(0)}`;
+    }, 20);
+}
+
+// Load admin stats - YOUR ENDPOINT
+async function loadAdminStats() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/admin/stats', {
+            headers: { Authorization: `Bearer ${token}` }
         });
+        const data = await response.json();
+        
+        // Set data-targets and animate
+        document.getElementById('menuCount').setAttribute('data-target', data.menuItems);
+        document.getElementById('orderCount').setAttribute('data-target', data.totalOrders);
+        document.getElementById('revenueCount').setAttribute('data-target', data.revenue);
+        document.getElementById('userCount').setAttribute('data-target', data.totalUsers);
+        
+        animateCounters(data);
+        console.log('✅ Stats loaded:', data);
+    } catch (error) {
+        console.error('Stats error:', error);
     }
+}
 
-    // FIXED: Load real stats from YOUR database
-    async function loadAdminStats() {
-        try {
-            const token = localStorage.getItem('token') || 'demo-token';
-            const response = await fetch('/api/admin/stats', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            if (!response.ok) throw new Error('Stats fetch failed');
-            const data = await response.json();
-
-            // Update counters with YOUR real data
-            const menuEl = document.querySelector('.stat-card:nth-child(1) .stat-number');
-            const ordersEl = document.querySelector('.stat-card:nth-child(2) .stat-number');
-            const revenueEl = document.querySelector('.stat-card:nth-child(3) .stat-number');
-            const usersEl = document.querySelector('.stat-card:nth-child(4) .stat-number');
-
-            menuEl.setAttribute('data-target', data.menuItems);
-            ordersEl.setAttribute('data-target', data.totalOrders);
-            revenueEl.setAttribute('data-target', data.totalRevenue);
-            usersEl.setAttribute('data-target', data.totalUsers);
-
-            // Animate with real numbers
-            setTimeout(animateCounters, 100);
-            
-            console.log('✅ Stats loaded:', data); // Shows: {menuItems:4, totalOrders:3, totalRevenue:90.49, totalUsers:2}
-        } catch (error) {
-            console.error('Stats error:', error);
-            // Fallback animation
-            animateCounters();
-        }
-    }
-
-    // Recent Orders - YOUR real orders data
-    async function loadRecentOrders() {
-        try {
-            const token = localStorage.getItem('token') || 'demo-token';
-            const response = await fetch('/api/admin/recent-orders', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const orders = await response.json();
-
-            const tbody = document.getElementById('recentOrders');
-            tbody.innerHTML = orders.map(order => `
-                <tr>
-                    <td>${order.order_number}</td>
-                    <td>${order.customer}</td>
-                    <td>
-                        <span class="order-status status-${order.status}">
-                            ${order.status.replace('_', ' ')}
-                        </span>
-                    </td>
-                    <td>₱${Number(order.total_amount).toFixed(2)}</td>
-                    <td>${order.time_ago}</td>
-                    <td>
-                        <div class="quick-actions">
-                            <button class="btn btn-primary" onclick="viewOrder(${order.id})">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="btn btn-secondary" onclick="editOrder(${order.id})">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-danger" onclick="deleteOrder(${order.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('') || '<tr><td colspan="6">No recent orders</td></tr>';
-        } catch (error) {
-            console.error('Orders error:', error);
-            document.getElementById('recentOrders').innerHTML = 
-                '<tr><td colspan="6">Error loading orders</td></tr>';
-        }
-    }
-
-    // Activity Feed - YOUR real activity_log data
-    async function loadActivityFeed() {
-        try {
-            const token = localStorage.getItem('token') || 'demo-token';
-            const response = await fetch('/api/admin/activity', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const activities = await response.json();
-
-            const feed = document.getElementById('activityFeed');
-            feed.innerHTML = activities.map(activity => `
-                <div class="activity-item">
-                    <div class="activity-icon ${activity.type}">
-                        <i class="fas fa-${activity.type === 'order' ? 'shopping-cart' : 
-                                      activity.type === 'user' ? 'user-plus' : 'utensils'}"></i>
+// Recent orders - YOUR ENDPOINT
+async function loadRecentOrders() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/admin/recent-orders', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const orders = await response.json();
+        
+        const tbody = document.getElementById('recentOrders');
+        tbody.innerHTML = orders.map(order => `
+            <tr>
+                <td>${order.order_number}</td>
+                <td>${order.customer}</td>
+                <td><span class="order-status status-${order.status}">${order.status.replace('_',' ')}</span></td>
+                <td>₱${parseFloat(order.total_amount).toFixed(2)}</td>
+                <td>${order.time_ago}</td>
+                <td>
+                    <div class="quick-actions">
+                        <button class="btn btn-primary" onclick="viewOrder(${order.id})">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-secondary" onclick="editOrder(${order.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteOrder(${order.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
-                    <div class="activity-content">
-                        <h4>${activity.message}</h4>
-                        <p>${activity.time}</p>
-                    </div>
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Orders error:', error);
+    }
+}
+
+// Activity feed - YOUR ENDPOINT (fixed)
+async function loadActivityFeed() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/admin/activity', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const activities = await response.json();
+        
+        const feed = document.getElementById('activityFeed');
+        feed.innerHTML = activities.map(activity => `
+            <div class="activity-item">
+                <div class="activity-icon ${activity.type}">
+                    <i class="fas fa-${activity.type === 'order' ? 'shopping-cart' : 
+                                  activity.type === 'user' ? 'user-plus' : 'utensils'}"></i>
                 </div>
-            `).join('') || '<div>No recent activity</div>';
-        } catch (error) {
-            console.error('Activity error:', error);
-        }
+                <div class="activity-content">
+                    <h4>${activity.message}</h4>
+                    <p>${activity.time}</p>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Activity error:', error);
     }
+}
 
-    // Action functions
-    function viewOrder(id) { alert(`View order ${id}`); }
-    function editOrder(id) { alert(`Edit order ${id}`); }
-    
-    async function deleteOrder(id) {
-        if (!confirm('Delete this order?')) return;
-        try {
-            const token = localStorage.getItem('token') || 'demo-token';
-            const response = await fetch(`/api/admin/orders/${id}`, {
-                method: 'DELETE',
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            const result = await response.json();
-            alert(result.message);
+// Action handlers
+function viewOrder(id) { window.location.href = `/admin/order-details.html?id=${id}`; }
+function editOrder(id) { window.location.href = `/admin/edit-order.html?id=${id}`; }
+
+async function deleteOrder(id) {
+    if (!confirm('Delete this order?')) return;
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/admin/orders/${id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.ok) {
+            alert('Order deleted!');
             loadRecentOrders();
-        } catch (error) {
-            alert('Delete failed');
         }
+    } catch (error) {
+        alert('Delete failed');
     }
+}
 
-    // Navbar effects
-    window.addEventListener('scroll', () => {
-        const navbar = document.querySelector('.navbar');
-        if (window.scrollY > 50) {
-            navbar.style.background = 'rgba(255,255,255,1)';
-            navbar.style.boxShadow = '0 4px 20px rgba(0,0,0,0.1)';
-        } else {
-            navbar.style.background = 'rgba(255,255,255,0.98)';
-        }
-    });
+// Navbar scroll
+window.addEventListener('scroll', () => {
+    const navbar = document.querySelector('.navbar');
+    navbar.style.background = window.scrollY > 50 ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.98)';
+});
 
-    // Logout
-    document.getElementById('logoutBtn').addEventListener('click', (e) => {
-        e.preventDefault();
-        localStorage.removeItem('token');
-        window.location.href = '/index.html';
-    });
+// Logout
+document.getElementById('logoutBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    localStorage.removeItem('token');
+    window.location.href = '/index.html';
+});
 
-    // QUICK START - Auto-login for testing
+// Initialize - LOADS YOUR REAL DATA!
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('🔥 Loading Hulyanas Admin Dashboard...');
+    
+    // Auto-login if no token
     if (!localStorage.getItem('token')) {
-        localStorage.setItem('token', 'demo-admin-token');
+        try {
+            const loginRes = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: 'admin', password: 'password' })
+            });
+            const loginData = await loginRes.json();
+            localStorage.setItem('token', loginData.token);
+        } catch (e) {
+            console.log('Use manual login');
+        }
     }
-
-    // Initialize - Loads YOUR real database data!
-    document.addEventListener('DOMContentLoaded', async () => {
-        console.log('🔥 Loading Hulyanas real data...');
-        await Promise.all([
-            loadAdminStats(),    // Your 4 menu items, 3 orders, ₱90.49, 2 users
-            loadRecentOrders(),  // John Doe, Sarah Wilson orders  
-            loadActivityFeed()   // Your activity_log entries
-        ]);
-        console.log('✅ Dashboard connected to hulyanas database!');
-    });
+    
+    await Promise.all([
+        loadAdminStats(),
+        loadRecentOrders(), 
+        loadActivityFeed()
+    ]);
+    console.log('✅ Dashboard fully loaded with real data!');
+});
 </script>
 </body>
 </html>
