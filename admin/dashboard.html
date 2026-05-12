@@ -648,7 +648,7 @@
             }
         }
 
-        / NEW: Edit modal functions
+        // NEW: Edit modal functions
         const editModal = document.getElementById('editModal');
         let currentEditingOrderId = null;
 
@@ -722,29 +722,22 @@
             }
         }
 
-        // NEW: Centralized event delegation for all order actions
+        // MODIFIED: Event delegation includes edit modal
         function setupOrderActions() {
-            const tableContainer = document.querySelector('.recent-orders-section');
+            const container = document.querySelector('.recent-orders-section');
             
-            tableContainer.addEventListener('click', (e) => {
+            container.addEventListener('click', (e) => {
                 const btn = e.target.closest('button[data-action]');
                 if (!btn) return;
                 
                 const action = btn.dataset.action;
                 const orderId = btn.dataset.id;
                 
-                console.log(`Order action: ${action} #${orderId}`);
-                
-                switch(action) {
-                    case 'view':
-                        window.location.href = `/admin/order-details.html?id=${orderId}`;
-                        break;
-                    case 'edit':
-                        window.location.href = `/admin/edit-order.html?id=${orderId}`;
-                        break;
-                    case 'delete':
-                        deleteOrder(orderId);
-                        break;
+                if (action === 'edit') {
+                    e.stopPropagation();
+                    openEditModal(orderId);
+                } else if (action === 'delete') {
+                    deleteOrder(orderId);
                 }
             });
         }
