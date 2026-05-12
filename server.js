@@ -441,6 +441,77 @@ function formatTimeAgo(date) {
     const hours = Math.floor(diff / 60);
     return `${hours}h ago`;
 }
+// 🆕 1. GET SINGLE ORDER BY ID (for edit modal)
+app.get('/api/admin/orders/:id', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const conn = await pool.getConnection();
+        
+        const [rows] = await conn.execute(`
+            SELECT 
+                o.id,
+                o.order_number,
+                CONCAT(u.first_name, ' ', u.last_name) as customer,
+                o.total_amount,
+                o.status,
+                o.created_at
+            FROM orders o 
+            LEFT JOIN users u ON o.user_id = u.id 
+            WHERE o.id = ?
+        `, [id]);
+        
+        conn.release();
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+        
+        res.json(rows[0]);
+        
+    } catch (error) {
+        console.error('Get order error:', error);
+        res.status(500).json({ error: 'Failed to fetch order' });
+    }
+});
+
+// 🆕 2. UPDATE ORDER STATUS ONLY (PUT endpoint)
+app.put('/api/admin/orders/:id', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        
+        // ✅ Validate status
+        const validStatuses = ['pending', 'preparing', 'delivered', 'cancelled'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ error: 'Invalid status' });
+        }
+        
+        const conn = await pool.getConnection();
+        
+        const [result] = await conn.execute(
+            `UPDATE orders 
+             SET status = ?, updated_at = NOW() 
+             WHERE id = ?`,
+            [status, id]
+        );
+        
+        conn.release();
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+        
+        res.json({ 
+            success: true, 
+            message: `Status updated to ${status}`,
+            affectedRows: result.affectedRows 
+        });
+        
+    } catch (error) {
+        console.error('Update order error:', error);
+        res.status(500).json({ error: 'Failed to update order' });
+    }
+});
 
 // ===== ADMIN ROUTES =====
 app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
