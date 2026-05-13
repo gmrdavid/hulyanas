@@ -472,10 +472,18 @@
                     <tr data-order-id="${order.id}">
                         <td><strong>#${order.order_number || 'N/A'}</strong></td>
                         <td>${order.customer || 'Unknown'}</td>
-                        <td><span class="order-status status-${order.status}">${order.status?.replace('_',' ') || 'Unknown'}</span></td>
-                        <td><strong>₱${parseFloat(order.total_amount || 0).toFixed(2)}</strong></td>
+
+                        <td>
+                            <span class="order-status status-${order.status}">
+                                ${(order.status || 'unknown').replace(/_/g, ' ')}
+                            </span>
+                        </td>
+
+                        <td>
+                            <strong>₱${Number(order.total_amount || 0).toFixed(2)}</strong>
+                        </td>
+
                         <td>${order.time_ago || 'N/A'}</td>
-                        <!-- ✅ NO ACTIONS COLUMN -->
                     </tr>
                 `).join('');
                 
