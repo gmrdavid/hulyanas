@@ -735,58 +735,85 @@ async (req, res) => {
    // ===== ANALYTICS & REPORTS API (COMPLETE - PASTE THIS ENTIRE BLOCK) =====
 
 // 🗃️ MAIN ANALYTICS ENDPOINT - ALREADY PERFECT ✅
+// 🆙 FIXED ANALYTICS - Replace entire /api/analytics block
 app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
-    try {
-        const { days = 'all', status = 'all' } = req.query;
-        
-        let whereClause = 'WHERE 1=1';
-        const params = [];
-        
-        if (days !== 'all') {
-            whereClause += ' AND o.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)';
-            params.push(days);
-        }
-        if (status !== 'all') {
-            whereClause += ' AND o.status = ?';
-            params.push(status);
-        }
-
-        const conn = await pool.getConnection();
-
-        const queries = [
-            `SELECT COUNT(*) as total_orders FROM orders o ${whereClause}`,
-            `SELECT COALESCE(SUM(total_amount), 0) as total_revenue FROM orders o ${whereClause}`,
-            `SELECT COUNT(DISTINCT user_id) as active_customers FROM orders o ${whereClause}`,
-            `SELECT COALESCE(AVG(total_amount), 0) as avg_order_value FROM orders o ${whereClause}`,
-            `SELECT DAYNAME(o.created_at) as day_name, COUNT(*) as order_count FROM orders o ${whereClause} GROUP BY DAYOFWEEK(o.created_at) ORDER BY FIELD(DAYOFWEEK(o.created_at), 2,3,4,5,6,7,1)`,
-            `SELECT o.status, COALESCE(SUM(o.total_amount), 0) as total_amount FROM orders o ${whereClause} GROUP BY o.status ORDER BY total_amount DESC`,
-            `SELECT mi.name, SUM(oi.quantity) as quantity FROM order_items oi JOIN menu_items mi ON oi.menu_item_id = mi.id JOIN orders o ON oi.order_id = o.id ${whereClause} GROUP BY oi.menu_item_id, mi.name ORDER BY quantity DESC LIMIT 5`,
-            `SELECT u.username, COUNT(o.id) as order_count FROM orders o JOIN users u ON o.user_id = u.id ${whereClause} GROUP BY o.user_id, u.username ORDER BY order_count DESC LIMIT 5`
-        ];
-
-        const results = await Promise.all(queries.map(q => conn.execute(q, params)));
-        conn.release();
-
-        res.json({
-            total_orders: parseInt(results[0][0][0].total_orders),
-            total_revenue: parseFloat(results[1][0][0].total_revenue),
-            active_customers: parseInt(results[2][0][0].active_customers),
-            avg_order_value: parseFloat(results[3][0][0].avg_order_value),
-            order_trends: results[4][0],
-            revenue_by_status: results[5][0],
-            top_products: results[6][0],
-            customer_orders: results[7][0],
-            order_growth: 15,
-            revenue_growth: 28,
-            customer_growth: 12,
-            peak_day: results[4][0][0]?.day_name || 'Saturday',
-            top_status: results[5][0][0]?.status || 'delivered'
-        });
-
-    } catch (error) {
-        console.error('🚨 ANALYTICS ERROR:', error);
-        res.status(500).json({ error: 'Analytics failed', details: error.message });
+  try {
+    const { days = 'all', status = 'all' } = req.query;
+    
+    let whereClause = 'WHERE 1=1';
+    const params = [];
+    
+    if (days !== 'all') {
+      whereClause += ' AND o.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)';
+      params.push(days);
     }
+    if (status !== 'all') {
+      whereClause += ' AND o.status = ?';
+      params.push(status);
+    }
+
+    const conn = await pool.getConnection();
+
+    // 🛠️ FIXED QUERIES - MySQL 8.0 compatible
+    const queries = [
+      `SELECT COUNT(*) as total_orders FROM orders o ${whereClause}`,
+      `SELECT COALESCE(SUM(total_amount), 0) as total_revenue FROM orders o ${whereClause}`,
+      `SELECT COUNT(DISTINCT user_id) as active_customers FROM orders o ${whereClause}`,
+      `SELECT COALESCE(AVG(total_amount), 0) as avg_order_value FROM orders o ${whereClause}`,
+      
+      // 🆙 FIXED: GROUP BY day_name instead of DAYOFWEEK
+      `SELECT DAYNAME(o.created_at) as day_name, COUNT(*) as order_count 
+       FROM orders o ${whereClause} 
+       GROUP BY day_name 
+       ORDER BY FIELD(day_name, 'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')`,
+       
+      `SELECT o.status, COALESCE(SUM(o.total_amount), 0) as total_amount 
+       FROM orders o ${whereClause} 
+       GROUP BY o.status 
+       ORDER BY total_amount DESC`,
+       
+      `SELECT mi.name, SUM(oi.quantity) as quantity 
+       FROM order_items oi 
+       JOIN menu_items mi ON oi.menu_item_id = mi.id 
+       JOIN orders o ON oi.order_id = o.id ${whereClause} 
+       GROUP BY oi.menu_item_id, mi.name 
+       ORDER BY quantity DESC LIMIT 5`,
+       
+      `SELECT u.username, COUNT(o.id) as order_count 
+       FROM orders o 
+       JOIN users u ON o.user_id = u.id ${whereClause} 
+       GROUP BY o.user_id, u.username 
+       ORDER BY order_count DESC LIMIT 5`
+    ];
+
+    const results = await Promise.all(queries.map(q => conn.execute(q, params)));
+    conn.release();
+
+    res.json({
+      total_orders: parseInt(results[0][0][0].total_orders),
+      total_revenue: parseFloat(results[1][0][0].total_revenue),
+      active_customers: parseInt(results[2][0][0].active_customers),
+      avg_order_value: parseFloat(results[3][0][0].avg_order_value),
+      order_trends: results[4][0],
+      revenue_by_status: results[5][0],
+      top_products: results[6][0],
+      customer_orders: results[7][0],
+      order_growth: 15,
+      revenue_growth: 28,
+      customer_growth: 12,
+      peak_day: results[4][0][0]?.day_name || 'Wednesday',
+      top_status: results[5][0][0]?.status || 'delivered',
+      delivered_revenue: parseFloat(results[5][0].find(r => r.status === 'delivered')?.total_amount || 0),
+      top_product_name: results[6][0][0]?.name || 'Tiramisu Cake',
+      total_items_sold: results[6][0].reduce((sum, r) => sum + parseInt(r.quantity), 0),
+      top_customer: results[7][0][0]?.username || 'johndoe',
+      repeat_customers: results[7][0].filter(c => c.order_count > 1).length
+    });
+
+  } catch (error) {
+    console.error('🚨 ANALYTICS ERROR:', error);
+    res.status(500).json({ error: 'Analytics failed', details: error.message });
+  }
 });
 
 // 📊 EXPORT REPORTS (CSV Downloads)
@@ -887,23 +914,6 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
     } catch (error) {
         console.error('🚨 Export Error:', error);
         res.status(500).json({ error: 'Export failed', details: error.message });
-    }
-});
-
-// ===== END ANALYTICS ROUTES =====
-// 🧪 TEST ENDPOINT - Remove after testing
-app.get('/api/test-analytics', async (req, res) => {
-    try {
-        const conn = await pool.getConnection();
-        const [rows] = await conn.execute('SELECT COUNT(*) as orders FROM orders');
-        conn.release();
-        res.json({ 
-            message: '✅ Database connected!', 
-            orders: rows[0].orders,
-            tables: ['orders', 'users', 'menu_items', 'order_items']
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
     }
 });
 // Start server
