@@ -222,8 +222,7 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
         
         const [[totalOrders], [totalSpent], [activeOrders]] = await Promise.all([
             conn.execute(`SELECT COUNT(*) as count FROM orders WHERE user_id = ?`, [req.user.id]),
-            // ✅ CHANGED: Only preparing and delivered orders count toward revenue
-            conn.execute(`SELECT COALESCE(SUM(total_amount), 0) as total FROM orders WHERE user_id = ? AND status IN ('preparing', 'delivered')`, [req.user.id]),
+            conn.execute(`SELECT COALESCE(SUM(total_amount), 0) as total FROM orders WHERE user_id = ? AND status != 'cancelled'`, [req.user.id]),
             conn.execute(`SELECT COUNT(*) as count FROM orders WHERE user_id = ? AND status IN ('pending', 'preparing')`, [req.user.id])
         ]);
         
@@ -467,8 +466,7 @@ app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
         const [[menuItems], [totalOrders], [revenue], [totalUsers]] = await Promise.all([
             conn.execute(`SELECT COUNT(*) as count FROM menu_items WHERE is_available = TRUE`),
             conn.execute(`SELECT COUNT(*) as count FROM orders`),
-            // ✅ CHANGED: Only preparing and delivered orders count toward revenue
-            conn.execute(`SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders WHERE status IN ('preparing', 'delivered')`),
+            conn.execute(`SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders WHERE status != 'cancelled'`),
             conn.execute(`SELECT COUNT(*) as count FROM users WHERE role = 'customer'`)
         ]);
         conn.release();
@@ -566,21 +564,20 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
         const conn = await pool.getConnection();
         const queries = [
             `SELECT COUNT(*) as total_orders FROM orders o ${whereClause}`,
-            // ✅ CHANGED: Only preparing and delivered orders count toward revenue
-            `SELECT COALESCE(SUM(total_amount), 0) as total_revenue FROM orders o WHERE status IN ('preparing', 'delivered') ${whereClause}`,
+            `SELECT COALESCE(SUM(total_amount), 0) as total_revenue FROM orders o ${whereClause}`,
             `SELECT COUNT(DISTINCT user_id) as active_customers FROM orders o ${whereClause}`,
-            `SELECT COALESCE(AVG(total_amount), 0) as avg_order_value FROM orders o WHERE status IN ('preparing', 'delivered') ${whereClause}`,
+            `SELECT COALESCE(AVG(total_amount), 0) as avg_order_value FROM orders o ${whereClause}`,
             `SELECT DAYNAME(o.created_at) as day_name, COUNT(*) as order_count 
              FROM orders o ${whereClause} GROUP BY day_name 
              ORDER BY FIELD(day_name, 'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')`,
             `SELECT o.status, COALESCE(SUM(o.total_amount), 0) as total_amount 
-             FROM orders o WHERE o.status IN ('preparing', 'delivered') ${whereClause} GROUP BY o.status ORDER BY total_amount DESC`,
+             FROM orders o ${whereClause} GROUP BY o.status ORDER BY total_amount DESC`,
             `SELECT mi.name, SUM(oi.quantity) as quantity 
              FROM order_items oi JOIN menu_items mi ON oi.menu_item_id = mi.id 
-             JOIN orders o ON oi.order_id = o.id WHERE o.status IN ('preparing', 'delivered') ${whereClause} 
+             JOIN orders o ON oi.order_id = o.id ${whereClause} 
              GROUP BY oi.menu_item_id, mi.name ORDER BY quantity DESC LIMIT 5`,
             `SELECT u.username, COUNT(o.id) as order_count 
-             FROM orders o JOIN users u ON o.user_id = u.id WHERE o.status IN ('preparing', 'delivered') ${whereClause} 
+             FROM orders o JOIN users u ON o.user_id = u.id ${whereClause} 
              GROUP BY o.user_id, u.username ORDER BY order_count DESC LIMIT 5`
         ];
 
@@ -666,7 +663,6 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
         } else if (type === 'sales') {
             console.log('💰 [SALES] Generating CSV...');
             
-            // ✅ CHANGED: Sales export already uses preparing/delivered (no change needed)
             const [rows] = await conn.execute(`
                 SELECT DATE_FORMAT(o.created_at, '%Y-%m-%d') as sale_date,
                        o.order_number, o.status, ROUND(o.total_amount, 2) as order_total
