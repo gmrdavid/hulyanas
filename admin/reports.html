@@ -767,11 +767,10 @@
             loadAnalyticsData(days, e.target.value);
         });
 
-        /// ✅ FIXED Export function - No body data needed
+        // ✅ FIXED Export function with better error handling
         async function exportReport(type) {
             try {
                 document.body.classList.add('loading');
-                
                 console.log(`📤 Exporting ${type} report...`);
                 
                 const response = await fetch(`${API_BASE}/export/${type}`, {
@@ -780,14 +779,18 @@
                         'Authorization': `Bearer ${localStorage.getItem('token')}`,
                         'Content-Type': 'application/json'
                     }
-                    // ✅ REMOVED body: JSON.stringify({ filters: analyticsData }) - Server doesn't need it!
                 });
 
+                // ✅ Better error checking
                 if (!response.ok) {
-                    throw new Error(`Export failed: ${response.status} ${response.statusText}`);
+                    const errorText = await response.text();
+                    console.error(`❌ Server error ${response.status}:`, errorText);
+                    throw new Error(`Server error ${response.status}: ${errorText}`);
                 }
 
                 const blob = await response.blob();
+                console.log(`✅ Blob received: ${blob.size} bytes, type: ${blob.type}`);
+                
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
