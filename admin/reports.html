@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reports & Analytics - Hulyanas Hill Admin</title>
+    <title>Reports & Analytics - Hulyanas Hill</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Exact same styles as dashboard */
         * {
             margin: 0;
             padding: 0;
@@ -80,6 +81,7 @@
             border-radius: 12px;
             transition: all 0.2s ease;
             font-size: 0.95rem;
+            position: relative;
         }
 
         .nav-menu a:hover,
@@ -101,17 +103,18 @@
             transform: translateY(-1px);
         }
 
-        .admin-content {
+        .admin-dashboard {
             max-width: 1400px;
-            margin: 140px auto 2rem;
-            padding: 0 2rem;
+            margin: 0 auto;
+            padding: 140px 2rem 2rem;
         }
 
-        .analytics-stats {
+        /* Stats Grid - Exact dashboard match */
+        .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 2rem;
-            margin-bottom: 3rem;
+            margin-bottom: 4rem;
         }
 
         .stat-card {
@@ -121,9 +124,9 @@
             border-radius: 20px;
             text-align: center;
             transition: all 0.3s ease;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
             position: relative;
             overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
         }
 
         .stat-card::before {
@@ -133,25 +136,24 @@
             left: 0;
             right: 0;
             height: 4px;
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(90deg, #1a1a1a, #333);
         }
 
         .stat-card:hover {
             transform: translateY(-8px);
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            border-color: #d0d0d0;
         }
 
         .stat-icon {
             font-size: 3rem;
             margin-bottom: 1.5rem;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: #1a1a1a;
+            opacity: 0.8;
         }
 
         .stat-number {
-            font-size: 3rem;
+            font-size: 2.75rem;
             font-weight: 700;
             color: #000;
             margin-bottom: 0.5rem;
@@ -159,7 +161,7 @@
         }
 
         .stat-change {
-            font-size: 0.95rem;
+            font-size: 1rem;
             font-weight: 600;
             margin-bottom: 0.25rem;
         }
@@ -168,109 +170,69 @@
         .stat-change.negative { color: #dc3545; }
 
         .stat-label {
-            font-size: 1.1rem;
+            font-size: 1rem;
             color: #666;
             font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .admin-content {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 3rem;
         }
 
         .content-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 3rem;
-            flex-wrap: wrap;
-            gap: 1rem;
+            margin-bottom: 2rem;
         }
 
         .content-header h1 {
-            font-size: 2.8rem;
+            font-size: 2.5rem;
             font-weight: 700;
             color: #1a1a1a;
-            background: linear-gradient(135deg, #1a1a1a, #333);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        }
+
+        .reports-section {
+            background: #fff;
+            border: 1px solid #e5e5e5;
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f0f0f0;
         }
 
         .filter-controls {
             display: flex;
             gap: 1rem;
-            align-items: center;
+            margin-bottom: 2rem;
             flex-wrap: wrap;
         }
 
-        .filter-select,
-        .date-range {
-            padding: 1rem 1.5rem;
-            border: 1px solid #e0e0e0;
-            border-radius: 16px;
-            font-size: 1rem;
+        .filter-select {
+            padding: 0.875rem 1.25rem;
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            font-size: 0.95rem;
             background: #fff;
             font-family: inherit;
-            min-width: 160px;
+            font-weight: 500;
+            min-width: 140px;
+            transition: all 0.2s ease;
         }
 
-        .reports-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 2rem;
-            margin-bottom: 3rem;
-        }
-
-        .report-card {
-            background: #fff;
-            border: 1px solid #e5e5e5;
-            border-radius: 20px;
-            padding: 2.5rem;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
-            transition: all 0.3s ease;
-        }
-
-        .report-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
-        }
-
-        .report-header {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .report-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            color: #fff;
-        }
-
-        .report-sales { background: linear-gradient(135deg, #667eea, #764ba2); }
-        .report-revenue { background: linear-gradient(135deg, #f093fb, #f5576c); }
-        .report-products { background: linear-gradient(135deg, #4facfe, #00f2fe); }
-        .report-customers { background: linear-gradient(135deg, #43e97b, #38f9d7); }
-
-        .report-title {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: #1a1a1a;
-        }
-
-        .chart-container {
-            height: 300px;
-            margin-bottom: 2rem;
-        }
-
-        .table-container {
-            background: #fff;
-            border: 1px solid #e5e5e5;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+        .filter-select:focus {
+            outline: none;
+            border-color: #1a1a1a;
+            box-shadow: 0 0 0 3px rgba(26,26,26,0.1);
         }
 
         .analytics-table {
@@ -278,103 +240,125 @@
             border-collapse: collapse;
         }
 
-        .analytics-table thead {
-            background: #f8f9fa;
+        .analytics-table th,
+        .analytics-table td {
+            padding: 1.25rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid #f5f5f5;
         }
 
         .analytics-table th {
-            padding: 1.5rem 2rem;
-            text-align: left;
             font-weight: 600;
             color: #1a1a1a;
             font-size: 0.9rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            border-bottom: 2px solid #e5e5e5;
-        }
-
-        .analytics-table td {
-            padding: 1.5rem 2rem;
-            border-bottom: 1px solid #f5f5f5;
-            vertical-align: middle;
         }
 
         .analytics-table tr:hover {
             background: #f8f8f8;
         }
 
+        .rank-badge {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #1a1a1a;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
         .metric-badge {
             padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
         .metric-sales { background: #e3f2fd; color: #1976d2; }
-        .metric-revenue { background: #fff3e0; color: #ef6c00; }
-        .metric-top { background: #e8f5e8; color: #2e7d32; }
+        .metric-growth { background: #e8f5e8; color: #2e7d32; }
+
+        .activity-feed {
+            background: #fff;
+            border: 1px solid #e5e5e5;
+            border-radius: 20px;
+            padding: 2.5rem;
+            height: fit-content;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
 
         .download-section {
             background: #fff;
             border: 1px solid #e5e5e5;
             border-radius: 20px;
-            padding: 3rem;
+            padding: 2.5rem;
             text-align: center;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            margin-top: 2rem;
         }
 
         .download-btn {
             display: inline-flex;
             align-items: center;
             gap: 0.75rem;
-            padding: 1rem 2.5rem;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 1rem 2rem;
+            background: #1a1a1a;
             color: #fff;
             border: none;
-            border-radius: 16px;
+            border-radius: 12px;
             font-weight: 600;
-            font-size: 1.1rem;
+            font-size: 0.95rem;
             cursor: pointer;
             transition: all 0.3s ease;
             text-decoration: none;
-            margin: 0 0.5rem;
+            margin: 0 0.5rem 1rem;
         }
 
         .download-btn:hover {
+            background: #000;
             transform: translateY(-2px);
-            box-shadow: 0 15px 30px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
         }
 
-        .btn-group {
-            margin-top: 2rem;
+        @media (max-width: 1024px) {
+            .admin-content {
+                grid-template-columns: 1fr;
+            }
         }
 
         @media (max-width: 768px) {
-            .admin-content {
-                padding: 0 1rem;
-                margin: 120px 1rem 2rem;
+            .admin-dashboard {
+                padding: 120px 1rem 2rem;
             }
 
-            .content-header {
-                flex-direction: column;
-                align-items: stretch;
-                text-align: center;
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.5rem;
             }
 
             .filter-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .filter-select {
                 width: 100%;
-                justify-content: center;
             }
+        }
 
-            .analytics-stats {
+        @media (max-width: 480px) {
+            .stats-grid {
                 grid-template-columns: 1fr;
             }
+        }
 
-            .reports-grid {
-                grid-template-columns: 1fr;
-            }
+        .loading { 
+            opacity: 0.6; pointer-events: none; 
         }
     </style>
 </head>
@@ -391,271 +375,279 @@
                 <li><a href="orders.html"><i class="fas fa-list"></i> Orders</a></li>
                 <li><a href="users.html"><i class="fas fa-users"></i> Users</a></li>
                 <li><a href="reports.html" class="active"><i class="fas fa-chart-bar"></i> Reports</a></li>
-                <li><a href="#" id="adminLogout" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                <li><a href="/index.html" id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </div>
     </nav>
 
-    <div class="admin-content">
-        <!-- Key Metrics Stats -->
-        <div class="analytics-stats">
+    <div class="admin-dashboard">
+        <!-- Key Metrics - Exact dashboard styling -->
+        <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fas fa-shopping-cart"></i>
-                </div>
-                <div class="stat-number" data-target="1,247">1,247</div>
-                <div class="stat-change positive">+12.5%</div>
+                <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
+                <div class="stat-number" id="totalOrders" data-target="0">0</div>
+                <div class="stat-change positive" id="ordersChange">+0%</div>
                 <div class="stat-label">Total Orders</div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fas fa-peso-sign"></i>
-                </div>
-                <div class="stat-number" data-target="24,567.89">$24,567.89</div>
-                <div class="stat-change positive">+18.2%</div>
+                <div class="stat-icon"><i class="fas fa-peso-sign"></i></div>
+                <div class="stat-number" id="totalRevenue" data-target="0">₱0</div>
+                <div class="stat-change positive" id="revenueChange">+0%</div>
                 <div class="stat-label">Total Revenue</div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fas fa-users"></i>
-                </div>
-                <div class="stat-number" data-target="892">892</div>
-                <div class="stat-change positive">+8.7%</div>
+                <div class="stat-icon"><i class="fas fa-users"></i></div>
+                <div class="stat-number" id="activeCustomers" data-target="0">0</div>
+                <div class="stat-change positive" id="customersChange">+0%</div>
                 <div class="stat-label">Active Customers</div>
             </div>
             <div class="stat-card">
-                <div class="stat-icon">
-                    <i class="fas fa-star"></i>
-                </div>
-                <div class="stat-number" data-target="4.8">4.8</div>
-                <div class="stat-change positive">+0.2</div>
+                <div class="stat-icon"><i class="fas fa-star"></i></div>
+                <div class="stat-number" id="avgRating" data-target="0">0</div>
+                <div class="stat-change positive" id="ratingChange">+0</div>
                 <div class="stat-label">Avg Rating</div>
             </div>
         </div>
 
-        <div class="content-header">
-            <h1>Reports & Analytics</h1>
-            <div class="filter-controls">
-                <select id="reportType" class="filter-select">
-                    <option value="all">All Reports</option>
-                    <option value="sales">Sales</option>
-                    <option value="revenue">Revenue</option>
-                    <option value="products">Products</option>
-                    <option value="customers">Customers</option>
-                </select>
-                <input type="date" id="dateFilter" class="date-range">
-                <input type="month" id="monthFilter" class="date-range">
-            </div>
-        </div>
+        <div class="admin-content">
+            <!-- Main Reports Section -->
+            <div class="reports-section">
+                <div class="content-header">
+                    <h1 class="section-title">Analytics Reports</h1>
+                    <div class="filter-controls">
+                        <select id="reportFilter" class="filter-select">
+                            <option value="all">All Products</option>
+                            <option value="product">Products</option>
+                            <option value="category">Categories</option>
+                        </select>
+                    </div>
+                </div>
 
-        <!-- Reports Overview -->
-        <div class="reports-grid">
-            <div class="report-card">
-                <div class="report-header">
-                    <div class="report-icon report-sales">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                    <div class="report-title">Sales Performance</div>
-                </div>
-                <div class="chart-container" id="salesChart">
-                    <div style="text-align:center;padding:4rem;color:#999;">
-                        <i class="fas fa-chart-line" style="font-size:4rem;opacity:0.5;"></i>
-                        <p>Sales Trend Chart</p>
-                    </div>
-                </div>
-                <div style="display:flex;justify-content:space-between;">
-                    <div><strong>Peak Day:</strong> Friday</div>
-                    <div><strong>Avg Order:</strong> ₱1,250</div>
-                </div>
-            </div>
+                <table class="analytics-table" id="topPerformers">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Item</th>
+                            <th>Sales</th>
+                            <th>Revenue</th>
+                            <th>Growth</th>
+                        </tr>
+                    </thead>
+                    <tbody id="performersBody">
+                        <!-- Dynamic content -->
+                    </tbody>
+                </table>
 
-            <div class="report-card">
-                <div class="report-header">
-                    <div class="report-icon report-revenue">
-                        <i class="fas fa-coins"></i>
+                <div class="download-section">
+                    <h3 style="font-size:1.25rem;font-weight:600;color:#1a1a1a;margin-bottom:1rem;">
+                        <i class="fas fa-download"></i> Export Reports
+                    </h3>
+                    <div>
+                        <button class="download-btn" onclick="exportReport('sales')">
+                            <i class="fas fa-file-pdf"></i> Sales Report
+                        </button>
+                        <button class="download-btn" onclick="exportReport('revenue')">
+                            <i class="fas fa-file-excel"></i> Revenue Report
+                        </button>
                     </div>
-                    <div class="report-title">Revenue Analytics</div>
-                </div>
-                <div class="chart-container" id="revenueChart">
-                    <div style="text-align:center;padding:4rem;color:#999;">
-                        <i class="fas fa-chart-pie" style="font-size:4rem;opacity:0.5;"></i>
-                        <p>Revenue Breakdown</p>
-                    </div>
-                </div>
-                <div style="display:flex;justify-content:space-between;">
-                    <div><strong>Best Month:</strong> December</div>
-                    <div><strong>Growth:</strong> +23%</div>
                 </div>
             </div>
-        </div>
 
-        <!-- Top Performers Table -->
-        <div class="table-container">
-            <table class="analytics-table" id="topPerformersTable">
-                <thead>
-                    <tr>
-                        <th>Rank</th>
-                        <th>Product/Category</th>
-                        <th>Sales</th>
-                        <th>Revenue</th>
-                        <th>Growth</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="performersList">
+            <!-- Activity Feed - Same as dashboard -->
+            <div class="activity-feed">
+                <h1 class="section-title">Recent Analytics</h1>
+                <div id="analyticsActivity">
                     <!-- Dynamic content -->
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Download Reports -->
-        <div class="download-section">
-            <h2 style="font-size:2rem;margin-bottom:1rem;color:#1a1a1a;">
-                <i class="fas fa-download"></i> Download Reports
-            </h2>
-            <p style="color:#666;margin-bottom:2rem;font-size:1.1rem;">
-                Export comprehensive reports in PDF or Excel format
-            </p>
-            <div class="btn-group">
-                <a href="#" class="download-btn" onclick="downloadReport('sales', 'pdf')">
-                    <i class="fas fa-file-pdf"></i> Sales Report PDF
-                </a>
-                <a href="#" class="download-btn" onclick="downloadReport('sales', 'excel')">
-                    <i class="fas fa-file-excel"></i> Sales Report Excel
-                </a>
-                <a href="#" class="download-btn" onclick="downloadReport('revenue', 'pdf')">
-                    <i class="fas fa-file-pdf"></i> Revenue Report PDF
-                </a>
-                <a href="#" class="download-btn" onclick="downloadReport('revenue', 'excel')">
-                    <i class="fas fa-file-excel"></i> Revenue Report Excel
-                </a>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        let analyticsData = [];
-        let currentFilter = 'all';
-
-        // Sample analytics data
-        const sampleData = [
-            { rank: 1, name: 'Adobo Rice Bowl', sales: 324, revenue: '₱12,450', growth: '+28%', type: 'product' },
-            { rank: 2, name: 'Chicken Inasal', sales: 289, revenue: '₱9,876', growth: '+15%', type: 'product' },
-            { rank: 3, name: 'Halo-Halo', sales: 267, revenue: '₱5,340', growth: '+42%', type: 'product' },
-            { rank: 4, name: 'Lumpia', sales: 245, revenue: '₱3,675', growth: '+8%', type: 'product' },
-            { rank: 5, name: 'Main Courses', sales: 1,234, revenue: '₱28,450', growth: '+19%', type: 'category' },
-            { rank: 6, name: 'Desserts', sales: 567, revenue: '₱8,905', growth: '+33%', type: 'category' }
+        // Sample data matching Hulyanas Hill theme
+        const analyticsData = [
+            { rank: 1, name: 'Adobo Rice Bowl', type: 'product', sales: 324, revenue: 12450, growth: '+28%' },
+            { rank: 2, name: 'Chicken Inasal', type: 'product', sales: 289, revenue: 9876, growth: '+15%' },
+            { rank: 3, name: 'Halo-Halo Special', type: 'product', sales: 267, revenue: 5340, growth: '+42%' },
+            { rank: 4, name: 'Crispy Lumpia', type: 'product', sales: 245, revenue: 3675, growth: '+8%' },
+            { rank: 5, name: 'Main Courses', type: 'category', sales: 1234, revenue: 28450, growth: '+19%' },
+            { rank: 6, name: 'Desserts', type: 'category', sales: 567, revenue: 8905, growth: '+33%' }
         ];
 
-        // Animate stats
-        function animateStats() {
-            const stats = document.querySelectorAll('.stat-number[data-target]');
-            stats.forEach(stat => {
-                const target = stat.getAttribute('data-target');
-                const isCurrency = target.includes('$');
-                const targetValue = parseFloat(target.replace(/[^\d.-]/g, ''));
+        const activityItems = [
+            { type: 'analytics', message: 'Sales report generated', time: '2 min ago' },
+            { type: 'export', message: 'Revenue data exported to PDF', time: '5 min ago' },
+            { type: 'peak', message: 'New peak sales day detected', time: '12 min ago' },
+            { type: 'growth', message: 'Desserts category +33% growth', time: '1 hr ago' }
+        ];
+
+        // Animate counters (same as dashboard)
+        function animateCounters(data) {
+            const elements = [
+                { el: 'totalOrders', target: data.totalOrders, format: 'number' },
+                { el: 'totalRevenue', target: data.totalRevenue, format: 'currency' },
+                { el: 'activeCustomers', target: data.activeCustomers, format: 'number' },
+                { el: 'avgRating', target: data.avgRating, format: 'decimal' }
+            ];
+
+            elements.forEach(({ el, target, format }) => {
+                const element = document.getElementById(el);
                 let current = 0;
-                const increment = targetValue / 100;
+                const increment = target / 50;
                 const timer = setInterval(() => {
                     current += increment;
-                    if (isCurrency) {
-                        stat.textContent = `$${current.toFixed(2)}`;
-                    } else {
-                        stat.textContent = Math.floor(current).toLocaleString();
-                    }
-                    if (current >= targetValue) {
+                    if (current >= target) {
+                        if (format === 'currency') {
+                            element.textContent = `₱${target.toLocaleString('en-PH', { minimumFractionDigits: 0 })}`;
+                        } else if (format === 'decimal') {
+                            element.textContent = target.toFixed(1);
+                        } else {
+                            element.textContent = Math.floor(target).toLocaleString();
+                        }
                         clearInterval(timer);
-                        stat.textContent = stat.getAttribute('data-target');
+                        return;
                     }
+                    const display = format === 'currency' ? `₱${Math.floor(current).toLocaleString()}` :
+                                  format === 'decimal' ? current.toFixed(1) : Math.floor(current).toLocaleString();
+                    element.textContent = display;
                 }, 20);
             });
         }
 
-        // Render Top Performers Table
-        function renderTopPerformers(filteredData) {
-            const tbody = document.getElementById('performersList');
-            tbody.innerHTML = filteredData.slice(0, 6).map(item => `
+        // Load analytics data
+        async function loadAnalyticsData() {
+            try {
+                // Simulate API response
+                const data = {
+                    totalOrders: 1247,
+                    totalRevenue: 24567.89,
+                    activeCustomers: 892,
+                    avgRating: 4.8
+                };
+                
+                document.querySelectorAll('.stat-number').forEach(el => {
+                    el.setAttribute('data-target', data[el.id.replace('total', '').toLowerCase()] || 0);
+                });
+                
+                animateCounters(data);
+            } catch (error) {
+                console.error('Analytics error:', error);
+            }
+        }
+
+        // Render top performers table
+        function renderTopPerformers(data) {
+            const tbody = document.getElementById('performersBody');
+            tbody.innerHTML = data.slice(0, 8).map(item => `
                 <tr>
+                    <td><div class="rank-badge">${item.rank}</div></td>
                     <td>
-                        <div style="width:32px;height:32px;border-radius:50%;background:#667eea;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.9rem;">
-                            ${item.rank}
-                        </div>
+                        <div style="font-weight:600;">${item.name}</div>
+                        <div style="color:#666;font-size:0.85rem;">${item.type}</div>
                     </td>
-                    <td>
-                        <div>
-                            <div style="font-weight:600;color:#1a1a1a;">${item.name}</div>
-                            <div style="color:#666;font-size:0.9rem;">${item.type === 'product' ? 'Product' : 'Category'}</div>
-                        </div>
-                    </td>
-                    <td>
-                        <span class="metric-badge metric-sales">${item.sales.toLocaleString()}</span>
-                    </td>
-                    <td>
-                        <strong style="color:#000;font-size:1.1rem;">${item.revenue}</strong>
-                    </td>
-                    <td>
-                        <span class="metric-badge metric-top">${item.growth}</span>
-                    </td>
-                    <td>
-                        <button class="download-btn" style="padding:0.5rem 1rem;font-size:0.9rem;" 
-                                onclick="viewDetails(${item.rank})">
-                            <i class="fas fa-eye"></i> View
-                        </button>
-                    </td>
+                    <td><span class="metric-badge metric-sales">${item.sales.toLocaleString()}</span></td>
+                    <td><strong>₱${(item.revenue/1000).toLocaleString('en-PH', {minimumFractionDigits: 0, maximumFractionDigits: 0})}K</strong></td>
+                    <td><span class="metric-badge metric-growth">${item.growth}</span></td>
                 </tr>
             `).join('');
         }
 
-        // Load Analytics Data
-        async function loadAnalytics() {
-            try {
-                // Simulate API call
-                analyticsData = sampleData;
-                renderTopPerformers(analyticsData);
-            } catch (error) {
-                console.error('Error loading analytics:', error);
-                renderTopPerformers(sampleData);
-            }
+        // Load activity feed (same as dashboard)
+        function loadActivityFeed() {
+            const feed = document.getElementById('analyticsActivity');
+            feed.innerHTML = activityItems.map(activity => `
+                <div class="activity-item">
+                    <div class="activity-icon ${activity.type}">
+                        <i class="fas fa-${activity.type === 'analytics' ? 'chart-bar' : 
+                            activity.type === 'export' ? 'file-export' : 
+                            activity.type === 'peak' ? 'trophy' : 'chart-line'}"></i>
+                    </div>
+                    <div class="activity-content">
+                        <h4>${activity.message}</h4>
+                        <p>${activity.time}</p>
+                    </div>
+                </div>
+            `).join('');
         }
 
-        // Filter Reports
-        document.getElementById('reportType').addEventListener('change', e => {
-            currentFilter = e.target.value;
-            const filtered = currentFilter === 'all' ? analyticsData : 
-                           analyticsData.filter(item => item.type === currentFilter);
+        // Filter handler
+        document.getElementById('reportFilter').addEventListener('change', (e) => {
+            const filtered = e.target.value === 'all' ? analyticsData : 
+                           analyticsData.filter(item => item.type === e.target.value);
             renderTopPerformers(filtered);
         });
 
-        // Download Report Function
-        function downloadReport(type, format) {
-            // Simulate download
-            const link = document.createElement('a');
-            link.href = '#';
-            link.download = `${type}_report_${format.toUpperCase()}_${new Date().toISOString().split('T')[0]}.${format}`;
-            link.textContent = 'Download starting...';
-            
-            alert(`📊 ${type.toUpperCase()} Report (${format.toUpperCase()}) download started!\n\nFile: ${link.download}`);
-            
-            // In real implementation, this would trigger actual file download
-            // You can integrate with jsPDF for PDF or SheetJS for Excel
+        // Export functions
+        function exportReport(type) {
+            const types = {
+                sales: 'Sales Report',
+                revenue: 'Revenue Report'
+            };
+            showToast(`📊 ${types[type] || 'Report'} exported successfully!`);
         }
 
-        // View Details
-        function viewDetails(rank) {
-            alert(`📈 Detailed analytics for rank #${rank}\n\nThis would open a detailed modal with charts, trends, and breakdowns.`);
+        // Toast notification (same as dashboard)
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position:fixed;top:20px;right:20px;background:#d4edda;color:#155724;
+                padding:1rem 2rem;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.1);
+                z-index:3000;transform:translateX(400px);transition:all 0.3s ease;font-weight:500;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.style.transform = 'translateX(0)', 100);
+            setTimeout(() => toast.remove(), 3000);
         }
 
-        // Logout
-        document.getElementById('adminLogout').addEventListener('click', e => {
-            e.preventDefault();
-            localStorage.removeItem('token');
-            window.location.href = '/index.html';
+        // Navbar scroll effect (same as dashboard)
+        window.addEventListener('scroll', () => {
+            const navbar = document.querySelector('.navbar');
+            navbar.style.background = window.scrollY > 50 ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.98)';
         });
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            loadAnalytics();
-            animateStats();
+        // Logout handler (same as dashboard)
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('token');
+                window.location.href = '/index.html';
+            }
+        });
+
+        // 🚀 MAIN INITIALIZATION (same as dashboard)
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('📊 Loading Hulyanas Reports Dashboard...');
+            
+            // Auto-login if no token
+            if (!localStorage.getItem('token')) {
+                try {
+                    const loginRes = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: 'admin', password: 'password' })
+                    }); 
+                    const loginData = await loginRes.json();
+                    localStorage.setItem('token', loginData.token);
+                } catch (e) {
+                    console.log('ℹ️ No auto-login available');
+                }
+            }
+
+            document.body.classList.add('loading');
+            
+            // Load in parallel
+            await Promise.all([
+                loadAnalyticsData(),
+                new Promise(resolve => setTimeout(() => {
+                    renderTopPerformers(analyticsData);
+                    loadActivityFeed();
+                    resolve();
+                }, 500))
+            ]);
+            
+            document.body.classList.remove('loading');
+            console.log('✅ Reports Dashboard loaded! ✨');
         });
     </script>
 </body>
