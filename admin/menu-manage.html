@@ -561,10 +561,9 @@
                     <td>
                         <img 
                             src="${item.image_url || '/images/default-menu.jpg'}" 
-                            alt="${escapeHtml(item.name)}" 
+                            alt="${item.name}" 
                             class="item-image"
                             onerror="this.src='/images/default-menu.jpg'"
-                            loading="lazy"
                         >
                     </td>
                     <td>
@@ -588,39 +587,26 @@
                     </td>
                     <td>
                         <div class="table-actions">
-                            <button class="action-btn action-edit" title="Edit">
+                            <button 
+                                class="action-btn action-edit"
+                                onclick="editItem(${JSON.stringify(item).replace(/"/g, '&quot;')})"
+                                title="Edit"
+                            >
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="action-btn action-delete" title="Delete">
+                            <button 
+                                class="action-btn action-delete"
+                                onclick="confirmDelete(${item.id})"
+                                title="Delete"
+                            >
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
                     </td>
                 </tr>
             `).join('');
-            
-            // Re-attach event listeners after render
-            attachTableEventListeners();
         }
 
-        // Remove inline onclicks from table render
-        // Add this event listener after rendering:
-        document.getElementById('menuTable').addEventListener('click', (e) => {
-            const editBtn = e.target.closest('.action-edit');
-            const deleteBtn = e.target.closest('.action-delete');
-            
-            if (editBtn) {
-                const row = editBtn.closest('tr');
-                const item = menuItems.find(item => item.id == row.dataset.id);
-                if (item) editItem(item);
-            }
-            
-            if (deleteBtn) {
-                const row = deleteBtn.closest('tr');
-                confirmDelete(row.dataset.id);
-            }
-        });
-    
         // Utility function to escape HTML
         function escapeHtml(text) {
             const map = {
@@ -830,7 +816,6 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             loadMenuItems();
-            attachTableEventListeners(); // Add this
         });
     </script>
 </body>
