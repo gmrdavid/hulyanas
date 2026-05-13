@@ -587,12 +587,13 @@
         }
 
         // Animate counters with real database data
+        // FIXED: Correct counter animation with proper percentage updates
         function animateCounters(data) {
             const elements = [
                 { el: 'totalOrders', target: data.total_orders || 0, format: 'number' },
                 { el: 'totalRevenue', target: data.total_revenue || 0, format: 'currency' },
                 { el: 'activeCustomers', target: data.active_customers || 0, format: 'number' },
-                { el: 'avgRating', target: data.avg_order_value || 0, format: 'currency' }
+                { el: 'avgRating', target: data.avg_order_value || 0, format: 'currency' } // This is correct
             ];
 
             elements.forEach(({ el, target, format }) => {
@@ -602,27 +603,27 @@
                 const timer = setInterval(() => {
                     current += increment;
                     if (current >= target) {
-                        if (format === 'currency') {
-                            element.textContent = `₱${Number(target).toLocaleString('en-PH', { 
-                                minimumFractionDigits: 2, maximumFractionDigits: 2 
-                            })}`;
-                        } else {
-                            element.textContent = Math.floor(target).toLocaleString();
-                        }
+                        element.textContent = formatNumber(target, format);
                         clearInterval(timer);
                         return;
                     }
-                    const display = format === 'currency' ? 
-                        `₱${Math.floor(current).toLocaleString()}` : 
-                        Math.floor(current).toLocaleString();
-                    element.textContent = display;
+                    element.textContent = formatNumber(current, format);
                 }, 20);
             });
 
-            // Update change percentages
-            document.getElementById('ordersChange').textContent = `+${data.order_growth || 0}%`;
-            document.getElementById('revenueChange').textContent = `+${data.revenue_growth || 0}%`;
-            document.getElementById('customersChange').textContent = `+${data.customer_growth || 0}%`;
+            // FIXED: Update ALL change percentages IMMEDIATELY (not animated)
+            const changeElements = [
+                { el: 'ordersChange', value: data.order_growth || 0 },
+                { el: 'revenueChange', value: data.revenue_growth || 0 },
+                { el: 'customersChange', value: data.customer_growth || 0 },
+                { el: 'ratingChange', value: data.avg_order_growth || 0 } // Add this if your API returns it
+            ];
+
+            changeElements.forEach(({ el, value }) => {
+                const element = document.getElementById(el);
+                element.textContent = `+${value.toFixed(1)}%`; // Show percentage immediately
+                element.className = `stat-change positive`; // Always positive class
+            });
         }
 
         // Initialize charts with REAL database data
