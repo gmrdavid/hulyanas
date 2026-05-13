@@ -10,18 +10,21 @@ const multer = require('multer');
 const fs = require('fs').promises;
 
 const app = express();
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
-app.options('/api/export/:type', (req, res) => {
+app.use(cors({
+    origin: '*',
+    credentials: true
+}));
+app.options('*', (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     res.sendStatus(200);
 });
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
 app.use('/user', express.static('user'));
 app.use('/admin', express.static('admin'));
@@ -43,7 +46,7 @@ const pool = mysql.createPool({
 });
 
 // JWT Secret
-const JWT_SECRET = 'hulyanas_secret_key_2024_secure_change_this';
+const JWT_SECRET = process.env.JWT_SECRET || 'hulyanas_secret_key_2024_secure_change_this';
 
 // Multer setup
 const storage = multer.diskStorage({
@@ -88,35 +91,148 @@ const isAdmin = (req, res, next) => {
     next();
 };
 
-// ===== CUSTOMER ROUTES =====
+// ===== 🚀 USER DASHBOARD API ENDPOINTS =====
+
+// 🆕 Get user profile by ID (for dashboard welcome message)
+app.get('/api/user/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const conn = await pool.getConnection();
+        
+        const [rows] = await conn.execute(
+            `SELECT id, first_name, last_name, username, email 
+             FROM users WHERE id = ? AND is_active = 1`,
+            [parseInt(id)]
+        );
+        conn.release();
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        const user = rows[0];
+        res.json({
+            id: user.id,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            username: user.username,
+            email: user.email,
+            full_name: `${user.first_name} ${user.last_name}`.trim()
+        });
+    } catch (error) {
+        console.error('🚨 User fetch error:', error);
+        res.status(500).json({ error: 'Failed to fetch user data' });
+    }
+});
+
+// 🆕 Get user statistics (for dashboard stats cards)
+app.get('/api/user/:id/stats', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const conn = await pool.getConnection();
+        
+        const [stats] = await conn.execute(`
+            SELECT 
+                COUNT(*) as totalOrders,
+                COALESCE(SUM(total_amount), 0) as totalSpent,
+                COUNT(CASE WHEN status IN ('pending', 'preparing', 'out_for_delivery') THEN 1 END) as activeOrders,
+                4.8 as avgRating
+            FROM orders 
+            WHERE user_id = ?
+        `, [parseInt(id)]);
+        
+        conn.release();
+        
+        const userStats = stats[0];
+        res.json({
+            totalOrders: parseInt(userStats.totalOrders || 0),
+            totalSpent: parseFloat(userStats.totalSpent || 0),
+            activeOrders: parseInt(userStats.activeOrders || 0),
+            avgRating: parseFloat(userStats.avgRating || 0)
+        });
+        
+    } catch (error) {
+        console.error('🚨 User stats error:', error);
+        res.status(500).json({ error: 'Failed to fetch user stats' });
+    }
+});
+
+// 🆕 Get user recent activity (for activity feed)
+app.get('/api/user/:id/activity', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const conn = await pool.getConnection();
+        
+        const [rows] = await conn.execute(`
+            SELECT al.id, al.type, al.action, al.details, al.created_at,
+                   CASE 
+                       WHEN al.type = 'order' AND JSON_EXTRACT(al.details, '$.order_number') IS NOT NULL 
+                       THEN CONCAT('Order ', JSON_UNQUOTE(JSON_EXTRACT(al.details, '$.order_number')))
+                       ELSE al.action 
+                   END as display_action
+            FROM activity_log al
+            WHERE al.user_id = ? OR al.user_id IS NULL
+            ORDER BY al.created_at DESC 
+            LIMIT 5
+        `, [parseInt(id)]);
+        
+        conn.release();
+        
+        const activities = rows.map(activity => ({
+            id: activity.id,
+            type: activity.type || 'system',
+            action: activity.action,
+            display_action: activity.display_action || activity.action,
+            details: activity.details ? JSON.parse(activity.details) : null,
+            created_at: activity.created_at
+        }));
+        
+        res.json(activities);
+    } catch (error) {
+        console.error('🚨 User activity error:', error);
+        res.status(500).json({ error: 'Failed to fetch activity' });
+    }
+});
+
+// ===== AUTHENTICATION ROUTES =====
 
 // Register
 app.post('/api/register', async (req, res) => {
     try {
         const { username, email, password, first_name, last_name, phone } = req.body;
-        const hashedPassword = await bcrypt.hash(password, 12);
         
+        if (!username || !email || !password) {
+            return res.status(400).json({ error: 'Username, email, and password required' });
+        }
+        
+        const hashedPassword = await bcrypt.hash(password, 12);
         const conn = await pool.getConnection();
+        
         try {
             await conn.beginTransaction();
             const [result] = await conn.execute(
-                `INSERT INTO users (username, email, password_hash, first_name, last_name, phone, role) 
-                 VALUES (?, ?, ?, ?, ?, ?, 'customer')`,
-                [username, email, hashedPassword, first_name, last_name, phone]
+                `INSERT INTO users (username, email, password_hash, first_name, last_name, phone, role, is_active) 
+                 VALUES (?, ?, ?, ?, ?, ?, 'customer', 1)`,
+                [username, email, hashedPassword, first_name || '', last_name || '', phone || null]
             );
             await conn.commit();
-            res.status(201).json({ message: 'Registered successfully' });
+            
+            res.status(201).json({ 
+                message: 'Registered successfully',
+                userId: result.insertId 
+            });
         } catch (err) {
             await conn.rollback();
             if (err.code === 'ER_DUP_ENTRY') {
-                return res.status(400).json({ error: 'Username or email exists' });
+                return res.status(400).json({ error: 'Username or email already exists' });
             }
             throw err;
         } finally {
             conn.release();
         }
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('🚨 Register error:', error);
+        res.status(500).json({ error: 'Registration failed' });
     }
 });
 
@@ -124,33 +240,47 @@ app.post('/api/register', async (req, res) => {
 app.post('/api/login', async (req, res) => {
     try {
         const { username, password } = req.body;
-        const conn = await pool.getConnection();
         
+        if (!username || !password) {
+            return res.status(400).json({ error: 'Username and password required' });
+        }
+        
+        const conn = await pool.getConnection();
         const [rows] = await conn.execute(
-            `SELECT id, username, email, password_hash, role, first_name, last_name 
-             FROM users WHERE username = ? OR email = ?`,
+            `SELECT id, username, email, password_hash, role, first_name, last_name, is_active
+             FROM users WHERE (username = ? OR email = ?) AND is_active = 1`,
             [username, username]
         );
         conn.release();
         
-        if (rows.length === 0) return res.status(401).json({ error: 'Invalid credentials' });
+        if (rows.length === 0) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
         
         const user = rows[0];
         const valid = await bcrypt.compare(password, user.password_hash);
-        if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
+        if (!valid) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
         
-        const token = jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '24h' });
+        const token = jwt.sign(
+            { id: user.id, username: user.username, role: user.role }, 
+            JWT_SECRET, 
+            { expiresIn: '24h' }
+        );
         
         res.json({
             token,
             user: {
                 id: user.id,
                 username: user.username,
+                email: user.email,
                 role: user.role,
-                full_name: `${user.first_name} ${user.last_name}`
+                full_name: `${user.first_name} ${user.last_name}`.trim()
             }
         });
     } catch (error) {
+        console.error('🚨 Login error:', error);
         res.status(500).json({ error: 'Login failed' });
     }
 });
@@ -160,20 +290,29 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
     try {
         const conn = await pool.getConnection();
         const [rows] = await conn.execute(
-            `SELECT id, username, email, first_name, last_name, phone, created_at 
+            `SELECT id, username, email, first_name, last_name, phone, created_at, is_active
              FROM users WHERE id = ?`,
             [req.user.id]
         );
         conn.release();
         
-        if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
         
         const user = rows[0];
         res.json({
-            ...user,
-            full_name: `${user.first_name} ${user.last_name}`
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            phone: user.phone,
+            full_name: `${user.first_name} ${user.last_name}`.trim(),
+            created_at: user.created_at
         });
     } catch (error) {
+        console.error('🚨 Profile error:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -184,14 +323,19 @@ app.put('/api/profile', authenticateToken, async (req, res) => {
         const { first_name, last_name, phone } = req.body;
         const conn = await pool.getConnection();
         
-        await conn.execute(
-            `UPDATE users SET first_name = ?, last_name = ?, phone = ? WHERE id = ?`,
-            [first_name, last_name, phone, req.user.id]
+        const [result] = await conn.execute(
+            `UPDATE users SET first_name = ?, last_name = ?, phone = ?, updated_at = NOW() WHERE id = ?`,
+            [first_name || '', last_name || '', phone || null, req.user.id]
         );
         conn.release();
         
-        res.json({ message: 'Profile updated' });
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        res.json({ message: 'Profile updated successfully' });
     } catch (error) {
+        console.error('🚨 Profile update error:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -211,30 +355,7 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
         conn.release();
         res.json(rows);
     } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// ===== DASHBOARD STATS =====
-app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
-    try {
-        const conn = await pool.getConnection();
-        const [[menuItems], [totalOrders], [revenue], [totalUsers]] = await Promise.all([
-            conn.execute(`SELECT COUNT(*) as count FROM menu_items WHERE is_available = TRUE`),
-            // ✅ FIXED: Only Preparing or Delivered
-            conn.execute(`SELECT COUNT(*) as count FROM orders WHERE LOWER(status) IN ('preparing', 'delivered')`),
-            conn.execute(`SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders WHERE status NOT IN ('cancelled', 'pending')`),
-            conn.execute(`SELECT COUNT(*) as count FROM users WHERE role = 'customer'`)
-        ]);
-        conn.release();
-        
-        res.json({
-            menuItems: parseInt(menuItems[0].count),
-            totalOrders: parseInt(totalOrders[0].count),  // ✅ Now correct!
-            revenue: parseFloat(revenue[0].revenue).toFixed(2),
-            totalUsers: parseInt(totalUsers[0].count)
-        });
-    } catch (error) {
+        console.error('🚨 Orders error:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -250,33 +371,134 @@ app.get('/api/menu', async (req, res) => {
         conn.release();
         res.json(rows);
     } catch (error) {
+        console.error('🚨 Menu error:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// ADD MENU ITEM
-app.post('/api/menu', upload.single('image'), async (req, res) => {
+// ===== ADMIN ROUTES =====
+
+// Admin stats
+app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const conn = await pool.getConnection();
+        const [[menuItems], [totalOrders], [revenue], [totalUsers]] = await Promise.all([
+            conn.execute(`SELECT COUNT(*) as count FROM menu_items WHERE is_available = TRUE`),
+            conn.execute(`SELECT COUNT(*) as count FROM orders WHERE status IN ('preparing', 'delivered')`),
+            conn.execute(`SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders WHERE status NOT IN ('cancelled', 'pending')`),
+            conn.execute(`SELECT COUNT(*) as count FROM users WHERE role = 'customer'`)
+        ]);
+        conn.release();
+        
+        res.json({
+            menuItems: parseInt(menuItems[0].count),
+            totalOrders: parseInt(totalOrders[0].count),
+            revenue: parseFloat(revenue[0].revenue).toFixed(2),
+            totalUsers: parseInt(totalUsers[0].count)
+        });
+    } catch (error) {
+        console.error('🚨 Admin stats error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Admin recent orders
+app.get('/api/admin/recent-orders', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const conn = await pool.getConnection();
+        const [rows] = await conn.execute(`
+            SELECT o.id, o.order_number, CONCAT(u.first_name, ' ', u.last_name) as customer,
+                   o.status, o.total_amount,
+                   CASE WHEN TIMESTAMPDIFF(MINUTE, o.created_at, NOW()) < 60 
+                        THEN CONCAT(TIMESTAMPDIFF(MINUTE, o.created_at, NOW()), ' min ago')
+                        ELSE CONCAT(FLOOR(TIMESTAMPDIFF(HOUR, o.created_at, NOW()) / 60), ' hr ago')
+                   END as time_ago
+            FROM orders o JOIN users u ON o.user_id = u.id 
+            ORDER BY o.created_at DESC LIMIT 10`);
+        conn.release();
+        res.json(rows);
+    } catch (error) {
+        console.error('🚨 Admin recent orders error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Admin orders
+app.get('/api/admin/orders', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const conn = await pool.getConnection();
+        const [rows] = await conn.execute(`
+            SELECT o.*, CONCAT(u.first_name, ' ', u.last_name) AS customer_name, u.phone
+            FROM orders o LEFT JOIN users u ON o.user_id = u.id
+            ORDER BY o.created_at DESC`);
+        conn.release();
+        res.json(rows);
+    } catch (error) {
+        console.error('🚨 Admin orders error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Admin users
+app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const conn = await pool.getConnection();
+        const [rows] = await conn.execute(`
+            SELECT id, username, email, first_name, last_name, phone, role, is_active, created_at
+            FROM users ORDER BY id DESC`);
+        conn.release();
+        res.json(rows);
+    } catch (error) {
+        console.error('🚨 Admin users error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Admin activity
+app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const conn = await pool.getConnection();
+        const [rows] = await conn.execute(`SELECT type, action as message, created_at FROM activity_log ORDER BY created_at DESC LIMIT 10`);
+        conn.release();
+
+        const formatted = rows.map(row => ({
+            type: row.type || 'system',
+            message: row.message,
+            time: formatTimeAgo(row.created_at)
+        }));
+
+        res.json(formatted);
+    } catch (error) {
+        console.error('🚨 Admin activity error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Menu management (Admin only)
+app.post('/api/menu', authenticateToken, isAdmin, upload.single('image'), async (req, res) => {
     try {
         const { name, description, price, category, is_available } = req.body;
-        const image_url = req.file ? `/images/${req.file.filename}` : '';
+        const image_url = req.file ? `/images/${req.file.filename}` : null;
 
         const conn = await pool.getConnection();
-        await conn.execute(
+        const [result] = await conn.execute(
             `INSERT INTO menu_items (name, description, price, category, image_url, is_available)
              VALUES (?, ?, ?, ?, ?, ?)`,
-            [name, description, price, category, image_url, is_available]
+            [name, description, parseFloat(price), category || 'main', image_url, is_available === 'true']
         );
         conn.release();
 
-        res.json({ message: 'Menu item added successfully' });
+        res.status(201).json({ 
+            message: 'Menu item added successfully',
+            id: result.insertId 
+        });
     } catch (error) {
-        console.error(error);
+        console.error('🚨 Add menu error:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// UPDATE MENU ITEM
-app.put('/api/menu/:id', upload.single('image'), async (req, res) => {
+app.put('/api/menu/:id', authenticateToken, isAdmin, upload.single('image'), async (req, res) => {
     try {
         const { id } = req.params;
         const { name, description, price, category, is_available } = req.body;
@@ -290,20 +512,19 @@ app.put('/api/menu/:id', upload.single('image'), async (req, res) => {
         }
 
         await conn.execute(
-            `UPDATE menu_items SET name=?, description=?, price=?, category=?, image_url=?, is_available=? WHERE id=?`,
-            [name, description, price, category, image_url, is_available, id]
+            `UPDATE menu_items SET name=?, description=?, price=?, category=?, image_url=?, is_available=?, updated_at=NOW() WHERE id=?`,
+            [name, description, parseFloat(price), category, image_url, is_available === 'true', id]
         );
         conn.release();
 
         res.json({ message: 'Menu item updated successfully' });
     } catch (error) {
-        console.error(error);
+        console.error('🚨 Update menu error:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// DELETE MENU ITEM
-app.delete('/api/menu/:id', async (req, res) => {
+app.delete('/api/menu/:id', authenticateToken, isAdmin, async (req, res) => {
     let conn;
     try {
         const { id } = req.params;
@@ -319,26 +540,19 @@ app.delete('/api/menu/:id', async (req, res) => {
         if (menuItem.length === 0) {
             await conn.rollback();
             conn.release();
-            console.log(`❌ Menu item ${id} not found`);
             return res.status(404).json({ error: 'Menu item not found' });
         }
         
-        console.log(`✅ Found menu item: ${menuItem[0].name || menuItem[0].id}`);
-        
         const [orderItemsDeleted] = await conn.execute(`DELETE oi FROM order_items oi JOIN orders o ON oi.order_id = o.id WHERE oi.menu_item_id = ?`,[id]);
-        console.log(`🧹 Deleted ${orderItemsDeleted.affectedRows} order items`);
         
         const [result] = await conn.execute(`DELETE FROM menu_items WHERE id = ?`, [id]);
-        
-        console.log(`🎉 Menu item ${id} DELETED - affected rows: ${result.affectedRows}`);
         
         const imagePath = menuItem[0].image_url ? `public${menuItem[0].image_url}` : null;
         if (imagePath && imagePath.startsWith('/images/')) {
             try {
-                await require('fs').promises.unlink(imagePath);
-                console.log(`🗑️ Deleted image: ${imagePath}`);
+                await fs.unlink(imagePath);
             } catch (fileErr) {
-                console.log(`⚠️ Could not delete image ${imagePath}:`, fileErr.message);
+                console.log(`⚠️ Could not delete image ${imagePath}`);
             }
         }
         
@@ -346,13 +560,13 @@ app.delete('/api/menu/:id', async (req, res) => {
         conn.release();
         
         res.json({ 
-            message: 'Menu item permanently deleted from database!',
+            message: 'Menu item permanently deleted!',
             deletedId: id,
             affectedRows: result.affectedRows
         });
         
     } catch (error) {
-        console.error('🚨 DELETE ERROR:', error);
+        console.error('🚨 Delete menu error:', error);
         if (conn) {
             try {
                 await conn.rollback();
@@ -365,37 +579,7 @@ app.delete('/api/menu/:id', async (req, res) => {
     }
 });
 
-// ADMIN ACTIVITY
-app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
-    try {
-        const conn = await pool.getConnection();
-        const [rows] = await conn.execute(`SELECT type, action as message, created_at FROM activity_log ORDER BY created_at DESC LIMIT 10`);
-        conn.release();
-
-        const formatted = rows.map(row => ({
-            type: row.type || 'system',
-            message: row.message,
-            time: formatTimeAgo(row.created_at)
-        }));
-
-        res.json(formatted);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// Helper function
-function formatTimeAgo(date) {
-    const now = new Date();
-    const orderDate = new Date(date);
-    const diff = Math.floor((now - orderDate) / 1000 / 60);
-    if (diff < 1) return 'Just now';
-    if (diff < 60) return `${diff}m ago`;
-    const hours = Math.floor(diff / 60);
-    return `${hours}h ago`;
-}
-
-// GET SINGLE ORDER
+// Admin order management
 app.get('/api/admin/orders/:id', authenticateToken, isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
@@ -408,16 +592,15 @@ app.get('/api/admin/orders/:id', authenticateToken, isAdmin, async (req, res) =>
         if (rows.length === 0) return res.status(404).json({ error: 'Order not found' });
         res.json(rows[0]);
     } catch (error) {
-        console.error('Get order error:', error);
+        console.error('🚨 Get order error:', error);
         res.status(500).json({ error: 'Failed to fetch order' });
     }
 });
 
-// UPDATE ORDER STATUS
 app.put('/api/admin/orders/:id/status', authenticateToken, isAdmin, async (req, res) => {
     try {
         const { status } = req.body;
-        const validStatuses = ['pending', 'preparing', 'delivered', 'cancelled'];
+        const validStatuses = ['pending', 'preparing', 'out_for_delivery', 'delivered', 'cancelled'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({ error: 'Invalid status' });
         }
@@ -435,12 +618,11 @@ app.put('/api/admin/orders/:id/status', authenticateToken, isAdmin, async (req, 
 
         res.json({ success: true, message: `Status updated to ${status}` });
     } catch (error) {
-        console.error('Update order error:', error);
+        console.error('🚨 Update order error:', error);
         res.status(500).json({ error: 'Failed to update order' });
     }
 });
 
-// DELETE ORDER
 app.delete('/api/admin/orders/:id', authenticateToken, isAdmin, async (req, res) => {
     try {
         const conn = await pool.getConnection();
@@ -448,107 +630,30 @@ app.delete('/api/admin/orders/:id', authenticateToken, isAdmin, async (req, res)
         conn.release();
         res.json({ message: 'Order deleted successfully' });
     } catch (error) {
-        console.error(error);
+        console.error('🚨 Delete order error:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// ===== ADMIN ROUTES =====
-app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
-    try {
-        const conn = await pool.getConnection();
-        const [[menuItems], [totalOrders], [revenue], [totalUsers]] = await Promise.all([
-            conn.execute(`SELECT COUNT(*) as count FROM menu_items WHERE is_available = TRUE`),
-            conn.execute(`SELECT COUNT(*) as count FROM orders  WHERE status NOT IN ('cancelled', 'pending')`),
-            conn.execute(`SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders WHERE status NOT IN ('cancelled', 'pending')`),
-            conn.execute(`SELECT COUNT(*) as count FROM users WHERE role = 'customer'`)
-        ]);
-        conn.release();
-        
-        res.json({
-            menuItems: parseInt(menuItems[0].count),
-            totalOrders: parseInt(totalOrders[0].count),
-            revenue: parseFloat(revenue[0].revenue).toFixed(2),
-            totalUsers: parseInt(totalUsers[0].count)
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.get('/api/admin/recent-orders', authenticateToken, isAdmin, async (req, res) => {
-    try {
-        const conn = await pool.getConnection();
-        const [rows] = await conn.execute(`
-            SELECT o.id, o.order_number, CONCAT(u.first_name, ' ', u.last_name) as customer,
-                   o.status, o.total_amount,
-                   CASE WHEN TIMESTAMPDIFF(MINUTE, o.created_at, NOW()) < 60 
-                        THEN CONCAT(TIMESTAMPDIFF(MINUTE, o.created_at, NOW()), ' min ago')
-                        ELSE CONCAT(FLOOR(TIMESTAMPDIFF(HOUR, o.created_at, NOW()) / 60), ' hr ago')
-                   END as time_ago
-            FROM orders o JOIN users u ON o.user_id = u.id 
-            ORDER BY o.created_at DESC LIMIT 10`);
-        conn.release();
-        res.json(rows);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// ADMIN ORDERS API
-app.get('/api/admin/orders', authenticateToken, isAdmin, async (req, res) => {
-    try {
-        const conn = await pool.getConnection();
-        const [rows] = await conn.execute(`
-            SELECT o.*, CONCAT(u.first_name, ' ', u.last_name) AS customer_name, u.phone
-            FROM orders o LEFT JOIN users u ON o.user_id = u.id
-            ORDER BY o.created_at DESC`);
-        conn.release();
-        res.json(rows);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// ADMIN USERS API
-app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
-    try {
-        const conn = await pool.getConnection();
-        const [rows] = await conn.execute(`
-            SELECT id, username, email, first_name, last_name, phone, role, is_active, created_at, updated_at
-            FROM users ORDER BY id DESC`);
-        conn.release();
-        res.json(rows);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
+// Admin users delete
 app.delete('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res) => {
     try {
         const conn = await pool.getConnection();
-        await conn.execute(`DELETE FROM users WHERE id = ?`, [req.params.id]);
+        await conn.execute(`DELETE FROM users WHERE id = ? AND role != 'admin'`, [req.params.id]);
         conn.release();
         res.json({ message: 'User deleted successfully' });
     } catch (error) {
-        console.error(error);
+        console.error('🚨 Delete user error:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-// ===== ANALYTICS & REPORTS API =====
+// Analytics
 app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
     try {
         const { days = 'all', status = 'all' } = req.query;
-
-        // For total orders, revenue, avg value
         let filteredWhereClause = "WHERE o.status NOT IN ('cancelled', 'pending')";
-        
-        // For analytics that should include all statuses
         let normalWhereClause = 'WHERE 1=1';
-
         const params = [];
 
         if (days !== 'all') {
@@ -564,48 +669,15 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
         }
 
         const conn = await pool.getConnection();
-
         const queries = [
-            // Excluding cancelled & pending
-            `SELECT COUNT(*) as total_orders 
-             FROM orders o ${filteredWhereClause}`,
-
-            `SELECT COALESCE(SUM(total_amount), 0) as total_revenue 
-             FROM orders o ${filteredWhereClause}`,
-
-            `SELECT COUNT(DISTINCT user_id) as active_customers 
-             FROM orders o ${filteredWhereClause}`,
-
-            `SELECT COALESCE(AVG(total_amount), 0) as avg_order_value 
-             FROM orders o ${filteredWhereClause}`,
-
-            // Normal analytics with all statuses
-            `SELECT DAYNAME(o.created_at) as day_name, COUNT(*) as order_count 
-             FROM orders o ${normalWhereClause}
-             GROUP BY day_name 
-             ORDER BY FIELD(day_name, 'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')`,
-
-            `SELECT o.status, COALESCE(SUM(o.total_amount), 0) as total_amount 
-             FROM orders o ${normalWhereClause}
-             GROUP BY o.status 
-             ORDER BY total_amount DESC`,
-
-            `SELECT mi.name, SUM(oi.quantity) as quantity 
-             FROM order_items oi
-             JOIN menu_items mi ON oi.menu_item_id = mi.id 
-             JOIN orders o ON oi.order_id = o.id 
-             ${normalWhereClause}
-             GROUP BY oi.menu_item_id, mi.name 
-             ORDER BY quantity DESC 
-             LIMIT 5`,
-
-            `SELECT u.username, COUNT(o.id) as order_count 
-             FROM orders o 
-             JOIN users u ON o.user_id = u.id 
-             ${normalWhereClause}
-             GROUP BY o.user_id, u.username 
-             ORDER BY order_count DESC 
-             LIMIT 5`
+            `SELECT COUNT(*) as total_orders FROM orders o ${filteredWhereClause}`,
+            `SELECT COALESCE(SUM(total_amount), 0) as total_revenue FROM orders o ${filteredWhereClause}`,
+            `SELECT COUNT(DISTINCT user_id) as active_customers FROM orders o ${filteredWhereClause}`,
+            `SELECT COALESCE(AVG(total_amount), 0) as avg_order_value FROM orders o ${filteredWhereClause}`,
+            `SELECT DAYNAME(o.created_at) as day_name, COUNT(*) as order_count FROM orders o ${normalWhereClause} GROUP BY day_name ORDER BY FIELD(day_name, 'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')`,
+            `SELECT o.status, COALESCE(SUM(o.total_amount), 0) as total_amount FROM orders o ${normalWhereClause} GROUP BY o.status ORDER BY total_amount DESC`,
+            `SELECT mi.name, SUM(oi.quantity) as quantity FROM order_items oi JOIN menu_items mi ON oi.menu_item_id = mi.id JOIN orders o ON oi.order_id = o.id ${normalWhereClause} GROUP BY oi.menu_item_id, mi.name ORDER BY quantity DESC LIMIT 5`,
+            `SELECT u.username, COUNT(o.id) as order_count FROM orders o JOIN users u ON o.user_id = u.id ${normalWhereClause} GROUP BY o.user_id, u.username ORDER BY order_count DESC LIMIT 5`
         ];
 
         const results = await Promise.all(queries.map(q => conn.execute(q, params)));
@@ -619,82 +691,53 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
             order_trends: results[4][0],
             revenue_by_status: results[5][0],
             top_products: results[6][0],
-            customer_orders: results[7][0],
-            order_growth: 15,
-            revenue_growth: 28,
-            customer_growth: 12,
-            peak_day: results[4][0][0]?.day_name || 'Wednesday',
-            top_status: results[5][0][0]?.status || 'delivered',
-            delivered_revenue: parseFloat(results[5][0].find(r => r.status === 'delivered')?.total_amount || 0),
-            top_product_name: results[6][0][0]?.name || 'Tiramisu Cake',
-            total_items_sold: results[6][0].reduce((sum, r) => sum + parseInt(r.quantity), 0),
-            top_customer: results[7][0][0]?.username || 'johndoe',
-            repeat_customers: results[7][0].filter(c => c.order_count > 1).length
+            customer_orders: results[7][0]
         });
     } catch (error) {
-        console.error('🚨 ANALYTICS ERROR:', error);
-        res.status(500).json({ error: 'Analytics failed', details: error.message });
+        console.error('🚨 Analytics error:', error);
+        res.status(500).json({ error: 'Analytics failed' });
     }
 });
 
-// 🔥 SIMPLIFIED EXPORT ROUTES - Only Orders Excel & Sales CSV
+// Export routes
 app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
     let conn;
-    
     try {
         const { type } = req.params;
-        console.log(`📄 EXPORT STARTED: ${type.toUpperCase()}`);
-
         conn = await pool.getConnection();
 
         if (type === 'orders') {
-            console.log('📋 [ORDERS] Generating CSV...');
-            
             const [rows] = await conn.execute(`
-                SELECT 
-                    o.id, o.order_number, o.status, o.payment_method,
-                    CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as customer,
-                    u.phone, o.total_amount,
-                    DATE_FORMAT(o.created_at, '%Y-%m-%d %H:%i:%s') as order_date,
-                    DATE_FORMAT(o.updated_at, '%Y-%m-%d %H:%i:%s') as updated_date
-                FROM orders o 
-                LEFT JOIN users u ON o.user_id = u.id 
-                ORDER BY o.created_at DESC 
-                LIMIT 2000`);
+                SELECT o.id, o.order_number, o.status, o.payment_method,
+                       CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as customer,
+                       u.phone, o.total_amount, DATE_FORMAT(o.created_at, '%Y-%m-%d %H:%i') as order_date
+                FROM orders o LEFT JOIN users u ON o.user_id = u.id ORDER BY o.created_at DESC`);
 
-            const csvHeader = ['ID', 'Order #', 'Customer', 'Phone', 'Status', 'Payment', 'Total', 'Created', 'Updated'];
+            const csvHeader = ['ID', 'Order #', 'Customer', 'Phone', 'Status', 'Payment', 'Total', 'Date'];
             const csvRows = rows.map(row => [
-                row.id,
+                row.id || '',
                 row.order_number || '',
                 `"${(row.customer || 'Walk-in').trim().replace(/"/g, '""')}"`,
                 row.phone || '',
                 row.status || '',
                 row.payment_method || '',
                 parseFloat(row.total_amount || 0).toFixed(2),
-                row.order_date || '',
-                row.updated_date || ''
+                row.order_date || ''
             ]);
 
             const csvContent = [csvHeader, ...csvRows].map(row => row.join(',')).join('\r\n');
             
             res.set({
                 'Content-Type': 'text/csv; charset=utf-8',
-                'Content-Disposition': `attachment; filename="Hulyanas-Orders-${new Date().toISOString().split('T')[0]}.csv"`,
-                'Content-Length': Buffer.byteLength(csvContent, 'utf8').toString(),
-                'Access-Control-Allow-Origin': '*'
+                'Content-Disposition': `attachment; filename="Hulyanas-Orders-${new Date().toISOString().split('T')[0]}.csv"`
             });
-            
-            console.log(`✅ [ORDERS] CSV SUCCESS! Rows: ${rows.length}`);
             return res.status(200).send(csvContent);
 
         } else if (type === 'sales') {
-            console.log('💰 [SALES] Generating CSV...');
-            
             const [rows] = await conn.execute(`
                 SELECT DATE_FORMAT(o.created_at, '%Y-%m-%d') as sale_date,
                        o.order_number, o.status, ROUND(o.total_amount, 2) as order_total
-                FROM orders o WHERE o.status IN ('delivered', 'preparing')
-                ORDER BY o.created_at DESC`);
+                FROM orders o WHERE o.status IN ('delivered', 'preparing') ORDER BY o.created_at DESC`);
 
             const csvHeader = ['Date', 'Order #', 'Status', 'Total'];
             const csvRows = rows.map(row => [
@@ -705,64 +748,93 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
             ]);
 
             const csvContent = [csvHeader, ...csvRows].map(row => row.join(',')).join('\r\n');
-            const csvBuffer = Buffer.from(csvContent, 'utf8');
-
+            
             res.set({
                 'Content-Type': 'text/csv; charset=utf-8',
-                'Content-Disposition': `attachment; filename="Hulyanas-Sales-${new Date().toISOString().split('T')[0]}.csv"`,
-                'Content-Length': csvBuffer.length.toString(),
-                'Access-Control-Allow-Origin': '*'
+                'Content-Disposition': `attachment; filename="Hulyanas-Sales-${new Date().toISOString().split('T')[0]}.csv"`
             });
-
-            console.log(`✅ [SALES] CSV SUCCESS! Rows: ${rows.length}`);
-            return res.status(200).send(csvBuffer);
+            return res.status(200).send(csvContent);
 
         } else {
             return res.status(400).json({ error: 'Invalid type. Use: orders, sales' });
         }
 
     } catch (error) {
-        console.error('Export error:', error);
-        res.status(500).json({ error: 'Export failed', details: error.message });
+        console.error('🚨 Export error:', error);
+        res.status(500).json({ error: 'Export failed' });
     } finally {
         if (conn) conn.release();
     }
 });
+
+// Helper function
+function formatTimeAgo(date) {
+    const now = new Date();
+    const orderDate = new Date(date);
+    const diff = Math.floor((now - orderDate) / 1000 / 60);
+    if (diff < 1) return 'Just now';
+    if (diff < 60) return `${diff}m ago`;
+    const hours = Math.floor(diff / 60);
+    return `${hours}h ago`;
+}
 
 // Health check
 app.get('/api/health', async (req, res) => {
     try {
         const conn = await pool.getConnection();
         conn.release();
-        res.json({ status: 'OK', timestamp: new Date().toISOString() });
+        res.json({ 
+            status: 'OK ✅', 
+            timestamp: new Date().toISOString(),
+            database: 'Connected ✅',
+            endpoints: {
+                user: ['GET /api/user/:id', 'GET /api/user/:id/stats', 'GET /api/user/:id/activity'],
+                auth: ['POST /api/login', 'POST /api/register', 'GET /api/profile'],
+                admin: ['GET /api/admin/stats', 'GET /api/admin/orders']
+            }
+        });
     } catch (error) {
-        res.status(500).json({ status: 'DB_ERROR', error: error.message });
+        console.error('🚨 Health check failed:', error);
+        res.status(500).json({ status: 'DB_ERROR ❌', error: error.message });
     }
 });
 
 // 404 handler
 app.use('*', (req, res) => {
-    res.status(404).json({ error: 'Route not found' });
+    res.status(404).json({ error: `Route ${req.originalUrl} not found` });
 });
 
 // Global error handler
 app.use((error, req, res, next) => {
-    console.error('Global error:', error);
+    console.error('🚨 Global error:', error);
     res.status(500).json({ error: 'Internal server error' });
 });
 
 // Start Server
 const server = app.listen(PORT, () => {
-    console.log(`🚀 Hulyanas Hill Server running on port ${PORT}`);
-    console.log(`📱 Customer: http://localhost:${PORT}`);
-    console.log(`👑 Admin: http://localhost:${PORT}/admin`);
-    console.log(`🩺 Health: http://localhost:${PORT}/api/health`);
+    console.log('\n🚀 Hulyanas Hill Server v2.0 - LIVE!');
+    console.log(`📍 Port: ${PORT}`);
+    console.log(`📱 Customer Dashboard: http://localhost:${PORT}/user/dashboard.html`);
+    console.log(`👑 Admin Dashboard: http://localhost:${PORT}/admin/dashboard.html`);
+    console.log(`🩺 Health Check: http://localhost:${PORT}/api/health`);
+    console.log('\n🆕 NEW USER DASHBOARD APIs:');
+    console.log(`   👤 GET  http://localhost:${PORT}/api/user/2`);
+    console.log(`   📊 GET  http://localhost:${PORT}/api/user/2/stats`);
+    console.log(`   📋 GET  http://localhost:${PORT}/api/user/2/activity`);
+    console.log('\n✅ Server ready! Database connected.');
 });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-    console.log('SIGTERM received, shutting down gracefully');
+    console.log('\n🛑 SIGTERM received, shutting down gracefully...');
     server.close(() => {
-        console.log('Process terminated');
+        console.log('✅ Server terminated');
+    });
+});
+
+process.on('SIGINT', () => {
+    console.log('\n🛑 SIGINT received, shutting down gracefully...');
+    server.close(() => {
+        console.log('✅ Server terminated');
     });
 });
