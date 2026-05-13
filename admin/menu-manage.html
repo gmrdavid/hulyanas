@@ -455,6 +455,25 @@
     </nav>
 
     <div class="admin-content">
+        <!-- Add this right after <div class="content-header"> -->
+            <div style="margin-bottom:2rem;">
+                <div style="background:#fff;padding:1.5rem;border-radius:16px;border:1px solid #e5e5e5;">
+                    <div style="display:flex;gap:1rem;max-width:500px;margin:0 auto;flex-wrap:wrap;">
+                        <input type="text" id="searchInput" placeholder="🔍 Search menu items..." 
+                            style="flex:1;padding:1rem 1.25rem;border:1px solid #e0e0e0;border-radius:12px;font-size:1rem;">
+                        <select id="categoryFilter" style="padding:1rem 1.25rem;border:1px solid #e0e0e0;border-radius:12px;">
+                            <option value="">All Categories</option>
+                            <option value="drinks">Drinks</option>
+                            <option value="pizza">Pizza</option>
+                            <option value="pasta">Pasta</option>
+                            <option value="fries">Fries</option>
+                        </select>
+                        <button onclick="filterMenuItems()" class="btn" style="padding:1rem 2rem;">
+                            <i class="fas fa-search"></i> Filter
+                        </button>
+                    </div>
+                </div>
+            </div>
         <div class="content-header">
             <h1>Menu Management</h1>
             <button class="btn btn-primary" onclick="showAddModal()">
@@ -847,6 +866,27 @@
                 window.location.href = 'login.html';
             }
         });
+
+        let filteredItems = [];
+
+        function filterMenuItems() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const category = document.getElementById('categoryFilter').value;
+            
+            filteredItems = menuItems.filter(item => {
+                const matchesSearch = !search || 
+                    item.name.toLowerCase().includes(search) || 
+                    (item.description || '').toLowerCase().includes(search);
+                const matchesCategory = !category || item.category === category;
+                return matchesSearch && matchesCategory;
+            });
+            
+            renderMenuTable(filteredItems);
+        }
+
+        // Real-time search
+        document.getElementById('searchInput').addEventListener('input', filterMenuItems);
+        document.getElementById('categoryFilter').addEventListener('change', filterMenuItems);
     </script>
 </body>
 </html>
