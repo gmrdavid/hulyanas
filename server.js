@@ -224,18 +224,7 @@ app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
             // ✅ FIXED: Only Preparing or Delivered
             conn.execute(`SELECT COUNT(*) as count FROM orders WHERE LOWER(status) IN ('preparing', 'delivered')`),
             conn.execute(`SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders WHERE status NOT IN ('cancelled', 'pending')`),
-            conn.execute(`SELECT COUNT(*) as count FROM users WHERE role = 'customer'`),
-
-            conn.execute(`
-        SELECT 
-            SUM(CASE WHEN LOWER(status) = 'delivered' THEN 1 ELSE 0 END) as delivered_today,
-            SUM(CASE WHEN LOWER(status) = 'pending' THEN 1 ELSE 0 END) as pending_today,
-            COUNT(*) as total_today
-        FROM orders 
-        WHERE DATE(created_at) = CURDATE()
-    `),
-    
-    conn.execute(`SELECT COALESCE(SUM(total_amount), 0) as revenue_today FROM orders WHERE DATE(created_at) = CURDATE() AND status IN ('delivered', 'preparing')`)
+            conn.execute(`SELECT COUNT(*) as count FROM users WHERE role = 'customer'`)
         ]);
         conn.release();
         
