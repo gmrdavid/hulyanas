@@ -123,30 +123,6 @@
             color: #1a1a1a;
         }
 
-        .search-filter {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .search-input {
-            padding: 1rem 1.5rem;
-            border: 1px solid #e0e0e0;
-            border-radius: 16px;
-            font-size: 1rem;
-            background: #fff;
-            width: 300px;
-        }
-
-        .filter-select {
-            padding: 1rem 1.5rem;
-            border: 1px solid #e0e0e0;
-            border-radius: 16px;
-            font-size: 1rem;
-            background: #fff;
-        }
-
         .btn {
             padding: 1rem 2rem;
             border: none;
@@ -185,48 +161,19 @@
         }
 
         .btn-danger {
-            background: #dc3545;
-            color: #fff;
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
         }
 
         .btn-danger:hover {
-            background: #c82333;
+            background: #f5c2c5;
         }
 
         .btn-success {
-            background: #28a745;
-            color: #fff;
-        }
-
-        .btn-success:hover {
-            background: #218838;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .stat-card {
-            background: #fff;
-            padding: 1.5rem;
-            border-radius: 16px;
-            border: 1px solid #e5e5e5;
-            text-align: center;
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #1a1a1a;
-        }
-
-        .stat-label {
-            color: #666;
-            font-size: 0.9rem;
-            margin-top: 0.25rem;
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
         }
 
         .table-container {
@@ -289,18 +236,6 @@
             font-feature-settings: 'tnum' 1;
         }
 
-        .stock-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 12px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .stock-low { background: #fff3cd; color: #856404; }
-        .stock-medium { background: #d1ecf1; color: #0c5460; }
-        .stock-high { background: #d4edda; color: #155724; }
-        .stock-out { background: #f8d7da; color: #721c24; }
-
         .item-status {
             padding: 0.5rem 1.25rem;
             border-radius: 20px;
@@ -328,24 +263,36 @@
         }
 
         .action-btn {
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1rem;
+            font-size: 0.9rem;
             transition: all 0.2s ease;
-            border: none;
-            cursor: pointer;
         }
 
-        .action-edit { background: #007bff; color: #fff; }
-        .action-edit:hover { background: #0056b3; transform: scale(1.05); }
-        .action-delete { background: #dc3545; color: #fff; }
-        .action-delete:hover { background: #c82333; transform: scale(1.05); }
-        .action-toggle { background: #28a745; color: #fff; }
-        .action-toggle:hover { background: #218838; transform: scale(1.05); }
+        .action-edit {
+            background: #1a1a1a;
+            color: #fff;
+        }
+
+        .action-edit:hover {
+            background: #000;
+            transform: scale(1.1);
+        }
+
+        .action-delete {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .action-delete:hover {
+            background: #f5c2c5;
+            transform: scale(1.1);
+        }
 
         /* Modal Styles */
         .modal {
@@ -362,15 +309,15 @@
 
         .modal-content {
             background: #fff;
-            margin: 2% auto;
-            padding: 3rem;
+            margin: 5% auto;
+            padding: 3.5rem;
             border-radius: 24px;
             width: 90%;
-            max-width: 800px;
+            max-width: 600px;
             max-height: 90vh;
             overflow-y: auto;
             position: relative;
-            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.25);
             border: 1px solid #e5e5e5;
         }
 
@@ -398,25 +345,15 @@
         }
 
         .modal h2 {
-            font-size: 2rem;
+            font-size: 1.75rem;
             font-weight: 700;
             color: #1a1a1a;
-            margin-bottom: 2rem;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
+            text-align: center;
         }
 
         .form-group {
             margin-bottom: 2rem;
-        }
-
-        .form-group.full-width {
-            grid-column: 1 / -1;
         }
 
         .form-group label {
@@ -448,43 +385,26 @@
             box-shadow: 0 0 0 4px rgba(26, 26, 26, 0.08);
         }
 
-        .image-upload {
-            border: 2px dashed #e0e0e0;
-            border-radius: 16px;
-            padding: 2rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: #fafafa;
-        }
-
-        .image-upload:hover {
-            border-color: #1a1a1a;
-            background: #f0f0f0;
-        }
-
-        .image-upload.dragover {
-            border-color: #007bff;
-            background: #e7f3ff;
-        }
-
-        .image-preview {
-            width: 100%;
-            max-width: 200px;
-            height: 200px;
-            border-radius: 16px;
-            object-fit: cover;
-            border: 2px solid #e0e0e0;
-            margin-top: 1rem;
-            display: none;
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
         }
 
         .form-actions {
             display: flex;
-            gap: 1rem;
-            justify-content: flex-end;
-            padding-top: 2rem;
-            border-top: 1px solid #e5e5e5;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .image-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 16px;
+            object-fit: cover;
+            border: 2px dashed #e0e0e0;
+            margin-top: 1rem;
+            display: block;
         }
 
         @media (max-width: 768px) {
@@ -499,21 +419,16 @@
                 text-align: center;
             }
 
-            .form-grid {
+            .form-row {
                 grid-template-columns: 1fr;
+            }
+
+            .form-actions {
+                flex-direction: column;
             }
 
             .table-actions {
                 flex-direction: column;
-            }
-
-            .search-filter {
-                width: 100%;
-                justify-content: center;
-            }
-
-            .search-input {
-                width: 100%;
             }
         }
     </style>
@@ -538,36 +453,10 @@
     <div class="admin-content">
         <div class="content-header">
             <h1>Menu Management</h1>
-            <div class="search-filter">
-                <input type="text" class="search-input" id="searchInput" placeholder="Search products...">
-                <select class="filter-select" id="categoryFilter">
-                    <option value="">All Categories</option>
-                    <option value="drinks">Drinks</option>
-                    <option value="pizza">Pizza</option>
-                    <option value="pfc">Pasta, Fries, and Chips</option>
-                    <option value="bfast">All Day Breakfast</option>
-                    <option value="meal">Meals</option>
-                </select>
-                <button class="btn btn-primary" onclick="showAddModal()">
-                    <i class="fas fa-plus"></i>
-                    Add New Product
-                </button>
-            </div>
-        </div>
-
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number" id="totalProducts">0</div>
-                <div class="stat-label">Total Products</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="availableProducts">0</div>
-                <div class="stat-label">Available</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="lowStock">0</div>
-                <div class="stat-label">Low Stock</div>
-            </div>
+            <button class="btn btn-primary" onclick="showAddModal()">
+                <i class="fas fa-plus"></i>
+                Add New Item
+            </button>
         </div>
 
         <div class="table-container">
@@ -578,7 +467,6 @@
                         <th>Name</th>
                         <th>Category</th>
                         <th>Price</th>
-                        <th>Stock</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -590,24 +478,24 @@
         </div>
     </div>
 
-    <!-- Add/Edit Product Modal -->
+    <!-- Add/Edit Modal -->
     <div id="menuModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="hideMenuModal()">&times;</span>
-            <h2 id="modalTitle">Add New Product</h2>
-            <form id="menuForm" enctype="multipart/form-data">
-                <div class="form-grid">
+            <h2 id="modalTitle">Add New Menu Item</h2>
+            <form id="menuForm">
+                <div class="form-group">
+                    <label>Name *</label>
+                    <input type="text" id="itemName" placeholder="e.g. Margherita Pizza" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="itemDescription" rows="3" placeholder="Delicious description of your menu item..."></textarea>
+                </div>
+                <div class="form-row">
                     <div class="form-group">
-                        <label>Product Name *</label>
-                        <input type="text" id="itemName" placeholder="e.g. Margherita Pizza" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Price (₱) *</label>
-                        <input type="number" id="itemPrice" step="0.01" min="0" placeholder="0.00" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Stock Quantity *</label>
-                        <input type="number" id="itemStock" min="0" placeholder="0" required>
+                        <label>Price *</label>
+                        <input type="number" id="itemPrice" step="0.01" placeholder="0.00" required>
                     </div>
                     <div class="form-group">
                         <label>Category *</label>
@@ -620,370 +508,286 @@
                         </select>
                     </div>
                 </div>
-                <div class="form-group full-width">
-                    <label>Description</label>
-                    <textarea id="itemDescription" rows="4" placeholder="Detailed product description..."></textarea>
-                </div>
-                <div class="form-group full-width">
-                    <label>Product Image</label>
-                    <div class="image-upload" id="imageUpload">
-                        <i class="fas fa-cloud-upload-alt" style="font-size: 2.5rem; color: #999; margin-bottom: 1rem;"></i>
-                        <p><strong>Click to upload</strong> or drag and drop</p>
-                        <p style="color: #666; font-size: 0.9rem;">PNG, JPG up to 5MB</p>
-                        <input type="file" id="itemImage" accept="image/*" style="display: none;">
-                    </div>
-                    <img id="imagePreview" class="image-preview" alt="Preview">
+                <div class="form-group">
+                    <label>Image</label>
+                    <input type="file" id="itemImage" accept="image/*">
+                    <img id="imagePreview" class="image-preview" style="display: none;">
                 </div>
                 <div class="form-group">
-                    <label>Availability</label>
+                    <label>Status</label>
                     <select id="itemStatus">
-                        <option value="1">Available</option>
-                        <option value="0">Unavailable</option>
+                        <option value="available">Available</option>
+                        <option value="unavailable">Unavailable</option>
                     </select>
                 </div>
                 <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Item</button>
                     <button type="button" class="btn btn-secondary" onclick="hideMenuModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i>
-                        Save Product
-                    </button>
                 </div>
             </form>
         </div>
     </div>
 
     <script>
-    let menuItems = [];
     let currentEditId = null;
-    let filteredItems = [];
 
     // Load menu items from database
     async function loadMenuItems() {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('/api/admin/menu', {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
-            
-            if (!response.ok) throw new Error('Failed to load menu items');
-            
-            menuItems = await response.json();
-            filteredItems = [...menuItems];
-            renderMenuTable(filteredItems);
-            updateStats();
+            const response = await fetch('/api/menu');
+            const menuItems = await response.json();
+
+            renderMenuTable(menuItems);
+
         } catch (error) {
             console.error('Error loading menu items:', error);
-            alert('Failed to load menu items');
         }
     }
 
-    // Render table with filtering
-    function renderMenuTable(items) {
+    // Render table
+    function renderMenuTable(menuItems) {
         const tbody = document.getElementById('menuItems');
-        tbody.innerHTML = items.map(item => {
-            const stock = parseInt(item.stock_quantity);
-            let stockClass = 'stock-high';
-            let stockLabel = `${stock} in stock`;
-            
-            if (stock === 0) {
-                stockClass = 'stock-out';
-                stockLabel = 'Out of stock';
-            } else if (stock <= 5) {
-                stockClass = 'stock-low';
-                stockLabel = `Low stock (${stock})`;
-            } else if (stock <= 20) {
-                stockClass = 'stock-medium';
-                stockLabel = `${stock} in stock`;
-            }
 
-            return `
-                <tr>
-                    <td>
-                        <img src="${item.image_url || '/placeholder.jpg'}" 
-                             alt="${item.name}" 
-                             class="item-image"
-                             onerror="this.src='/placeholder.jpg'">
-                    </td>
-                    <td>
-                        <div class="item-name">${item.name}</div>
-                        <div style="font-size: 0.9rem; color: #666; margin-top: 0.25rem;">
-                            ${item.description ? item.description.substring(0, 50) + (item.description.length > 50 ? '...' : '') : 'No description'}
-                        </div>
-                    </td>
-                    <td style="font-weight: 500; text-transform: capitalize;">
-                        ${item.category.replace('_', ' ')}
-                    </td>
-                    <td>
-                        <span class="item-price">₱${parseFloat(item.price).toFixed(2)}</span>
-                    </td>
-                    <td>
-                        <span class="stock-badge ${stockClass}">${stockLabel}</span>
-                    </td>
-                    <td>
-                        <span class="item-status ${item.is_available == 1 ? 'status-available' : 'status-unavailable'}">
-                            ${item.is_available == 1 ? 'Available' : 'Unavailable'}
-                        </span>
-                    </td>
-                    <td>
-                        <div class="table-actions">
-                            <button class="action-btn action-edit" onclick="editItem(${item.id})" title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="action-btn action-toggle" onclick="toggleAvailability(${item.id}, ${item.is_available})" title="${item.is_available == 1 ? 'Mark Unavailable' : 'Mark Available'}">
-                                <i class="fas fa-toggle-${item.is_available == 1 ? 'on' : 'off'}"></i>
-                            </button>
-                            <button class="action-btn action-delete" onclick="deleteItem(${item.id})" title="Delete">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `;
-        }).join('');
+        tbody.innerHTML = menuItems.map(item => `
+            <tr>
+                <td>
+                    <img 
+                        src="${item.image_url}" 
+                        alt="${item.name}" 
+                        class="item-image"
+                    >
+                </td>
 
-        if (items.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="7" style="text-align: center; padding: 4rem; color: #666;">
-                        <i class="fas fa-utensils" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;"></i>
-                        <p>No products found</p>
-                    </td>
-                </tr>
-            `;
-        }
-    }
+                <td>
+                    <div class="item-name">${item.name}</div>
 
-    // Update stats
-    function updateStats() {
-        const total = menuItems.length;
-        const available = menuItems.filter(item => item.is_available == 1).length;
-        const lowStock = menuItems.filter(item => parseInt(item.stock_quantity) <= 5 && parseInt(item.stock_quantity) > 0).length;
+                    <div style="font-size: 0.9rem; color: #666; margin-top: 0.25rem;">
+                        ${item.description
+                            ? item.description.substring(0, 50)
+                            : ''
+                        }
+                        ${item.description && item.description.length > 50 ? '...' : ''}
+                    </div>
+                </td>
 
-        document.getElementById('totalProducts').textContent = total;
-        document.getElementById('availableProducts').textContent = available;
-        document.getElementById('lowStock').textContent = lowStock;
+                <td style="font-weight: 500; color: #1a1a1a;">
+                    ${item.category}
+                </td>
+
+                <td>
+                    <span class="item-price">
+                        ₱${parseFloat(item.price).toFixed(2)}
+                    </span>
+                </td>
+
+                <td>
+                    <span class="item-status ${
+                        item.is_available == 1
+                            ? 'status-available'
+                            : 'status-unavailable'
+                    }">
+                        ${item.is_available == 1
+                            ? 'Available'
+                            : 'Unavailable'
+                        }
+                    </span>
+                </td>
+
+                <td>
+                    <div class="table-actions">
+
+                        <button 
+                            class="action-btn action-edit"
+                            onclick='editItem(${JSON.stringify(item)})'
+                            title="Edit"
+                        >
+                            <i class="fas fa-edit"></i>
+                        </button>
+
+                        <button 
+                            class="action-btn action-delete"
+                            onclick="deleteItem(${item.id})"
+                            title="Delete"
+                        >
+                            <i class="fas fa-trash"></i>
+                        </button>
+
+                    </div>
+                </td>
+            </tr>
+        `).join('');
     }
 
     // Show add modal
     function showAddModal() {
         currentEditId = null;
-        document.getElementById('modalTitle').textContent = 'Add New Product';
+
+        document.getElementById('modalTitle').textContent = 'Add New Menu Item';
+
         document.getElementById('menuForm').reset();
+
         document.getElementById('imagePreview').style.display = 'none';
-        document.getElementById('imageUpload').classList.remove('dragover');
+
         document.getElementById('menuModal').style.display = 'block';
-        document.getElementById('itemStatus').value = '1';
     }
 
     // Hide modal
     function hideMenuModal() {
         document.getElementById('menuModal').style.display = 'none';
+
         document.getElementById('menuForm').reset();
+
         document.getElementById('imagePreview').style.display = 'none';
-        document.getElementById('imageUpload').classList.remove('dragover');
     }
 
     // Edit item
-    async function editItem(id) {
-        const item = menuItems.find(item => item.id == id);
-        if (!item) return;
+    function editItem(item) {
+        currentEditId = item.id;
 
-        currentEditId = id;
-        document.getElementById('modalTitle').textContent = 'Edit Product';
-        
+        document.getElementById('modalTitle').textContent = 'Edit Menu Item';
+
         document.getElementById('itemName').value = item.name;
         document.getElementById('itemDescription').value = item.description || '';
         document.getElementById('itemPrice').value = item.price;
-        document.getElementById('itemStock').value = item.stock_quantity;
         document.getElementById('itemCategory').value = item.category;
-        document.getElementById('itemStatus').value = item.is_available;
 
-        // Show current image
+        document.getElementById('itemStatus').value =
+            item.is_available == 1
+                ? 'available'
+                : 'unavailable';
+
+        // Preview current image
         const preview = document.getElementById('imagePreview');
-        if (item.image_url) {
-            preview.src = item.image_url;
-            preview.style.display = 'block';
-        } else {
-            preview.style.display = 'none';
-        }
+
+        preview.src = item.image_url;
+        preview.style.display = 'block';
 
         document.getElementById('menuModal').style.display = 'block';
     }
 
-    // Toggle availability quick action
-    async function toggleAvailability(id, currentStatus) {
-        if (!confirm(`Mark this product as ${currentStatus == 1 ? 'Unavailable' : 'Available'}?`)) return;
-
-        try {
-            const token = localStorage.getItem('token');
-            const newStatus = currentStatus == 1 ? 0 : 1;
-            
-            const response = await fetch(`/api/admin/menu/${id}/toggle`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify({ is_available: newStatus })
-            });
-
-            if (response.ok) {
-                loadMenuItems();
-                alert('Status updated successfully!');
-            } else {
-                alert('Failed to update status');
-            }
-        } catch (error) {
-            console.error('Toggle error:', error);
-            alert('Error updating status');
-        }
-    }
-
     // Delete item
     async function deleteItem(id) {
-        if (!confirm('Are you sure you want to delete this product? This action cannot be undone.')) return;
+        const confirmDelete = confirm(
+            'Are you sure you want to delete this menu item?'
+        );
+
+        if (!confirmDelete) return;
 
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`/api/admin/menu/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
+            const response = await fetch(`/api/menu/${id}`, {
+                method: 'DELETE'
             });
 
+            const result = await response.json();
+
             if (response.ok) {
+                alert(result.message || 'Menu item deleted');
+
                 loadMenuItems();
-                alert('Product deleted successfully!');
             } else {
-                const result = await response.json();
-                alert(result.error || 'Failed to delete product');
+                alert(result.message || 'Delete failed');
             }
+
         } catch (error) {
             console.error('Delete error:', error);
-            alert('Error deleting product');
         }
     }
 
-    // Form submission
+    // Save item (Add / Update)
     document.getElementById('menuForm').addEventListener('submit', async (e) => {
         e.preventDefault();
 
         try {
-            const token = localStorage.getItem('token');
             const formData = new FormData();
-            
-            formData.append('name', document.getElementById('itemName').value);
-            formData.append('description', document.getElementById('itemDescription').value);
-            formData.append('price', parseFloat(document.getElementById('itemPrice').value));
-            formData.append('stock_quantity', parseInt(document.getElementById('itemStock').value));
-            formData.append('category', document.getElementById('itemCategory').value);
-            formData.append('is_available', parseInt(document.getElementById('itemStatus').value));
 
-            const imageFile = document.getElementById('itemImage').files[0];
+            formData.append(
+                'name',
+                document.getElementById('itemName').value
+            );
+
+            formData.append(
+                'description',
+                document.getElementById('itemDescription').value
+            );
+
+            formData.append(
+                'price',
+                document.getElementById('itemPrice').value
+            );
+
+            formData.append(
+                'category',
+                document.getElementById('itemCategory').value
+            );
+
+            formData.append(
+                'is_available',
+                document.getElementById('itemStatus').value === 'available'
+                    ? 1
+                    : 0
+            );
+
+            const imageFile =
+                document.getElementById('itemImage').files[0];
+
             if (imageFile) {
                 formData.append('image', imageFile);
             }
 
-            const url = currentEditId ? 
-                `/api/admin/menu/${currentEditId}` : 
-                '/api/admin/menu';
-            
-            const method = currentEditId ? 'PUT' : 'POST';
+            let response;
 
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    Authorization: `Bearer ${token}`
-                },
-                body: formData
-            });
+            // UPDATE
+            if (currentEditId) {
+
+                response = await fetch(`/api/menu/${currentEditId}`, {
+                    method: 'PUT',
+                    body: formData
+                });
+
+            } else {
+
+                // ADD
+                response = await fetch('/api/menu', {
+                    method: 'POST',
+                    body: formData
+                });
+            }
+
+            const result = await response.json();
 
             if (response.ok) {
-                alert(currentEditId ? 'Product updated successfully!' : 'Product added successfully!');
+                alert(result.message || 'Saved successfully');
+
                 hideMenuModal();
+
                 loadMenuItems();
+
             } else {
-                const result = await response.json();
-                alert(result.error || 'Failed to save product');
+                alert(result.message || 'Save failed');
             }
+
         } catch (error) {
             console.error('Save error:', error);
-            alert('Error saving product');
         }
     });
 
-    // Image upload handling
-    const imageUpload = document.getElementById('imageUpload');
-    const imageInput = document.getElementById('itemImage');
-    const imagePreview = document.getElementById('imagePreview');
+    // Image preview
+    document.getElementById('itemImage').addEventListener('change', (e) => {
+        const file = e.target.files[0];
 
-    // Click to upload
-    imageUpload.addEventListener('click', () => imageInput.click());
+        if (file) {
+            const preview = document.getElementById('imagePreview');
 
-    // Drag & drop
-    imageUpload.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        imageUpload.classList.add('dragover');
-    });
+            preview.src = URL.createObjectURL(file);
 
-    imageUpload.addEventListener('dragleave', () => {
-        imageUpload.classList.remove('dragover');
-    });
-
-    imageUpload.addEventListener('drop', (e) => {
-        e.preventDefault();
-        imageUpload.classList.remove('dragover');
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            imageInput.files = files;
-            previewImage(files[0]);
+            preview.style.display = 'block';
         }
     });
-
-    imageInput.addEventListener('change', (e) => {
-        if (e.target.files[0]) {
-            previewImage(e.target.files[0]);
-        }
-    });
-
-    function previewImage(file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            imagePreview.src = e.target.result;
-            imagePreview.style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-    }
-
-    // Search and filter
-    document.getElementById('searchInput').addEventListener('input', (e) => {
-        filterItems();
-    });
-
-    document.getElementById('categoryFilter').addEventListener('change', () => {
-        filterItems();
-    });
-
-    function filterItems() {
-        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-        const category = document.getElementById('categoryFilter').value;
-
-        filteredItems = menuItems.filter(item => {
-            const matchesSearch = item.name.toLowerCase().includes(searchTerm) ||
-                                item.description?.toLowerCase().includes(searchTerm);
-            const matchesCategory = !category || item.category === category;
-            return matchesSearch && matchesCategory;
-        });
-
-        renderMenuTable(filteredItems);
-    }
 
     // Close modal when clicking outside
     window.onclick = function(event) {
         const modal = document.getElementById('menuModal');
+
         if (event.target === modal) {
             hideMenuModal();
         }
@@ -992,9 +796,11 @@
     // Logout
     document.getElementById('adminLogout').addEventListener('click', (e) => {
         e.preventDefault();
-        if (confirm('Are you sure you want to logout?')) {
+
+        if (confirm('Are you sure you want to logout from admin panel?')) {
             localStorage.removeItem('token');
-            window.location.href = '/login.html';
+
+            window.location.href = 'login.html';
         }
     });
 
@@ -1002,6 +808,6 @@
     document.addEventListener('DOMContentLoaded', () => {
         loadMenuItems();
     });
-    </script>
+</script>
 </body>
 </html>
