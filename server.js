@@ -326,12 +326,7 @@ app.delete('/api/menu/:id', async (req, res) => {
         
         console.log(`✅ Found menu item: ${menuItem[0].name || menuItem[0].id}`);
         
-        const [orderItemsDeleted] = await conn.execute(
-            `DELETE oi FROM order_items oi 
-             JOIN orders o ON oi.order_id = o.id 
-             WHERE oi.menu_item_id = ?`,
-            [id]
-        );
+        const [orderItemsDeleted] = await conn.execute(`DELETE oi FROM order_items oi JOIN orders o ON oi.order_id = o.id WHERE oi.menu_item_id = ?`,[id]);
         console.log(`🧹 Deleted ${orderItemsDeleted.affectedRows} order items`);
         
         const [result] = await conn.execute(`DELETE FROM menu_items WHERE id = ?`, [id]);
@@ -547,15 +542,16 @@ app.delete('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res) 
 // ===== ANALYTICS & REPORTS API =====
 app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
     try {
-        const { days = 'all', status = 'all' } = req.query;
-        
-        let whereClause = 'WHERE 1=1';
+       const { days = 'all', status = 'all' } = req.query;
+
+        let whereClause = "WHERE o.status NOT IN ('cancelled', 'pending')";
         const params = [];
-        
+
         if (days !== 'all') {
             whereClause += ' AND o.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)';
             params.push(days);
         }
+
         if (status !== 'all') {
             whereClause += ' AND o.status = ?';
             params.push(status);
