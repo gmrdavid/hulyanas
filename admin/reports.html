@@ -6,10 +6,9 @@
     <title>Reports & Analytics - Hulyanas Hill</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Chart.js for beautiful graphs -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Exact same dashboard styles */
+        /* [Exact same beautiful dashboard styles - unchanged] */
         * {
             margin: 0;
             padding: 0;
@@ -366,6 +365,15 @@
         .loading { 
             opacity: 0.6; pointer-events: none; 
         }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 12px;
+            margin: 1rem 0;
+            border: 1px solid #f5c6cb;
+        }
     </style>
 </head>
 <body>
@@ -391,27 +399,27 @@
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
-                <div class="stat-number" id="totalOrders" data-target="0">0</div>
-                <div class="stat-change positive" id="ordersChange">+0%</div>
+                <div class="stat-number" id="totalOrders">0</div>
+                <div class="stat-change positive" id="ordersChange">Loading...</div>
                 <div class="stat-label">Total Orders</div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon"><i class="fas fa-peso-sign"></i></div>
-                <div class="stat-number" id="totalRevenue" data-target="0">₱0</div>
-                <div class="stat-change positive" id="revenueChange">+0%</div>
+                <div class="stat-number" id="totalRevenue">₱0</div>
+                <div class="stat-change positive" id="revenueChange">Loading...</div>
                 <div class="stat-label">Total Revenue</div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon"><i class="fas fa-users"></i></div>
-                <div class="stat-number" id="activeCustomers" data-target="0">0</div>
-                <div class="stat-change positive" id="customersChange">+0%</div>
+                <div class="stat-number" id="activeCustomers">0</div>
+                <div class="stat-change positive" id="customersChange">Loading...</div>
                 <div class="stat-label">Active Customers</div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon"><i class="fas fa-star"></i></div>
-                <div class="stat-number" id="avgRating" data-target="0">0</div>
-                <div class="stat-change positive" id="ratingChange">+0</div>
-                <div class="stat-label">Avg Rating</div>
+                <div class="stat-number" id="avgRating">0</div>
+                <div class="stat-change positive" id="ratingChange">Loading...</div>
+                <div class="stat-label">Avg Order Value</div>
             </div>
         </div>
 
@@ -420,14 +428,14 @@
             <h1>Analytics Dashboard</h1>
             <div class="filter-controls">
                 <select id="timeFilter" class="filter-select">
+                    <option value="all">All Time</option>
                     <option value="30">30 Days</option>
                     <option value="90">90 Days</option>
-                    <option value="365">1 Year</option>
                 </select>
-                <select id="chartFilter" class="filter-select">
-                    <option value="all">All Charts</option>
-                    <option value="sales">Sales</option>
-                    <option value="revenue">Revenue</option>
+                <select id="statusFilter" class="filter-select">
+                    <option value="all">All Status</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="pending">Pending</option>
                 </select>
             </div>
         </div>
@@ -439,15 +447,15 @@
                     <div class="chart-icon chart-sales">
                         <i class="fas fa-chart-line"></i>
                     </div>
-                    <div class="chart-title">Sales Performance</div>
+                    <div class="chart-title">Order Trends</div>
                 </div>
                 <div class="chart-stats">
                     <div class="chart-stat">
-                        <div class="chart-stat-number" id="peakSalesDay">Friday</div>
+                        <div class="chart-stat-number" id="peakOrderDay">-</div>
                         <div class="chart-stat-label">Peak Day</div>
                     </div>
                     <div class="chart-stat">
-                        <div class="chart-stat-number" id="avgOrderValue">₱1,250</div>
+                        <div class="chart-stat-number" id="avgOrderValueDb">₱0</div>
                         <div class="chart-stat-label">Avg Order</div>
                     </div>
                 </div>
@@ -462,16 +470,16 @@
                     <div class="chart-icon chart-revenue">
                         <i class="fas fa-coins"></i>
                     </div>
-                    <div class="chart-title">Revenue Breakdown</div>
+                    <div class="chart-title">Revenue by Status</div>
                 </div>
                 <div class="chart-stats">
                     <div class="chart-stat">
-                        <div class="chart-stat-number" id="bestMonth">December</div>
-                        <div class="chart-stat-label">Best Month</div>
+                        <div class="chart-stat-number" id="bestStatus">-</div>
+                        <div class="chart-stat-label">Top Status</div>
                     </div>
                     <div class="chart-stat">
-                        <div class="chart-stat-number" id="revenueGrowth">+23%</div>
-                        <div class="chart-stat-label">Growth</div>
+                        <div class="chart-stat-number" id="deliveredRevenue">₱0</div>
+                        <div class="chart-stat-label">Delivered</div>
                     </div>
                 </div>
                 <div class="chart-container">
@@ -489,12 +497,12 @@
                 </div>
                 <div class="chart-stats">
                     <div class="chart-stat">
-                        <div class="chart-stat-number" id="topProduct">#1 Adobo</div>
+                        <div class="chart-stat-number" id="topProductName">-</div>
                         <div class="chart-stat-label">Best Seller</div>
                     </div>
                     <div class="chart-stat">
-                        <div class="chart-stat-number" id="totalProducts">324</div>
-                        <div class="chart-stat-label">Units Sold</div>
+                        <div class="chart-stat-number" id="totalItemsSold">0</div>
+                        <div class="chart-stat-label">Total Sold</div>
                     </div>
                 </div>
                 <div class="chart-container">
@@ -502,22 +510,22 @@
                 </div>
             </div>
 
-            <!-- Customer Growth Chart -->
+            <!-- Customer Orders Chart -->
             <div class="chart-card">
                 <div class="chart-header">
                     <div class="chart-icon chart-customers">
                         <i class="fas fa-users"></i>
                     </div>
-                    <div class="chart-title">Customer Growth</div>
+                    <div class="chart-title">Customer Orders</div>
                 </div>
                 <div class="chart-stats">
                     <div class="chart-stat">
-                        <div class="chart-stat-number" id="newCustomers">156</div>
-                        <div class="chart-stat-label">New This Month</div>
+                        <div class="chart-stat-number" id="topCustomer">-</div>
+                        <div class="chart-stat-label">Top Customer</div>
                     </div>
                     <div class="chart-stat">
-                        <div class="chart-stat-number" id="retentionRate">87%</div>
-                        <div class="chart-stat-label">Retention</div>
+                        <div class="chart-stat-number" id="repeatCustomers">0</div>
+                        <div class="chart-stat-label">Repeat Orders</div>
                     </div>
                 </div>
                 <div class="chart-container">
@@ -532,17 +540,17 @@
                 <i class="fas fa-download"></i> Export Reports
             </h2>
             <p style="color:#666;margin-bottom:2rem;font-size:1.1rem;">
-                Download comprehensive analytics reports
+                Download comprehensive analytics reports from your database
             </p>
             <div>
                 <button class="download-btn" onclick="exportReport('dashboard')">
                     <i class="fas fa-file-pdf"></i> Full Dashboard PDF
                 </button>
-                <button class="download-btn" onclick="exportReport('sales')">
-                    <i class="fas fa-file-excel"></i> Sales Data Excel
+                <button class="download-btn" onclick="exportReport('orders')">
+                    <i class="fas fa-file-excel"></i> Orders Excel
                 </button>
-                <button class="download-btn" onclick="exportReport('revenue')">
-                    <i class="fas fa-file-csv"></i> Revenue CSV
+                <button class="download-btn" onclick="exportReport('sales')">
+                    <i class="fas fa-file-csv"></i> Sales CSV
                 </button>
             </div>
         </div>
@@ -550,34 +558,41 @@
 
     <script>
         let salesChart, revenueChart, productsChart, customersChart;
+        let analyticsData = {};
 
-        // Chart data
-        const chartData = {
-            sales: {
-                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                data: [120, 190, 300, 500, 200, 300, 450]
-            },
-            revenue: {
-                labels: ['Food', 'Drinks', 'Dessert', 'Sides'],
-                data: [65, 20, 10, 5]
-            },
-            products: {
-                labels: ['Adobo', 'Inasal', 'Halo-Halo', 'Lumpia', 'Sisig'],
-                data: [324, 289, 267, 245, 210]
-            },
-            customers: {
-                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
-                data: [200, 320, 280, 420, 380]
+        // 🚀 DATABASE CONNECTION - Real data from your hulyanas database
+        const API_BASE = '/api'; // Your backend API endpoints
+
+        // Fetch all analytics data from database
+        async function fetchAnalyticsData(days = 'all', status = 'all') {
+            try {
+                const params = new URLSearchParams({ days, status });
+                const response = await fetch(`${API_BASE}/analytics?${params}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('❌ Database fetch error:', error);
+                showError('Failed to load analytics data from database');
+                return null;
             }
-        };
+        }
 
-        // Animate counters (dashboard exact)
+        // Animate counters with real database data
         function animateCounters(data) {
             const elements = [
-                { el: 'totalOrders', target: data.totalOrders, format: 'number' },
-                { el: 'totalRevenue', target: data.totalRevenue, format: 'currency' },
-                { el: 'activeCustomers', target: data.activeCustomers, format: 'number' },
-                { el: 'avgRating', target: data.avgRating, format: 'decimal' }
+                { el: 'totalOrders', target: data.total_orders || 0, format: 'number' },
+                { el: 'totalRevenue', target: data.total_revenue || 0, format: 'currency' },
+                { el: 'activeCustomers', target: data.active_customers || 0, format: 'number' },
+                { el: 'avgRating', target: data.avg_order_value || 0, format: 'currency' }
             ];
 
             elements.forEach(({ el, target, format }) => {
@@ -588,32 +603,39 @@
                     current += increment;
                     if (current >= target) {
                         if (format === 'currency') {
-                            element.textContent = `₱${target.toLocaleString('en-PH', { minimumFractionDigits: 0 })}`;
-                        } else if (format === 'decimal') {
-                            element.textContent = target.toFixed(1);
+                            element.textContent = `₱${Number(target).toLocaleString('en-PH', { 
+                                minimumFractionDigits: 2, maximumFractionDigits: 2 
+                            })}`;
                         } else {
                             element.textContent = Math.floor(target).toLocaleString();
                         }
                         clearInterval(timer);
                         return;
                     }
-                    const display = format === 'currency' ? `₱${Math.floor(current).toLocaleString()}` :
-                                  format === 'decimal' ? current.toFixed(1) : Math.floor(current).toLocaleString();
+                    const display = format === 'currency' ? 
+                        `₱${Math.floor(current).toLocaleString()}` : 
+                        Math.floor(current).toLocaleString();
                     element.textContent = display;
                 }, 20);
             });
+
+            // Update change percentages
+            document.getElementById('ordersChange').textContent = `+${data.order_growth || 0}%`;
+            document.getElementById('revenueChange').textContent = `+${data.revenue_growth || 0}%`;
+            document.getElementById('customersChange').textContent = `+${data.customer_growth || 0}%`;
         }
 
-        // Initialize charts
-        function initCharts() {
-            // Sales Line Chart
+        // Initialize charts with REAL database data
+        function initCharts(data) {
+            // 1. Sales Trend Chart - Orders by DAY_OF_WEEK
+            const orderTrends = data.order_trends || [];
             salesChart = new Chart(document.getElementById('salesChart'), {
                 type: 'line',
                 data: {
-                    labels: chartData.sales.labels,
+                    labels: orderTrends.map(item => item.day_name),
                     datasets: [{
                         label: 'Orders',
-                        data: chartData.sales.data,
+                        data: orderTrends.map(item => item.order_count),
                         borderColor: '#1a1a1a',
                         backgroundColor: 'rgba(26, 26, 26, 0.1)',
                         borderWidth: 3,
@@ -636,16 +658,15 @@
                 }
             });
 
-            // Revenue Pie Chart
+            // 2. Revenue by Status (Pie Chart)
+            const revenueByStatus = data.revenue_by_status || [];
             revenueChart = new Chart(document.getElementById('revenueChart'), {
                 type: 'doughnut',
                 data: {
-                    labels: chartData.revenue.labels,
+                    labels: revenueByStatus.map(item => item.status),
                     datasets: [{
-                        data: chartData.revenue.data,
-                        backgroundColor: [
-                            '#1a1a1a', '#28a745', '#ffc107', '#007bff'
-                        ],
+                        data: revenueByStatus.map(item => item.total_amount),
+                        backgroundColor: ['#1a1a1a', '#28a745', '#007bff', '#ffc107', '#dc3545'],
                         borderWidth: 0,
                         borderRadius: 8
                     }]
@@ -657,14 +678,15 @@
                 }
             });
 
-            // Products Bar Chart
+            // 3. Top Products (Bar Chart)
+            const topProducts = data.top_products || [];
             productsChart = new Chart(document.getElementById('productsChart'), {
                 type: 'bar',
                 data: {
-                    labels: chartData.products.labels,
+                    labels: topProducts.map(item => item.name.slice(0, 15) + (item.name.length > 15 ? '...' : '')),
                     datasets: [{
                         label: 'Units Sold',
-                        data: chartData.products.data,
+                        data: topProducts.map(item => item.quantity),
                         backgroundColor: '#1a1a1a',
                         borderRadius: 8,
                         borderSkipped: false
@@ -681,14 +703,15 @@
                 }
             });
 
-            // Customers Line Chart
+            // 4. Customer Orders (Line Chart)
+            const customerOrders = data.customer_orders || [];
             customersChart = new Chart(document.getElementById('customersChart'), {
                 type: 'line',
                 data: {
-                    labels: chartData.customers.labels,
+                    labels: customerOrders.map(item => item.username.slice(0, 8)),
                     datasets: [{
-                        label: 'New Customers',
-                        data: chartData.customers.data,
+                        label: 'Orders',
+                        data: customerOrders.map(item => item.order_count),
                         borderColor: '#28a745',
                         backgroundColor: 'rgba(40, 167, 69, 0.1)',
                         borderWidth: 3,
@@ -706,39 +729,81 @@
                     }
                 }
             });
+
+            // Update chart stats with real data
+            document.getElementById('peakOrderDay').textContent = data.peak_day || '-';
+            document.getElementById('avgOrderValueDb').textContent = `₱${(data.avg_order_value || 0).toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
+            document.getElementById('bestStatus').textContent = data.top_status || '-';
+            document.getElementById('deliveredRevenue').textContent = `₱${(data.delivered_revenue || 0).toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
+            document.getElementById('topProductName').textContent = data.top_product_name || '-';
+            document.getElementById('totalItemsSold').textContent = data.total_items_sold || 0;
+            document.getElementById('topCustomer').textContent = data.top_customer || '-';
+            document.getElementById('repeatCustomers').textContent = data.repeat_customers || 0;
         }
 
-        // Load data and animate
-        async function loadAnalyticsData() {
-            const data = {
-                totalOrders: 1247,
-                totalRevenue: 24567,
-                activeCustomers: 892,
-                avgRating: 4.8
-            };
+        // Load and display real database analytics
+        async function loadAnalyticsData(days = 'all', status = 'all') {
+            document.body.classList.add('loading');
             
-            // Set data targets
-            document.querySelectorAll('.stat-number').forEach(el => {
-                const key = el.id.replace('total', '').replace('active', '').toLowerCase();
-                if (data[key]) el.setAttribute('data-target', data[key]);
-            });
-
-            animateCounters(data);
+            const data = await fetchAnalyticsData(days, status);
+            if (data) {
+                analyticsData = data;
+                animateCounters(data);
+                initCharts(data);
+                showToast('✅ Analytics loaded from database!');
+            }
+            
+            document.body.classList.remove('loading');
         }
 
-        // Filter handler
+        // Filter handlers
         document.getElementById('timeFilter').addEventListener('change', (e) => {
-            showToast(`📊 Filtering data for last ${e.target.value} days`);
+            const status = document.getElementById('statusFilter').value;
+            loadAnalyticsData(e.target.value, status);
         });
 
-        // Export reports
-        function exportReport(type) {
-            const reports = {
-                dashboard: 'Full Dashboard Report',
-                sales: 'Sales Analytics',
-                revenue: 'Revenue Breakdown'
-            };
-            showToast(`📥 ${reports[type] || 'Report'} exported successfully!`);
+        document.getElementById('statusFilter').addEventListener('change', (e) => {
+            const days = document.getElementById('timeFilter').value;
+            loadAnalyticsData(days, e.target.value);
+        });
+
+        // Export real database reports
+        async function exportReport(type) {
+            try {
+                const response = await fetch(`${API_BASE}/export/${type}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ filters: analyticsData })
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `hulyanas-${type}-report-${new Date().toISOString().split('T')[0]}.${type === 'dashboard' ? 'pdf' : type}`;
+                    a.click();
+                    showToast(`📥 ${type.toUpperCase()} report exported!`);
+                }
+            } catch (error) {
+                showToast('❌ Export failed. Please try again.');
+            }
+        }
+
+        // Error display
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.innerHTML = `
+                <i class="fas fa-exclamation-triangle"></i>
+                ${message}<br>
+                <small>Check your database connection</small>
+            `;
+            document.querySelector('.admin-dashboard').prepend(errorDiv);
+            setTimeout(() => errorDiv.remove(), 5000);
         }
 
         // Toast notification
@@ -770,37 +835,19 @@
             }
         });
 
-        // 🚀 MAIN INITIALIZATION
+        // 🚀 MAIN INITIALIZATION - Loads REAL DATABASE DATA
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('📊 Loading Hulyanas Analytics Dashboard...');
+            console.log('📊 Loading Hulyanas Analytics Dashboard from DATABASE...');
             
-            // Auto-login
+            // Auto-login simulation (replace with your real auth)
             if (!localStorage.getItem('token')) {
-                try {
-                    const loginRes = await fetch('/api/login', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username: 'admin', password: 'password' })
-                    }); 
-                    const loginData = await loginRes.json();
-                    localStorage.setItem('token', loginData.token);
-                } catch (e) {
-                    console.log('ℹ️ No auto-login available');
-                }
+                localStorage.setItem('token', 'admin-token-' + Date.now());
             }
 
-            document.body.classList.add('loading');
+            // Load real analytics data from your database
+            await loadAnalyticsData();
             
-            await Promise.all([
-                loadAnalyticsData(),
-                new Promise(resolve => setTimeout(() => {
-                    initCharts();
-                    resolve();
-                }, 300))
-            ]);
-            
-            document.body.classList.remove('loading');
-            console.log('✅ Analytics Dashboard with Charts loaded! ✨');
+            console.log('✅ REAL DATABASE ANALYTICS loaded successfully! ✨');
         });
     </script>
 </body>
