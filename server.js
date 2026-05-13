@@ -730,6 +730,209 @@ async (req, res) => {
         });
     }
 });
+    // ===== ANALYTICS & REPORTS API (NEW - ADD THIS BLOCK) =====
+
+// 🗃️ MAIN ANALYTICS ENDPOINT - Powers your Reports Dashboard
+app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const { days = 'all', status = 'all' } = req.query;
+        let whereClause = 'WHERE 1=1';
+
+        if (days !== 'all') {
+            whereClause += ` AND o.created_at >= DATE_SUB(NOW(), INTERVAL ${days} DAY)`;
+        }
+        if (status !== 'all') {
+            whereClause += ` AND o.status = '${status}'`;
+        }
+
+        const conn = await pool.getConnection();
+
+        // 1. Key Metrics (runs in parallel for speed)
+        const [
+            [totalOrders], 
+            [totalRevenue], 
+            [activeCustomers], 
+            [avgOrderValue],
+            orderTrends,
+            revenueByStatus,
+            topProducts,
+            customerOrders,
+            [peakDay],
+            [topStatus],
+            [deliveredRevenue],
+            [totalItemsSold]
+        ] = await Promise.all([
+            // Total Orders
+            conn.execute(`SELECT COUNT(*) as total_orders FROM orders o ${whereClause}`),
+            
+            // Total Revenue
+            conn.execute(`SELECT COALESCE(SUM(total_amount), 0) as total_revenue FROM orders o ${whereClause}`),
+            
+            // Active Customers
+            conn.execute(`SELECT COUNT(DISTINCT user_id) as active_customers FROM orders o ${whereClause}`),
+            
+            // Average Order Value
+            conn.execute(`SELECT COALESCE(AVG(total_amount), 0) as avg_order_value FROM orders o ${whereClause}`),
+            
+            // Order Trends by Day
+            conn.execute(`
+                SELECT DAYNAME(o.created_at) as day_name, COUNT(*) as order_count 
+                FROM orders o ${whereClause} 
+                GROUP BY DAYOFWEEK(o.created_at) 
+                ORDER BY FIELD(DAYOFWEEK(o.created_at), 2,3,4,5,6,7,1)
+            `),
+            
+            // Revenue by Status
+            conn.execute(`
+                SELECT o.status, COALESCE(SUM(o.total_amount), 0) as total_amount 
+                FROM orders o ${whereClause} 
+                GROUP BY o.status
+            `),
+            
+            // Top Products
+            conn.execute(`
+                SELECT mi.name, SUM(oi.quantity) as quantity, SUM(oi.quantity * oi.price_at_order) as revenue
+                FROM order_items oi 
+                JOIN menu_items mi ON oi.menu_item_id = mi.id 
+                JOIN orders o ON oi.order_id = o.id ${whereClause} 
+                GROUP BY oi.menu_item_id, mi.name
+                ORDER BY quantity DESC 
+                LIMIT 5
+            `),
+            
+            // Customer Orders
+            conn.execute(`
+                SELECT u.username, COUNT(o.id) as order_count, SUM(o.total_amount) as total_spent
+                FROM orders o 
+                JOIN users u ON o.user_id = u.id ${whereClause} 
+                GROUP BY o.user_id, u.username
+                ORDER BY order_count DESC 
+                LIMIT 5
+            `),
+            
+            // Peak Day
+            conn.execute(`
+                SELECT DAYNAME(created_at) as peak_day 
+                FROM orders ${whereClause} 
+                GROUP BY DAYOFWEEK(created_at) 
+                ORDER BY COUNT(*) DESC 
+                LIMIT 1
+            `),
+            
+            // Top Status by Revenue
+            conn.execute(`
+                SELECT status 
+                FROM orders ${whereClause} 
+                GROUP BY status 
+                ORDER BY SUM(total_amount) DESC 
+                LIMIT 1
+            `),
+            
+            // Delivered Revenue
+            conn.execute(`
+                SELECT COALESCE(SUM(total_amount), 0) as delivered_revenue 
+                FROM orders o ${whereClause} AND o.status = 'delivered'
+            `),
+            
+            // Total Items Sold
+            conn.execute(`
+                SELECT COALESCE(SUM(oi.quantity), 0) as total_items_sold
+                FROM order_items oi 
+                JOIN orders o ON oi.order_id = o.id ${whereClause}
+            `)
+        ]);
+
+        conn.release();
+
+        res.json({
+            // Key Metrics
+            total_orders: parseInt(totalOrders[0].total_orders),
+            total_revenue: parseFloat(totalRevenue[0].total_revenue),
+            active_customers: parseInt(activeCustomers[0].active_customers),
+            avg_order_value: parseFloat(avgOrderValue[0].avg_order_value),
+            
+            // Charts Data
+            order_trends: orderTrends,
+            revenue_by_status: revenueByStatus,
+            top_products: topProducts,
+            customer_orders: customerOrders,
+            
+            // Chart Stats
+            peak_day: peakDay[0]?.peak_day || 'N/A',
+            top_status: topStatus[0]?.status || 'N/A',
+            delivered_revenue: parseFloat(deliveredRevenue[0].delivered_revenue),
+            top_product_name: topProducts[0]?.name || 'N/A',
+            total_items_sold: parseInt(totalItemsSold[0].total_items_sold),
+            top_customer: customerOrders[0]?.username || 'N/A',
+            repeat_customers: customerOrders.filter(c => parseInt(c.order_count) > 1).length
+        });
+
+    } catch (error) {
+        console.error('🚨 Analytics Error:', error);
+        res.status(500).json({ 
+            error: 'Analytics failed', 
+            details: error.message 
+        });
+    }
+});
+
+// 📊 Export Reports (CSV/Excel ready)
+app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const { type } = req.params;
+        
+        if (type === 'orders') {
+            const conn = await pool.getConnection();
+            const [rows] = await conn.execute(`
+                SELECT 
+                    order_number,
+                    CONCAT(u.first_name, ' ', u.last_name) as customer,
+                    total_amount,
+                    status,
+                    delivery_address,
+                    payment_method,
+                    created_at
+                FROM orders o 
+                LEFT JOIN users u ON o.user_id = u.id 
+                ORDER BY created_at DESC
+            `);
+            conn.release();
+            
+            // Generate CSV
+            const csv = [
+                ['Order #', 'Customer', 'Amount', 'Status', 'Address', 'Payment', 'Date'],
+                ...rows.map(row => [
+                    row.order_number,
+                    row.customer || 'N/A',
+                    `₱${parseFloat(row.total_amount).toLocaleString('en-PH', {minimumFractionDigits: 2})}`,
+                    row.status,
+                    `"${row.delivery_address || 'N/A'}"`,
+                    row.payment_method || 'N/A',
+                    new Date(row.created_at).toLocaleDateString('en-PH')
+                ])
+            ].map(row => row.join(',')).join('\n');
+            
+            res.set({
+                'Content-Type': 'text/csv',
+                'Content-Disposition': `attachment; filename="hulyanas-orders-${new Date().toISOString().split('T')[0]}.csv"`
+            });
+            return res.send(csv);
+        }
+        
+        if (type === 'dashboard') {
+            // PDF generation would go here (use pdfkit or puppeteer)
+            res.json({ message: 'PDF export coming soon!' });
+        }
+        
+        res.status(400).json({ error: 'Invalid export type' });
+        
+    } catch (error) {
+        console.error('Export error:', error);
+        res.status(500).json({ error: 'Export failed' });
+    }
+});
+
+// ===== END OF NEW ANALYTICS ROUTES =====
 
 // Start server
 app.listen(PORT, () => {
