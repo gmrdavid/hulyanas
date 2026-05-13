@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports & Analytics - Hulyanas Hill Admin</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #fafafa;
+            color: #1a1a1a;
+            line-height: 1.6;
+        }
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border-bottom: 2px solid #1a1a1a;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            padding: 1rem 0;
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            gap: 0.75rem;
+            text-decoration: none;
+        }
+
+        .nav-logo i {
+            color: #000;
+            font-size: 1.8rem;
+        }
+
+        .admin-logo i {
+            color: #1a1a1a;
+            background: #f0f0f0;
+            padding: 0.5rem;
+            border-radius: 12px;
+        }
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .nav-menu a {
+            text-decoration: none;
+            color: #4a4a4a;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
+        }
+
+        .nav-menu a:hover,
+        .nav-menu a.active {
+            background: #1a1a1a;
+            color: #fff;
+        }
+
+        .btn-logout {
+            background: #1a1a1a !important;
+            color: #fff !important;
+            padding: 0.75rem 2rem !important;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .btn-logout:hover {
+            background: #000 !important;
+            transform: translateY(-1px);
+        }
+
+        .admin-content {
+            max-width: 1400px;
+            margin: 140px auto 2rem;
+            padding: 0 2rem;
+        }
+
+        .analytics-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: #fff;
+            border: 1px solid #e5e5e5;
+            padding: 2.5rem;
+            border-radius: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 0.5rem;
+            font-feature-settings: 'tnum' 1;
+        }
+
+        .stat-change {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-change.positive { color: #28a745; }
+        .stat-change.negative { color: #dc3545; }
+
+        .stat-label {
+            font-size: 1.1rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .content-header h1 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            background: linear-gradient(135deg, #1a1a1a, #333);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .filter-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-select,
+        .date-range {
+            padding: 1rem 1.5rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 16px;
+            font-size: 1rem;
+            background: #fff;
+            font-family: inherit;
+            min-width: 160px;
+        }
+
+        .reports-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .report-card {
+            background: #fff;
+            border: 1px solid #e5e5e5;
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .report-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .report-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .report-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: #fff;
+        }
+
+        .report-sales { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .report-revenue { background: linear-gradient(135deg, #f093fb, #f5576c); }
+        .report-products { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+        .report-customers { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+
+        .report-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+
+        .chart-container {
+            height: 300px;
+            margin-bottom: 2rem;
+        }
+
+        .table-container {
+            background: #fff;
+            border: 1px solid #e5e5e5;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .analytics-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .analytics-table thead {
+            background: #f8f9fa;
+        }
+
+        .analytics-table th {
+            padding: 1.5rem 2rem;
+            text-align: left;
+            font-weight: 600;
+            color: #1a1a1a;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #e5e5e5;
+        }
+
+        .analytics-table td {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #f5f5f5;
+            vertical-align: middle;
+        }
+
+        .analytics-table tr:hover {
+            background: #f8f8f8;
+        }
+
+        .metric-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-sales { background: #e3f2fd; color: #1976d2; }
+        .metric-revenue { background: #fff3e0; color: #ef6c00; }
+        .metric-top { background: #e8f5e8; color: #2e7d32; }
+
+        .download-section {
+            background: #fff;
+            border: 1px solid #e5e5e5;
+            border-radius: 20px;
+            padding: 3rem;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 2.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            border: none;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            margin: 0 0.5rem;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-group {
+            margin-top: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .admin-content {
+                padding: 0 1rem;
+                margin: 120px 1rem 2rem;
+            }
+
+            .content-header {
+                flex-direction: column;
+                align-items: stretch;
+                text-align: center;
+            }
+
+            .filter-controls {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .analytics-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .reports-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="dashboard.html" class="nav-logo admin-logo">
+                <i class="fas fa-user-shield"></i>
+                <span>Admin Panel</span>
+            </a>
+            <ul class="nav-menu">
+                <li><a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="menu-manage.html"><i class="fas fa-utensils"></i> Menu</a></li>
+                <li><a href="orders.html"><i class="fas fa-list"></i> Orders</a></li>
+                <li><a href="users.html"><i class="fas fa-users"></i> Users</a></li>
+                <li><a href="reports.html" class="active"><i class="fas fa-chart-bar"></i> Reports</a></li>
+                <li><a href="#" id="adminLogout" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="admin-content">
+        <!-- Key Metrics Stats -->
+        <div class="analytics-stats">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <div class="stat-number" data-target="1,247">1,247</div>
+                <div class="stat-change positive">+12.5%</div>
+                <div class="stat-label">Total Orders</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-peso-sign"></i>
+                </div>
+                <div class="stat-number" data-target="24,567.89">$24,567.89</div>
+                <div class="stat-change positive">+18.2%</div>
+                <div class="stat-label">Total Revenue</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-number" data-target="892">892</div>
+                <div class="stat-change positive">+8.7%</div>
+                <div class="stat-label">Active Customers</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-star"></i>
+                </div>
+                <div class="stat-number" data-target="4.8">4.8</div>
+                <div class="stat-change positive">+0.2</div>
+                <div class="stat-label">Avg Rating</div>
+            </div>
+        </div>
+
+        <div class="content-header">
+            <h1>Reports & Analytics</h1>
+            <div class="filter-controls">
+                <select id="reportType" class="filter-select">
+                    <option value="all">All Reports</option>
+                    <option value="sales">Sales</option>
+                    <option value="revenue">Revenue</option>
+                    <option value="products">Products</option>
+                    <option value="customers">Customers</option>
+                </select>
+                <input type="date" id="dateFilter" class="date-range">
+                <input type="month" id="monthFilter" class="date-range">
+            </div>
+        </div>
+
+        <!-- Reports Overview -->
+        <div class="reports-grid">
+            <div class="report-card">
+                <div class="report-header">
+                    <div class="report-icon report-sales">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="report-title">Sales Performance</div>
+                </div>
+                <div class="chart-container" id="salesChart">
+                    <div style="text-align:center;padding:4rem;color:#999;">
+                        <i class="fas fa-chart-line" style="font-size:4rem;opacity:0.5;"></i>
+                        <p>Sales Trend Chart</p>
+                    </div>
+                </div>
+                <div style="display:flex;justify-content:space-between;">
+                    <div><strong>Peak Day:</strong> Friday</div>
+                    <div><strong>Avg Order:</strong> ₱1,250</div>
+                </div>
+            </div>
+
+            <div class="report-card">
+                <div class="report-header">
+                    <div class="report-icon report-revenue">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <div class="report-title">Revenue Analytics</div>
+                </div>
+                <div class="chart-container" id="revenueChart">
+                    <div style="text-align:center;padding:4rem;color:#999;">
+                        <i class="fas fa-chart-pie" style="font-size:4rem;opacity:0.5;"></i>
+                        <p>Revenue Breakdown</p>
+                    </div>
+                </div>
+                <div style="display:flex;justify-content:space-between;">
+                    <div><strong>Best Month:</strong> December</div>
+                    <div><strong>Growth:</strong> +23%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Performers Table -->
+        <div class="table-container">
+            <table class="analytics-table" id="topPerformersTable">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Product/Category</th>
+                        <th>Sales</th>
+                        <th>Revenue</th>
+                        <th>Growth</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="performersList">
+                    <!-- Dynamic content -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Download Reports -->
+        <div class="download-section">
+            <h2 style="font-size:2rem;margin-bottom:1rem;color:#1a1a1a;">
+                <i class="fas fa-download"></i> Download Reports
+            </h2>
+            <p style="color:#666;margin-bottom:2rem;font-size:1.1rem;">
+                Export comprehensive reports in PDF or Excel format
+            </p>
+            <div class="btn-group">
+                <a href="#" class="download-btn" onclick="downloadReport('sales', 'pdf')">
+                    <i class="fas fa-file-pdf"></i> Sales Report PDF
+                </a>
+                <a href="#" class="download-btn" onclick="downloadReport('sales', 'excel')">
+                    <i class="fas fa-file-excel"></i> Sales Report Excel
+                </a>
+                <a href="#" class="download-btn" onclick="downloadReport('revenue', 'pdf')">
+                    <i class="fas fa-file-pdf"></i> Revenue Report PDF
+                </a>
+                <a href="#" class="download-btn" onclick="downloadReport('revenue', 'excel')">
+                    <i class="fas fa-file-excel"></i> Revenue Report Excel
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let analyticsData = [];
+        let currentFilter = 'all';
+
+        // Sample analytics data
+        const sampleData = [
+            { rank: 1, name: 'Adobo Rice Bowl', sales: 324, revenue: '₱12,450', growth: '+28%', type: 'product' },
+            { rank: 2, name: 'Chicken Inasal', sales: 289, revenue: '₱9,876', growth: '+15%', type: 'product' },
+            { rank: 3, name: 'Halo-Halo', sales: 267, revenue: '₱5,340', growth: '+42%', type: 'product' },
+            { rank: 4, name: 'Lumpia', sales: 245, revenue: '₱3,675', growth: '+8%', type: 'product' },
+            { rank: 5, name: 'Main Courses', sales: 1,234, revenue: '₱28,450', growth: '+19%', type: 'category' },
+            { rank: 6, name: 'Desserts', sales: 567, revenue: '₱8,905', growth: '+33%', type: 'category' }
+        ];
+
+        // Animate stats
+        function animateStats() {
+            const stats = document.querySelectorAll('.stat-number[data-target]');
+            stats.forEach(stat => {
+                const target = stat.getAttribute('data-target');
+                const isCurrency = target.includes('$');
+                const targetValue = parseFloat(target.replace(/[^\d.-]/g, ''));
+                let current = 0;
+                const increment = targetValue / 100;
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (isCurrency) {
+                        stat.textContent = `$${current.toFixed(2)}`;
+                    } else {
+                        stat.textContent = Math.floor(current).toLocaleString();
+                    }
+                    if (current >= targetValue) {
+                        clearInterval(timer);
+                        stat.textContent = stat.getAttribute('data-target');
+                    }
+                }, 20);
+            });
+        }
+
+        // Render Top Performers Table
+        function renderTopPerformers(filteredData) {
+            const tbody = document.getElementById('performersList');
+            tbody.innerHTML = filteredData.slice(0, 6).map(item => `
+                <tr>
+                    <td>
+                        <div style="width:32px;height:32px;border-radius:50%;background:#667eea;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.9rem;">
+                            ${item.rank}
+                        </div>
+                    </td>
+                    <td>
+                        <div>
+                            <div style="font-weight:600;color:#1a1a1a;">${item.name}</div>
+                            <div style="color:#666;font-size:0.9rem;">${item.type === 'product' ? 'Product' : 'Category'}</div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="metric-badge metric-sales">${item.sales.toLocaleString()}</span>
+                    </td>
+                    <td>
+                        <strong style="color:#000;font-size:1.1rem;">${item.revenue}</strong>
+                    </td>
+                    <td>
+                        <span class="metric-badge metric-top">${item.growth}</span>
+                    </td>
+                    <td>
+                        <button class="download-btn" style="padding:0.5rem 1rem;font-size:0.9rem;" 
+                                onclick="viewDetails(${item.rank})">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Load Analytics Data
+        async function loadAnalytics() {
+            try {
+                // Simulate API call
+                analyticsData = sampleData;
+                renderTopPerformers(analyticsData);
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+                renderTopPerformers(sampleData);
+            }
+        }
+
+        // Filter Reports
+        document.getElementById('reportType').addEventListener('change', e => {
+            currentFilter = e.target.value;
+            const filtered = currentFilter === 'all' ? analyticsData : 
+                           analyticsData.filter(item => item.type === currentFilter);
+            renderTopPerformers(filtered);
+        });
+
+        // Download Report Function
+        function downloadReport(type, format) {
+            // Simulate download
+            const link = document.createElement('a');
+            link.href = '#';
+            link.download = `${type}_report_${format.toUpperCase()}_${new Date().toISOString().split('T')[0]}.${format}`;
+            link.textContent = 'Download starting...';
+            
+            alert(`📊 ${type.toUpperCase()} Report (${format.toUpperCase()}) download started!\n\nFile: ${link.download}`);
+            
+            // In real implementation, this would trigger actual file download
+            // You can integrate with jsPDF for PDF or SheetJS for Excel
+        }
+
+        // View Details
+        function viewDetails(rank) {
+            alert(`📈 Detailed analytics for rank #${rank}\n\nThis would open a detailed modal with charts, trends, and breakdowns.`);
+        }
+
+        // Logout
+        document.getElementById('adminLogout').addEventListener('click', e => {
+            e.preventDefault();
+            localStorage.removeItem('token');
+            window.location.href = '/index.html';
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAnalytics();
+            animateStats();
+        });
+    </script>
+</body>
+</html>
