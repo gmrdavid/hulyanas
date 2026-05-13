@@ -221,19 +221,25 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
         const conn = await pool.getConnection();
 
         const results = await Promise.all([
-            // ✅ Total Orders (exclude cancelled + pending)
-           conn.execute(`SELECT COUNT(*) as total_orders FROM orders WHERE status NOT IN ('cancelled', 'pending')`),
+            // ✅ Total Orders (USER only, exclude cancelled + pending)
+            conn.execute(
+                `SELECT COUNT(*) as count 
+                 FROM orders 
+                 WHERE user_id = ? 
+                 AND LOWER(status) NOT IN ('cancelled', 'pending')`,
+                [req.user.id]
+            ),
 
-            // 💰 Total Spent (exclude cancelled + pending)
+            // 💰 Total Spent (USER only, exclude cancelled + pending)
             conn.execute(
                 `SELECT COALESCE(SUM(total_amount), 0) AS total 
                  FROM orders 
                  WHERE user_id = ? 
-                 AND LOWER(TRIM(status)) NOT IN ('cancelled', 'pending')`,
+                 AND LOWER(status) NOT IN ('cancelled', 'pending')`,
                 [req.user.id]
             ),
 
-            // 🍽️ Total Menu Items
+            // 🍽️ Menu Items (ALL menu)
             conn.execute(
                 `SELECT COUNT(*) as count 
                  FROM menu_items`
@@ -249,8 +255,8 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
         res.json({
             totalOrders: parseInt(totalOrders.count),
             totalSpent: parseFloat(totalSpent.total).toFixed(2),
-            avgRating: 4.8,
-            menuItems: parseInt(menuItems.count)
+            menuItems: parseInt(menuItems.count),
+            avgRating: 4.8
         });
 
     } catch (error) {
