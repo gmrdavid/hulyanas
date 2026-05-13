@@ -1,5 +1,6 @@
 require('dotenv').config();
 
+
 const express = require('express');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
@@ -553,10 +554,10 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
 // ✅ COMPLETE EXPORT ROUTES (PDF + CSV - Render Optimized)
 // ✅ PDF/CSV EXPORT (DEPLOYMENT PROOF!)
 app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
+    const conn = await pool.getConnection(); // Move outside try-catch for proper release
+    
     try {
         const { type } = req.params;
-        const conn = await pool.getConnection();
-
         console.log(`📄 Export requested: ${type}`);
 
         if (type === 'dashboard') {
@@ -574,7 +575,13 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
 
             console.log('📊 Stats loaded:', { totalOrders: totalOrders[0].count });
 
-            // ✅ CREATE PDF WITH JSPDF
+            // ✅ IMPORTS NEEDED AT TOP OF FILE:
+            // const jsPDF = require('jspdf');
+            // const autoTable = require('jspdf-autotable');
+
+            // CREATE PDF WITH JSPDF
+            const { jsPDF } = require('jspdf');
+            const autoTable = require('jspdf-autotable');
             const doc = new jsPDF('p', 'mm', 'a4');
             
             // Header
@@ -654,7 +661,8 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
             return res.send(Buffer.from(pdfBuffer));
 
         } else if (type === 'orders') {
-            // Simple CSV Orders
+            console.log('📋 Generating Orders CSV...');
+            
             const [rows] = await conn.execute(`
                 SELECT o.order_number, CONCAT(u.first_name, ' ', u.last_name) as customer,
                        o.total_amount, o.status, o.payment_method, 
@@ -676,21 +684,26 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
 
             res.set({
                 'Content-Type': 'text/csv',
-                'Content-Disposition': `attachment; filename="hulyanas-orders-${new Date().toISOString().split('T')[0]}.csv"`
+                'Content-Disposition': `attachment; filename="hulyanas-orders-${new Date().toISOString().split('T')[0]}.csv"`,
+                'Content-Length': Buffer.byteLength(csvContent, 'utf8')
             });
             return res.send(csvContent);
 
         } else {
-            res.status(400).json({ error: 'Use: dashboard, orders' });
+            return res.status(400).json({ error: 'Invalid type. Use: dashboard or orders' });
         }
-
-        conn.release();
 
     } catch (error) {
         console.error('🚨 Export Error:', error);
-        res.status(500).json({ error: 'Export failed', details: error.message });
+        return res.status(500).json({ 
+            error: 'Export failed', 
+            details: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    } finally {
+        conn.release(); // ✅ Always release connection
     }
 });
+
 // Start Server
 app.listen(PORT, () => {
     console.log(`🚀 Hulyanas Hill running on port ${PORT}`);
