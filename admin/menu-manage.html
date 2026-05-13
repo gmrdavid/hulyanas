@@ -677,6 +677,10 @@
                     </tr>
                 `;
             }).join('');
+
+            // Add this at the end of renderMenuTable function
+            document.getElementById('totalItems').textContent = menuItems.length;
+            document.getElementById('availableItems').textContent = menuItems.filter(item => item.is_available == 1).length;
         }
 
         // Event delegation for table actions
