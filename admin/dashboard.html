@@ -413,17 +413,24 @@
 
             // Revenue animation
             let currentRev = 0;
-            const targetRev = data.revenue;
-            const revIncrement = targetRev / 50;
-            const revTimer = setInterval(() => {
-                currentRev += revIncrement;
-                if (currentRev >= targetRev) {
-                    revenueEl.textContent = `₱${targetRev.toFixed(2)}`;
-                    clearInterval(revTimer);
-                    return;
-                }
-                revenueEl.textContent = `₱${currentRev.toFixed(0)}`;
-            }, 20);
+                const targetRev = data.revenue;
+                const revIncrement = targetRev / 50;
+
+                const revTimer = setInterval(() => {
+                    currentRev += revIncrement;
+
+                    if (currentRev >= targetRev) {
+                        revenueEl.textContent = `₱${targetRev.toLocaleString(undefined, {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0
+                        })}`;
+                        
+                        clearInterval(revTimer);
+                        return;
+                    }
+
+                    revenueEl.textContent = `₱${Math.floor(currentRev).toLocaleString()}`;
+                }, 20);
         }
 
         // Load admin stats
