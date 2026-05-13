@@ -717,23 +717,22 @@
     let currentOrderId = null;
 
     // Load Orders from Database
-    async function loadOrders() {
-    try {
-        const token = localStorage.getItem('token');
-        const response = await fetch('/api/admin/orders', {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        });
+        async function loadOrders() {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/admin/orders', {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
 
-        orders = await response.json();
-        renderOrdersTable(orders);
-        await loadStats();  // ✅ Refresh stats after orders load
-    } catch (error) {
-        console.error('Error loading orders:', error);
+            orders = await response.json();
+            renderOrdersTable(orders);
+            await loadStats();  // ✅ Refresh stats after orders load
+        } catch (error) {
+            console.error('Error loading orders:', error);
+        }
     }
-}
-
     // Render Orders Table
     function renderOrdersTable(filteredOrders) {
         const tbody = document.getElementById('ordersList');
