@@ -561,46 +561,58 @@
                 return;
             }
             
-            tbody.innerHTML = items.map(item => `
-                <tr data-id="${item.id}">
-                    <td>
-                        <img 
-                            src="${item.image_url || '/images/default-menu.jpg'}" 
-                            alt="${escapeHtml(item.name)}" 
-                            class="item-image"
-                            loading="lazy"
-                            data-original-src="${item.image_url || ''}"
-                        >
-                    </td>
-                    <td>
-                        <div class="item-name">${escapeHtml(item.name)}</div>
-                        <div style="font-size: 0.9rem; color: #666; margin-top: 0.25rem;">
-                            ${escapeHtml(item.description || '').substring(0, 50)}${item.description && item.description.length > 50 ? '...' : ''}
-                        </div>
-                    </td>
-                    <td style="font-weight: 500; color: #1a1a1a; text-transform: capitalize;">
-                        ${escapeHtml(item.category || 'Uncategorized')}
-                    </td>
-                    <td>
-                        <span class="item-price">₱${parseFloat(item.price || 0).toFixed(2)}</span>
-                    </td>
-                    <td>
-                        <span class="item-status ${item.is_available == 1 ? 'status-available' : 'status-unavailable'}">
-                            ${item.is_available == 1 ? 'Available' : 'Unavailable'}
-                        </span>
-                    </td>
-                    <td>
-                        <div class="table-actions">
-                            <button class="action-btn action-edit" title="Edit">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="action-btn action-delete" title="Delete">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = items.map(item => {
+                const imageSrc = item.image_url || '/images/default-menu.jpg';
+                const cacheBustSrc = imageSrc + '?v=' + Date.now();
+                
+                return `
+                    <tr data-id="${item.id}">
+                        <td>
+                            <img 
+                                src="${cacheBustSrc}" 
+                                alt="${escapeHtml(item.name)}" 
+                                class="item-image"
+                                loading="lazy"
+                                data-original-src="${imageSrc}"
+                                onerror="handleImageError(this)"
+                            >
+                        </td>
+                        <td>
+                            <div class="item-name">${escapeHtml(item.name)}</div>
+                            <div style="font-size: 0.9rem; color: #666; margin-top: 0.25rem;">
+                                ${escapeHtml(item.description || '').substring(0, 50)}${item.description && item.description.length > 50 ? '...' : ''}
+                            </div>
+                        </td>
+                        <td style="font-weight: 500; color: #1a1a1a; text-transform: capitalize;">
+                            ${escapeHtml(item.category || 'Uncategorized')}
+                        </td>
+                        <td>
+                            <span class="item-price">₱${parseFloat(item.price || 0).toFixed(2)}</span>
+                        </td>
+                        <td>
+                            <span class="item-status ${item.is_available == 1 ? 'status-available' : 'status-unavailable'}">
+                                ${item.is_available == 1 ? 'Available' : 'Unavailable'}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="table-actions">
+                                <button class="action-btn action-edit" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="action-btn action-delete" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function handleImageError(img) {
+            const defaultImg = '/images/default-menu.jpg?v=' + Date.now();
+            img.src = defaultImg;
+            img.onerror = null; // Prevent infinite loop
         }
 
         // Event delegation for table actions (CRITICAL FIX)
