@@ -1,6 +1,5 @@
 require('dotenv').config();
 
-
 const express = require('express');
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
@@ -9,8 +8,6 @@ const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs').promises;
-const { jsPDF } = require('jspdf');
-const autoTable = require('jspdf-autotable');
 
 const app = express();
 const PORT = process.env.PORT;
@@ -306,20 +303,18 @@ app.put('/api/menu/:id', upload.single('image'), async (req, res) => {
     }
 });
 
-    // DELETE MENU ITEM - REPLACE THIS ENTIRE BLOCK
+// DELETE MENU ITEM
 app.delete('/api/menu/:id', async (req, res) => {
     let conn;
     try {
         const { id } = req.params;
         
-        console.log(`🗑️ DELETE REQUEST: menu item ID ${id}`); // Debug log
+        console.log(`🗑️ DELETE REQUEST: menu item ID ${id}`);
         
         conn = await pool.getConnection();
         
-        // Start transaction
         await conn.beginTransaction();
         
-        // 1. Get the menu item first to check if it exists
         const [menuItem] = await conn.execute(`SELECT id, image_url FROM menu_items WHERE id = ?`, [id]);
         
         if (menuItem.length === 0) {
@@ -331,7 +326,6 @@ app.delete('/api/menu/:id', async (req, res) => {
         
         console.log(`✅ Found menu item: ${menuItem[0].name || menuItem[0].id}`);
         
-        // 2. Delete associated order_items (only for completed/cancelled orders)
         const [orderItemsDeleted] = await conn.execute(
             `DELETE oi FROM order_items oi 
              JOIN orders o ON oi.order_id = o.id 
@@ -340,12 +334,10 @@ app.delete('/api/menu/:id', async (req, res) => {
         );
         console.log(`🧹 Deleted ${orderItemsDeleted.affectedRows} order items`);
         
-        // 3. Delete the menu item
         const [result] = await conn.execute(`DELETE FROM menu_items WHERE id = ?`, [id]);
         
         console.log(`🎉 Menu item ${id} DELETED - affected rows: ${result.affectedRows}`);
         
-        // 4. Delete the image file if it exists
         const imagePath = menuItem[0].image_url ? `public${menuItem[0].image_url}` : null;
         if (imagePath && imagePath.startsWith('/images/')) {
             try {
@@ -618,8 +610,7 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
     }
 });
 
-// 🔥 FIXED EXPORT ROUTES - All 3 buttons now work perfectly!
-// 🔥 BULLETPROOF EXPORT ROUTES - Works 100% guaranteed!
+// 🔥 SIMPLIFIED EXPORT ROUTES - Only Orders Excel & Sales CSV
 app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
     let conn;
     
@@ -629,106 +620,7 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
 
         conn = await pool.getConnection();
 
-        if (type === 'dashboard') {
-            console.log('🎯 [DASHBOARD] Generating PDF...');
-            
-            // Fetch ALL stats first
-            const stats = await Promise.all([
-                conn.execute(`SELECT COUNT(*) as count FROM orders`),
-                conn.execute(`SELECT COUNT(*) as count FROM orders WHERE status = 'delivered'`),
-                conn.execute(`SELECT COUNT(*) as count FROM orders WHERE status IN ('pending', 'preparing')`),
-                conn.execute(`SELECT COALESCE(SUM(total_amount), 0) as total FROM orders WHERE status != 'cancelled'`),
-                conn.execute(`SELECT COUNT(*) as count FROM users WHERE role = 'customer'`),
-                conn.execute(`SELECT COUNT(*) as count FROM menu_items WHERE is_available = TRUE`)
-            ]);
-
-            const [
-                totalOrders, delivered, pending, revenue, users, menuItems
-            ] = stats.map(s => s[0][0]);
-
-            // ✅ BULLETPROOF PDF - Direct Uint8Array output
-            const { jsPDF } = require('jspdf');
-            const autoTable = require('jspdf-autotable');
-            
-            const doc = new jsPDF({
-                orientation: 'portrait',
-                unit: 'mm',
-                format: 'a4',
-                compress: true
-            });
-
-            // Header
-            doc.setFillColor(26, 26, 26);
-            doc.rect(0, 0, 210, 40, 'F');
-            doc.setTextColor(255, 255, 255);
-            doc.setFontSize(28);
-            doc.setFont('helvetica', 'bold');
-            doc.text('Hulyanas Hill', 105, 22, { align: 'center' });
-            doc.setFontSize(16);
-            doc.text('Dashboard Analytics Report', 105, 32, { align: 'center' });
-            doc.setFontSize(12);
-            doc.text(`Generated: ${new Date().toLocaleString('en-PH')}`, 105, 38, { align: 'center' });
-
-            // Key Metrics Table
-            const metrics = [
-                ['📊 Total Orders', parseInt(totalOrders.count).toLocaleString()],
-                ['✅ Delivered', parseInt(delivered.count).toLocaleString()],
-                ['⏳ Pending/Preparing', parseInt(pending.count).toLocaleString()],
-                ['💰 Total Revenue', `₱${parseFloat(revenue.total).toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`],
-                ['👥 Active Customers', parseInt(users.count).toLocaleString()],
-                ['🍽️ Active Menu Items', parseInt(menuItems.count).toLocaleString()]
-            ];
-
-            autoTable(doc, {
-                startY: 50,
-                head: [['Metric', 'Value']],
-                body: metrics,
-                theme: 'grid',
-                styles: { 
-                    fontSize: 11, 
-                    cellPadding: 8, 
-                    halign: 'center', 
-                    minCellHeight: 12,
-                    font: 'helvetica'
-                },
-                headStyles: { 
-                    fillColor: [26, 26, 26], 
-                    textColor: 255, 
-                    fontSize: 12, 
-                    fontStyle: 'bold' 
-                },
-                alternateRowStyles: { fillColor: [248, 249, 250] },
-                columnStyles: { 
-                    0: { halign: 'left', fontStyle: 'bold', cellWidth: 100 }, 
-                    1: { halign: 'center', fontStyle: 'bold', cellWidth: 90 } 
-                },
-                margin: { top: 50, left: 15, right: 15 }
-            });
-
-            // Footer
-            const pageHeight = doc.internal.pageSize.height;
-            doc.setFontSize(10);
-            doc.setTextColor(100, 100, 100);
-            doc.text('Hulyanas Hill Restaurant Management System', 105, pageHeight - 15, { align: 'center' });
-
-            // ✅ PERFECT FIX: Use 'uint8array' output - WORKS 100% in Node.js
-            const pdfUint8Array = doc.output('uint8array');
-            const pdfBuffer = Buffer.from(pdfUint8Array);
-            
-            console.log(`✅ [DASHBOARD] PDF SUCCESS! Size: ${pdfBuffer.length} bytes`);
-
-            res.set({
-                'Content-Type': 'application/pdf',
-                'Content-Disposition': `attachment; filename="Hulyanas-Dashboard-${new Date().toISOString().split('T')[0]}.pdf"`,
-                'Content-Length': pdfBuffer.length.toString(),
-                'Cache-Control': 'no-cache',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Expose-Headers': 'Content-Disposition'
-            });
-            
-            return res.status(200).send(pdfBuffer);
-
-        } else if (type === 'orders') {
+        if (type === 'orders') {
             console.log('📋 [ORDERS] Generating CSV...');
             
             const [rows] = await conn.execute(`
@@ -769,7 +661,8 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
             return res.status(200).send(csvContent);
 
         } else if (type === 'sales') {
-            // Sales CSV
+            console.log('💰 [SALES] Generating CSV...');
+            
             const [rows] = await conn.execute(`
                 SELECT DATE_FORMAT(o.created_at, '%Y-%m-%d') as sale_date,
                        o.order_number, o.status, ROUND(o.total_amount, 2) as order_total
@@ -794,10 +687,11 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
                 'Access-Control-Allow-Origin': '*'
             });
 
+            console.log(`✅ [SALES] CSV SUCCESS! Rows: ${rows.length}`);
             return res.status(200).send(csvBuffer);
 
         } else {
-            return res.status(400).json({ error: 'Invalid type. Use: dashboard, orders, sales' });
+            return res.status(400).json({ error: 'Invalid type. Use: orders, sales' });
         }
 
     } catch (error) {
