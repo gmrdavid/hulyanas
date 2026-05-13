@@ -603,7 +603,8 @@
             attachTableEventListeners();
         }
 
-        function attachTableEventListeners() {
+        // Remove inline onclicks from table render
+        // Add this event listener after rendering:
         document.getElementById('menuTable').addEventListener('click', (e) => {
             const editBtn = e.target.closest('.action-edit');
             const deleteBtn = e.target.closest('.action-delete');
@@ -619,7 +620,7 @@
                 confirmDelete(row.dataset.id);
             }
         });
-    }
+    
         // Utility function to escape HTML
         function escapeHtml(text) {
             const map = {
