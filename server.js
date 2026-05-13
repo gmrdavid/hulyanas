@@ -219,21 +219,26 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
 app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
     try {
         const conn = await pool.getConnection();
-        
-        const [[totalOrders], [totalSpent], [activeOrders]] = await Promise.all([
-            conn.execute(`SELECT COUNT(*) as count FROM orders WHERE user_id = ?`, [req.user.id]),
-            conn.execute(`SELECT COALESCE(SUM(total_amount), 0) AS total FROM orders WHERE user_id = ? AND status NOT IN ('cancelled', 'pending')`, [req.user.id]),
-            conn.execute(`SELECT COUNT(*) as count FROM orders WHERE user_id = ? AND status IN ('pending', 'preparing')`, [req.user.id])
+
+        const results = await Promise.all([
+            conn.execute(`SELECT COUNT(*) as count FROM orders WHERE user_id = ?`,[req.user.id]),
+            conn.execute(`SELECT COALESCE(SUM(total_amount), 0) AS total FROM orders WHERE user_id = ? AND status NOT IN ('cancelled', 'pending')`,[req.user.id]),
+            conn.execute(`SELECT COUNT(*) as count FROM orders WHERE user_id = ? AND status IN ('pending', 'preparing')`,[req.user.id])
         ]);
-        
+
         conn.release();
-        
+
+        const totalOrders = results[0][0][0];
+        const totalSpent = results[1][0][0];
+        const activeOrders = results[2][0][0];
+
         res.json({
-            totalOrders: parseInt(totalOrders[0].count),
-            totalSpent: parseFloat(totalSpent[0].total).toFixed(2),
+            totalOrders: parseInt(totalOrders.count),
+            totalSpent: parseFloat(totalSpent.total).toFixed(2),
             avgRating: 4.8,
-            activeItems: parseInt(activeOrders[0].count)
+            activeItems: parseInt(activeOrders.count)
         });
+
     } catch (error) {
         console.error('Stats error:', error);
         res.status(500).json({ error: error.message });
