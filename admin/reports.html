@@ -767,29 +767,42 @@
             loadAnalyticsData(days, e.target.value);
         });
 
-        // Export real database reports
+        /// ✅ FIXED Export function - No body data needed
         async function exportReport(type) {
             try {
+                document.body.classList.add('loading');
+                
+                console.log(`📤 Exporting ${type} report...`);
+                
                 const response = await fetch(`${API_BASE}/export/${type}`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${localStorage.getItem('token')}`,
                         'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ filters: analyticsData })
+                    }
+                    // ✅ REMOVED body: JSON.stringify({ filters: analyticsData }) - Server doesn't need it!
                 });
 
-                if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `hulyanas-${type}-report-${new Date().toISOString().split('T')[0]}.${type === 'dashboard' ? 'pdf' : type}`;
-                    a.click();
-                    showToast(`📥 ${type.toUpperCase()} report exported!`);
+                if (!response.ok) {
+                    throw new Error(`Export failed: ${response.status} ${response.statusText}`);
                 }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `hulyanas-${type}-report-${new Date().toISOString().split('T')[0]}.${type === 'dashboard' ? 'pdf' : 'csv'}`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                showToast(`✅ ${type.toUpperCase()} report downloaded!`);
             } catch (error) {
-                showToast('❌ Export failed. Please try again.');
+                console.error('❌ Export error:', error);
+                showToast(`❌ ${type.toUpperCase()} export failed. Check console.`);
+            } finally {
+                document.body.classList.remove('loading');
             }
         }
 

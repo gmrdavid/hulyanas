@@ -17,6 +17,13 @@ const PORT = process.env.PORT;
 
 // Middleware
 app.use(cors());
+app.options('/api/export/:type', (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.sendStatus(200);
+});
+
 app.use(express.json());
 app.use(express.static('public'));
 app.use('/user', express.static('user'));
