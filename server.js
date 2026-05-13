@@ -222,13 +222,7 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
 
         const results = await Promise.all([
             // ✅ Total Orders (exclude cancelled + pending)
-             conn.execute(
-                `SELECT COALESCE(SUM(total_orders), 0) AS total 
-                 FROM orders 
-                 WHERE user_id = ? 
-                 AND LOWER(TRIM(status)) NOT IN ('cancelled', 'pending')`,
-                [req.user.id]
-            ),
+           conn.execute(`SELECT COUNT(*) as total_orders FROM orders WHERE status NOT IN ('cancelled', 'pending')`),
 
             // 💰 Total Spent (exclude cancelled + pending)
             conn.execute(
