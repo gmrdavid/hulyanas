@@ -788,24 +788,17 @@
     }
 
     // Load Dashboard Stats
-    // ✅ NEW - Server-powered stats
-        async function loadStats() {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch('/api/admin/stats', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                const stats = await response.json();
-                
-                document.querySelector('[data-target="127"]').textContent = stats.totalOrders;
-                document.querySelectorAll('.stat-number')[1].textContent = stats.deliveredToday || 0;
-                document.querySelectorAll('.stat-number')[2].textContent = stats.pendingToday || 0;
-                document.querySelectorAll('.stat-number')[3].textContent = `₱${stats.revenueToday}`;
-                
-            } catch (error) {
-                console.error('Stats error:', error);
-            }
-        }
+    function loadStats() {
+        const totalOrders = orders.length;
+        const delivered = orders.filter(o => o.status === 'delivered').length;
+        const pending = orders.filter(o => o.status === 'pending').length;
+        const revenue = orders.reduce((sum, order) => sum + parseFloat(order.total_amount), 0);
+        const stats = document.querySelectorAll('.stat-number');
+        stats[0].textContent = totalOrders;
+        stats[1].textContent = delivered;
+        stats[2].textContent = pending;
+        stats[3].textContent = `₱${revenue.toFixed(2)}`;
+    }
 
     // Open View Modal
     function openOrderModal(id) {
