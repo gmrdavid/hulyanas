@@ -7,6 +7,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* All existing CSS remains the same until the table section */
         * {
             margin: 0;
             padding: 0;
@@ -236,62 +237,6 @@
         .status-cancelled { background: #f8d7da; color: #721c24; }
         .status-preparing { background: #cce5ff; color: #004085; }
 
-        .quick-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .btn {
-            padding: 0.5rem 1rem;
-            border: none;
-            border-radius: 8px;
-            font-weight: 500;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
-
-        .btn-primary {
-            background: #1a1a1a;
-            color: #fff;
-        }
-
-        .btn-primary:hover {
-            background: #000;
-        }
-
-        .btn-secondary {
-            background: transparent;
-            color: #666;
-            border: 1px solid #e0e0e0;
-        }
-
-        .btn-secondary:hover {
-            background: #f0f0f0;
-            color: #1a1a1a;
-        }
-
-        .btn-danger {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .btn-danger:hover {
-            background: #f5c2c5;
-        }
-        .btn-success {  
-            background: #000;
-            color: #fff;
-        }
-        .btn-success:hover {
-            background: #333;
-        }
-
         .activity-feed {
             background: #fff;
             border: 1px solid #e5e5e5;
@@ -369,131 +314,6 @@
         .loading { 
             opacity: 0.6; pointer-events: none; 
         }
-
-        /* STATUS-ONLY EDIT MODAL */
-        .edit-modal {
-            display: none; 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%;
-            background: rgba(0,0,0,0.5); 
-            backdrop-filter: blur(5px); 
-            z-index: 2000;
-            align-items: center; 
-            justify-content: center; 
-            padding: 2rem;
-        }
-        .edit-modal.active { display: flex; }
-        .modal-content {
-            background: #fff; 
-            border-radius: 20px; 
-            width: 100%; 
-            max-width: 500px; 
-            max-height: 90vh;
-            overflow-y: auto; 
-            box-shadow: 0 25px 50px rgba(0,0,0,0.25); 
-            transform: scale(0.9);
-            transition: transform 0.3s ease; 
-            position: relative;
-        }
-        .edit-modal.active .modal-content { transform: scale(1); }
-        .modal-header {
-            padding: 2.5rem 2.5rem 0; 
-            border-bottom: 2px solid #f0f0f0; 
-            margin-bottom: 2rem;
-        }
-        .modal-title { 
-            font-size: 1.75rem; 
-            font-weight: 700; 
-            color: #1a1a1a; 
-            margin-bottom: 1rem; 
-        }
-        .modal-close {
-            position: absolute; 
-            top: 1.5rem; 
-            right: 1.5rem; 
-            background: none; 
-            border: none;
-            font-size: 1.5rem; 
-            color: #666; 
-            cursor: pointer; 
-            padding: 0.5rem; 
-            border-radius: 50%;
-            transition: all 0.2s ease;
-        }
-        .modal-close:hover { 
-            background: #f0f0f0; 
-            color: #1a1a1a; 
-            transform: scale(1.1); 
-        }
-        .modal-body { padding: 0 2.5rem 2.5rem; }
-        .form-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); 
-            gap: 1.5rem; 
-        }
-        .form-group { margin-bottom: 1.5rem; }
-        .form-label { 
-            display: block; 
-            font-weight: 500; 
-            color: #1a1a1a; 
-            margin-bottom: 0.5rem; 
-        }
-        
-        /* Read-only fields */
-        .form-readonly {
-            width: 100%; 
-            padding: 0.875rem 1rem; 
-            border: 2px solid #e5e5e5; 
-            border-radius: 12px;
-            font-size: 1rem; 
-            background: #f8f9fa; 
-            color: #666; 
-            cursor: not-allowed;
-        }
-        
-        /* Editable status field */
-        .form-select {
-            width: 100%; 
-            padding: 0.875rem 1rem; 
-            border: 2px solid #1a1a1a; 
-            border-radius: 12px;
-            font-size: 1rem; 
-            background: #fff; 
-            font-weight: 500;
-        }
-        .form-select:focus {
-            outline: none; 
-            border-color: #000; 
-            box-shadow: 0 0 0 3px rgba(26,26,26,0.1);
-        }
-        
-        .status-highlight {
-            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
-            border: 2px solid #856404;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(133, 100, 4, 0.4); }
-            50% { box-shadow: 0 0 0 10px rgba(133, 100, 4, 0); }
-        }
-        
-        .modal-actions {
-            display: flex; 
-            gap: 1rem; 
-            justify-content: flex-end; 
-            padding-top: 2rem;
-            border-top: 2px solid #f0f0f0; 
-            margin-top: 2rem;
-        }
-        
-        @media (max-width: 768px) {
-            .form-grid { grid-template-columns: 1fr; }
-            .modal-actions { flex-direction: column; }
-        }
     </style>
 </head>
 <body>
@@ -548,7 +368,7 @@
                             <th>Status</th>
                             <th>Total</th>
                             <th>Date</th>
-                            <th>Actions</th>
+                            <!-- ✅ ACTIONS COLUMN REMOVED -->
                         </tr>
                     </thead>
                     <tbody id="recentOrders">
@@ -561,63 +381,6 @@
                 <h1 class="section-title">Activity Feed</h1>
                 <div id="activityFeed">
                     <!-- Dynamic content -->
-                </div>
-            </div>
-        </div>
-
-        <!-- ✅ STATUS-ONLY EDIT MODAL (Complete & Working) -->
-        <div class="edit-modal" id="editModal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 class="modal-title">
-                        <i class="fas fa-edit" style="color:#666;margin-right:0.5rem;"></i>
-                        Update Status - Order #<span id="modalOrderNumber">Loading...</span>
-                    </h2>
-                    <button class="modal-close" id="modalClose">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <form id="editOrderForm">
-                        <input type="hidden" id="modalOrderId" name="id">
-                        
-                        <!-- 🔒 READ-ONLY FIELDS -->
-                        <div class="form-group">
-                            <label class="form-label">Order Number</label>
-                            <input type="text" id="modalOrderNumberField" class="form-readonly" readonly>
-                        </div>
-                        
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label class="form-label">Customer Name</label>
-                                <input type="text" id="modalCustomerName" class="form-readonly" readonly>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Total Amount</label>
-                                <input type="text" id="modalTotalAmount" class="form-readonly" readonly>
-                            </div>
-                        </div>
-
-                        <!-- ✏️ ONLY EDITABLE STATUS FIELD (Highlighted) -->
-                        <div class="form-group">
-                            <label class="form-label">New Status <span style="color:#856404;">(Only editable field)</span></label>
-                            <select id="modalOrderStatus" name="status" class="form-select status-highlight" required>
-                                <option value="pending">Pending</option>
-                                <option value="preparing">Preparing</option>
-                                <option value="delivered">Delivered</option>
-                                <option value="cancelled">Cancelled</option>
-                            </select>
-                        </div>
-
-                        <div class="modal-actions">
-                            <button type="button" class="btn btn-secondary" id="modalCancel">
-                                <i class="fas fa-times"></i> Cancel
-                            </button>
-                            <button type="submit" class="btn btn-success">
-                                <i class="fas fa-save"></i> Update Status
-                            </button>
-                        </div>
-                    </form>
                 </div>
             </div>
         </div>
@@ -693,94 +456,27 @@
                 
                 const tbody = document.getElementById('recentOrders');
                 if (orders.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:3rem;color:#999;">No recent orders found</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:3rem;color:#999;">No recent orders found</td></tr>';
                     return;
                 }
                 
                 tbody.innerHTML = orders.map(order => `
                     <tr data-order-id="${order.id}">
-                        <td>${order.order_number || 'N/A'}</td>
+                        <td><strong>#${order.order_number || 'N/A'}</strong></td>
                         <td>${order.customer || 'Unknown'}</td>
                         <td><span class="order-status status-${order.status}">${order.status?.replace('_',' ') || 'Unknown'}</span></td>
-                        <td>₱${parseFloat(order.total_amount || 0).toFixed(2)}</td>
+                        <td><strong>₱${parseFloat(order.total_amount || 0).toFixed(2)}</strong></td>
                         <td>${order.time_ago || 'N/A'}</td>
-                        <td>
-                            <div class="quick-actions">
-                                <button class="btn btn-primary" data-action="view" data-id="${order.id}" title="View Order">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="btn btn-secondary edit-status-btn" data-action="edit" data-id="${order.id}" title="Edit Status">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-danger" data-action="delete" data-id="${order.id}" title="Delete Order">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>
+                        <!-- ✅ NO ACTIONS COLUMN -->
                     </tr>
                 `).join('');
                 
-                setupOrderActions();
                 console.log('✅ Orders loaded:', orders.length);
                 
             } catch (error) {
                 console.error('Orders error:', error);
                 document.getElementById('recentOrders').innerHTML = 
-                    '<tr><td colspan="6" style="text-align:center;padding:3rem;color:#666;">Failed to load orders. Please refresh.</td></tr>';
-            }
-        }
-
-        // 🌟 STATUS-ONLY Edit modal functions (COMPLETE)
-        const editModal = document.getElementById('editModal');
-        let currentEditingOrderId = null;
-
-        function openEditModal(orderId) {
-            currentEditingOrderId = orderId;
-            editModal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-            loadOrderForEdit(orderId);
-        }
-
-        function closeEditModal() {
-            editModal.classList.remove('active');
-            document.body.style.overflow = '';
-            currentEditingOrderId = null;
-        }
-
-        async function loadOrderForEdit(orderId) {
-            try {
-                const token = localStorage.getItem('token');
-                document.body.classList.add('loading');
-                
-                const response = await fetch(`/api/admin/orders/${orderId}`, {
-                    headers: { 
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const order = await response.json();
-                
-                // ✅ Populate with REAL database data
-                document.getElementById('modalOrderId').value = order.id;
-                document.getElementById('modalOrderNumber').textContent = order.order_number;
-                document.getElementById('modalOrderNumberField').value = order.order_number;
-                document.getElementById('modalCustomerName').value = order.customer || 'Unknown';
-                document.getElementById('modalTotalAmount').value = `₱${parseFloat(order.total_amount || 0).toFixed(2)}`;
-                document.getElementById('modalOrderStatus').value = order.status || 'pending';
-                
-                console.log('✅ Real DB order loaded:', order);
-                
-            } catch (error) {
-                console.error('❌ Load order error:', error);
-                showToast('❌ Failed to load order');
-                closeEditModal();
-            } finally {
-                document.body.classList.remove('loading');
+                    '<tr><td colspan="5" style="text-align:center;padding:3rem;color:#666;">Failed to load orders. Please refresh.</td></tr>';
             }
         }
 
@@ -819,72 +515,6 @@
             }
         }
 
-        function setupOrderActions() {
-            // Use event delegation for dynamic buttons
-            document.querySelector('.recent-orders-section').addEventListener('click', (e) => {
-                const btn = e.target.closest('button[data-action]');
-                if (!btn) return;
-                
-                const action = btn.dataset.action;
-                const orderId = btn.dataset.id;
-                
-                if (action === 'edit') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    openEditModal(orderId);
-                } else if (action === 'delete') {
-                    e.preventDefault();
-                    deleteOrder(orderId);
-                }
-            });
-        }
-
-        // 🎯 Modal event listeners
-        document.getElementById('modalClose').onclick = closeEditModal;
-        document.getElementById('modalCancel').onclick = closeEditModal;
-        editModal.onclick = (e) => { 
-            if (e.target === editModal) closeEditModal(); 
-        };
-
-        // ✅ STATUS-ONLY Form submit (ONLY sends status)
-        document.getElementById('editOrderForm').onsubmit = async (e) => {
-            e.preventDefault();
-            if (!currentEditingOrderId) return;
-            
-            const status = document.getElementById('modalOrderStatus').value;
-            const updateData = { status }; // 🔒 ONLY status is sent
-            
-            try {
-                const token = localStorage.getItem('token');
-                document.body.classList.add('loading');
-                
-                const response = await fetch(`/api/admin/orders/${currentEditingOrderId}`, {
-                    method: 'PUT',
-                    headers: { 
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(updateData)
-                });
-                
-                if (response.ok) {
-                    closeEditModal();
-                    loadRecentOrders();
-                    loadAdminStats();
-                    showToast(`✅ Status updated to "${status.replace('_', ' ')}"!`);
-                    console.log('✅ Status updated:', status);
-                } else {
-                    const errorData = await response.json();
-                    alert('❌ Update failed: ' + (errorData.message || 'Unknown error'));
-                }
-            } catch (error) {
-                console.error('Update error:', error);
-                alert('❌ Update failed: ' + error.message);
-            } finally {
-                document.body.classList.remove('loading');
-            }
-        };
-
         // Toast notification
         function showToast(message) {
             const toast = document.createElement('div');
@@ -897,41 +527,6 @@
             document.body.appendChild(toast);
             setTimeout(() => toast.style.transform = 'translateX(0)', 100);
             setTimeout(() => toast.remove(), 3000);
-        }
-
-        async function deleteOrder(orderId) {
-            if (!confirm('Are you sure you want to delete this order?\nThis action cannot be undone.')) {
-                return;
-            }
-            
-            try {
-                const token = localStorage.getItem('token');
-                document.body.classList.add('loading');
-                
-                const response = await fetch(`/api/admin/orders/${orderId}`, {
-                    method: 'DELETE',
-                    headers: { 
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (response.ok) {
-                    showToast('Order deleted successfully!');
-                    setTimeout(() => {
-                        loadRecentOrders();
-                        loadAdminStats();
-                    }, 500);
-                } else {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.message || 'Delete failed');
-                }
-            } catch (error) {
-                console.error('Delete error:', error);
-                alert(`❌ Delete failed: ${error.message}`);
-            } finally {
-                document.body.classList.remove('loading');
-            }
         }
 
         // Navbar scroll effect
@@ -961,7 +556,7 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ username: 'admin', password: 'password' })
-                    });
+                    }); 
                     const loginData = await loginRes.json();
                     localStorage.setItem('token', loginData.token);
                     console.log('✅ Auto-login successful');
@@ -969,7 +564,7 @@
                     console.log('ℹ️ No auto-login available');
                 }
             }
-            
+            // Load all dashboard data in parallel
             document.body.classList.add('loading');
             await Promise.all([
                 loadAdminStats(),
@@ -978,7 +573,7 @@
             ]);
             document.body.classList.remove('loading');
             
-            console.log('✅ Dashboard fully loaded with STATUS-ONLY editing! ✨');
+            console.log('✅ Dashboard fully loaded! ✨');
         });
     </script>
 </body>
