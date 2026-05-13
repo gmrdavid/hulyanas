@@ -8,6 +8,7 @@ const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs').promises;
+const puppeteer = require('puppeteer'); // ✅ ADDED FOR PDF
 
 const app = express();
 const PORT = process.env.PORT;
@@ -207,7 +208,7 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
     }
 });
 
-// ===== DASHBOARD STATS (NEW!) =====
+// ===== DASHBOARD STATS =====
 app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
     try {
         const conn = await pool.getConnection();
@@ -223,7 +224,7 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
         res.json({
             totalOrders: parseInt(totalOrders[0].count),
             totalSpent: parseFloat(totalSpent[0].total).toFixed(2),
-            avgRating: 4.8, // Add ratings table later
+            avgRating: 4.8,
             activeItems: parseInt(activeOrders[0].count)
         });
     } catch (error) {
@@ -247,180 +248,75 @@ app.get('/api/menu', async (req, res) => {
     }
 });
 
-// ===== ADD MENU ITEM =====
+// ADD MENU ITEM
 app.post('/api/menu', upload.single('image'), async (req, res) => {
     try {
-
-        const {
-            name,
-            description,
-            price,
-            category,
-            is_available
-        } = req.body;
-
-        const image_url = req.file
-            ? `/images/${req.file.filename}`
-            : '';
+        const { name, description, price, category, is_available } = req.body;
+        const image_url = req.file ? `/images/${req.file.filename}` : '';
 
         const conn = await pool.getConnection();
-
         await conn.execute(
-            `
-            INSERT INTO menu_items
-            (
-                name,
-                description,
-                price,
-                category,
-                image_url,
-                is_available
-            )
-            VALUES (?, ?, ?, ?, ?, ?)
-            `,
-            [
-                name,
-                description,
-                price,
-                category,
-                image_url,
-                is_available
-            ]
+            `INSERT INTO menu_items (name, description, price, category, image_url, is_available)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [name, description, price, category, image_url, is_available]
         );
-
         conn.release();
 
-        res.json({
-            message: 'Menu item added successfully'
-        });
-
+        res.json({ message: 'Menu item added successfully' });
     } catch (error) {
-
         console.error(error);
-
-        res.status(500).json({
-            error: error.message
-        });
+        res.status(500).json({ error: error.message });
     }
 });
 
-
-// ===== UPDATE MENU ITEM =====
+// UPDATE MENU ITEM
 app.put('/api/menu/:id', upload.single('image'), async (req, res) => {
-
     try {
-
         const { id } = req.params;
-
-        const {
-            name,
-            description,
-            price,
-            category,
-            is_available
-        } = req.body;
+        const { name, description, price, category, is_available } = req.body;
 
         const conn = await pool.getConnection();
-
-        // Get old image
-        const [oldItem] = await conn.execute(
-            `SELECT image_url FROM menu_items WHERE id=?`,
-            [id]
-        );
-
+        const [oldItem] = await conn.execute(`SELECT image_url FROM menu_items WHERE id=?`, [id]);
         let image_url = oldItem[0]?.image_url || '';
 
-        // If new image uploaded
         if (req.file) {
             image_url = `/images/${req.file.filename}`;
         }
 
         await conn.execute(
-            `
-            UPDATE menu_items
-            SET
-                name=?,
-                description=?,
-                price=?,
-                category=?,
-                image_url=?,
-                is_available=?
-            WHERE id=?
-            `,
-            [
-                name,
-                description,
-                price,
-                category,
-                image_url,
-                is_available,
-                id
-            ]
+            `UPDATE menu_items SET name=?, description=?, price=?, category=?, image_url=?, is_available=? WHERE id=?`,
+            [name, description, price, category, image_url, is_available, id]
         );
-
         conn.release();
 
-        res.json({
-            message: 'Menu item updated successfully'
-        });
-
+        res.json({ message: 'Menu item updated successfully' });
     } catch (error) {
-
         console.error(error);
-
-        res.status(500).json({
-            error: error.message
-        });
+        res.status(500).json({ error: error.message });
     }
 });
 
-
-// ===== DELETE MENU ITEM =====
+// DELETE MENU ITEM
 app.delete('/api/menu/:id', async (req, res) => {
-
     try {
-
         const { id } = req.params;
-
         const conn = await pool.getConnection();
-
-        // Soft delete instead of actual delete
-        await conn.execute(
-            `
-            UPDATE menu_items
-            SET is_available = 0
-            WHERE id = ?
-            `,
-            [id]
-        );
-
+        await conn.execute(`UPDATE menu_items SET is_available = 0 WHERE id = ?`, [id]);
         conn.release();
-
-        res.json({
-            message: 'Menu item marked as unavailable'
-        });
-
+        res.json({ message: 'Menu item marked as unavailable' });
     } catch (error) {
-
         console.error(error);
-
-        res.status(500).json({
-            error: error.message
-        });
+        res.status(500).json({ error: error.message });
     }
 });
 
+// ADMIN ACTIVITY
 app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
     try {
         const conn = await pool.getConnection();
-        const [rows] = await conn.execute(`
-            SELECT type, action as message, created_at 
-            FROM activity_log 
-            ORDER BY created_at DESC LIMIT 10
-        `);
+        const [rows] = await conn.execute(`SELECT type, action as message, created_at FROM activity_log ORDER BY created_at DESC LIMIT 10`);
         conn.release();
 
-        // Format time_ago like dashboard expects
         const formatted = rows.map(row => ({
             type: row.type || 'system',
             message: row.message,
@@ -433,7 +329,7 @@ app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
     }
 });
 
-// Add this helper function at the bottom (before app.listen)
+// Helper function
 function formatTimeAgo(date) {
     const now = new Date();
     const orderDate = new Date(date);
@@ -443,75 +339,62 @@ function formatTimeAgo(date) {
     const hours = Math.floor(diff / 60);
     return `${hours}h ago`;
 }
-// 🆕 1. GET SINGLE ORDER BY ID (for edit modal)
+
+// GET SINGLE ORDER
 app.get('/api/admin/orders/:id', authenticateToken, isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const conn = await pool.getConnection();
-        
         const [rows] = await conn.execute(`
-            SELECT 
-                o.id,
-                o.order_number,
-                CONCAT(u.first_name, ' ', u.last_name) as customer,
-                o.total_amount,
-                o.status,
-                o.created_at
-            FROM orders o 
-            LEFT JOIN users u ON o.user_id = u.id 
-            WHERE o.id = ?
-        `, [id]);
-        
+            SELECT o.*, CONCAT(u.first_name, ' ', u.last_name) as customer_name, u.phone
+            FROM orders o LEFT JOIN users u ON o.user_id = u.id WHERE o.id = ?`, [id]);
         conn.release();
         
-        if (rows.length === 0) {
-            return res.status(404).json({ error: 'Order not found' });
-        }
-        
+        if (rows.length === 0) return res.status(404).json({ error: 'Order not found' });
         res.json(rows[0]);
-        
     } catch (error) {
         console.error('Get order error:', error);
         res.status(500).json({ error: 'Failed to fetch order' });
     }
 });
 
-// 🆕 2. UPDATE ORDER STATUS ONLY (PUT endpoint)
-app.put('/api/admin/orders/:id', authenticateToken, isAdmin, async (req, res) => {
+// UPDATE ORDER STATUS
+app.put('/api/admin/orders/:id/status', authenticateToken, isAdmin, async (req, res) => {
     try {
-        const { id } = req.params;
         const { status } = req.body;
-        
-        // ✅ Validate status
         const validStatuses = ['pending', 'preparing', 'delivered', 'cancelled'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({ error: 'Invalid status' });
         }
-        
+
         const conn = await pool.getConnection();
-        
         const [result] = await conn.execute(
-            `UPDATE orders 
-             SET status = ?, updated_at = NOW() 
-             WHERE id = ?`,
-            [status, id]
+            `UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?`,
+            [status, req.params.id]
         );
-        
         conn.release();
-        
+
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'Order not found' });
         }
-        
-        res.json({ 
-            success: true, 
-            message: `Status updated to ${status}`,
-            affectedRows: result.affectedRows 
-        });
-        
+
+        res.json({ success: true, message: `Status updated to ${status}` });
     } catch (error) {
         console.error('Update order error:', error);
         res.status(500).json({ error: 'Failed to update order' });
+    }
+});
+
+// DELETE ORDER
+app.delete('/api/admin/orders/:id', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const conn = await pool.getConnection();
+        await conn.execute(`DELETE FROM orders WHERE id = ?`, [req.params.id]);
+        conn.release();
+        res.json({ message: 'Order deleted successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -541,22 +424,15 @@ app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
 app.get('/api/admin/recent-orders', authenticateToken, isAdmin, async (req, res) => {
     try {
         const conn = await pool.getConnection();
-        const [rows] = await conn.execute(
-            `SELECT 
-                o.id,
-                o.order_number as order_number,
-                CONCAT(u.first_name, ' ', u.last_name) as customer,
-                o.status,
-                o.total_amount,
-                CASE 
-                    WHEN TIMESTAMPDIFF(MINUTE, o.created_at, NOW()) < 60 THEN 
-                        CONCAT(TIMESTAMPDIFF(MINUTE, o.created_at, NOW()), ' min ago')
-                    ELSE 
-                        CONCAT(FLOOR(TIMESTAMPDIFF(HOUR, o.created_at, NOW()) / 60), ' hr ago')
-                END as time_ago
-             FROM orders o JOIN users u ON o.user_id = u.id 
-             ORDER BY o.created_at DESC LIMIT 10`
-        );
+        const [rows] = await conn.execute(`
+            SELECT o.id, o.order_number, CONCAT(u.first_name, ' ', u.last_name) as customer,
+                   o.status, o.total_amount,
+                   CASE WHEN TIMESTAMPDIFF(MINUTE, o.created_at, NOW()) < 60 
+                        THEN CONCAT(TIMESTAMPDIFF(MINUTE, o.created_at, NOW()), ' min ago')
+                        ELSE CONCAT(FLOOR(TIMESTAMPDIFF(HOUR, o.created_at, NOW()) / 60), ' hr ago')
+                   END as time_ago
+            FROM orders o JOIN users u ON o.user_id = u.id 
+            ORDER BY o.created_at DESC LIMIT 10`);
         conn.release();
         res.json(rows);
     } catch (error) {
@@ -566,282 +442,128 @@ app.get('/api/admin/recent-orders', authenticateToken, isAdmin, async (req, res)
 
 // ADMIN ORDERS API
 app.get('/api/admin/orders', authenticateToken, isAdmin, async (req, res) => {
-
     try {
-
         const conn = await pool.getConnection();
-
         const [rows] = await conn.execute(`
-            SELECT
-                o.*,
-                CONCAT(u.first_name, ' ', u.last_name)
-                AS customer_name
-            FROM orders o
-            LEFT JOIN users u
-            ON o.user_id = u.id
-            ORDER BY o.created_at DESC
-        `);
-
+            SELECT o.*, CONCAT(u.first_name, ' ', u.last_name) AS customer_name, u.phone
+            FROM orders o LEFT JOIN users u ON o.user_id = u.id
+            ORDER BY o.created_at DESC`);
         conn.release();
-
         res.json(rows);
-
     } catch (error) {
-
         console.error(error);
-
-        res.status(500).json({
-            error: error.message
-        });
+        res.status(500).json({ error: error.message });
     }
 });
 
-// UPDATE ORDER STATUS
-app.put('/api/admin/orders/:id/status',
-authenticateToken,
-isAdmin,
-async (req, res) => {
-
+// ADMIN USERS API
+app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
     try {
-
-        const { status } = req.body;
-
         const conn = await pool.getConnection();
-
-        await conn.execute(
-            `UPDATE orders
-             SET status = ?
-             WHERE id = ?`,
-            [status, req.params.id]
-        );
-
-        conn.release();
-
-        res.json({
-            message: 'Order status updated'
-        });
-
-    } catch (error) {
-
-        console.error(error);
-
-        res.status(500).json({
-            error: error.message
-        });
-    }
-});
-
-// DELETE ORDER
-app.delete('/api/admin/orders/:id',
-authenticateToken,
-isAdmin,
-async (req, res) => {
-
-    try {
-
-        const conn = await pool.getConnection();
-
-        await conn.execute(
-            `DELETE FROM orders
-             WHERE id = ?`,
-            [req.params.id]
-        );
-
-        conn.release();
-
-        res.json({
-            message: 'Order deleted successfully'
-        });
-
-    } catch (error) {
-
-        console.error(error);
-
-        res.status(500).json({
-            error: error.message
-        });
-    }
-});
-
-// ===== ADMIN USERS API =====
-app.get('/api/admin/users',
-authenticateToken,
-isAdmin,
-async (req, res) => {
-
-    try {
-
-        const conn = await pool.getConnection();
-
         const [rows] = await conn.execute(`
-            SELECT
-                id,
-                username,
-                email,
-                first_name,
-                last_name,
-                phone,
-                role,
-                is_active,
-                created_at,
-                updated_at
-            FROM users
-            ORDER BY id DESC
-        `);
-
+            SELECT id, username, email, first_name, last_name, phone, role, is_active, created_at, updated_at
+            FROM users ORDER BY id DESC`);
         conn.release();
-
         res.json(rows);
-
     } catch (error) {
-
         console.error(error);
-
-        res.status(500).json({
-            error: error.message
-        });
+        res.status(500).json({ error: error.message });
     }
 });
 
-app.delete('/api/admin/users/:id',
-authenticateToken,
-isAdmin,
-async (req, res) => {
-
+app.delete('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res) => {
     try {
-
         const conn = await pool.getConnection();
-
-        await conn.execute(
-            `DELETE FROM users WHERE id = ?`,
-            [req.params.id]
-        );
-
+        await conn.execute(`DELETE FROM users WHERE id = ?`, [req.params.id]);
         conn.release();
-
-        res.json({
-            message: 'User deleted successfully'
-        });
-
+        res.json({ message: 'User deleted successfully' });
     } catch (error) {
-
         console.error(error);
-
-        res.status(500).json({
-            error: error.message
-        });
+        res.status(500).json({ error: error.message });
     }
 });
-   // ===== ANALYTICS & REPORTS API (COMPLETE - PASTE THIS ENTIRE BLOCK) =====
 
-// 🗃️ MAIN ANALYTICS ENDPOINT - ALREADY PERFECT ✅
-// 🆙 FIXED ANALYTICS - Replace entire /api/analytics block
+// ===== ANALYTICS & REPORTS API (COMPLETE) =====
 app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
-  try {
-    const { days = 'all', status = 'all' } = req.query;
-    
-    let whereClause = 'WHERE 1=1';
-    const params = [];
-    
-    if (days !== 'all') {
-      whereClause += ' AND o.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)';
-      params.push(days);
+    try {
+        const { days = 'all', status = 'all' } = req.query;
+        
+        let whereClause = 'WHERE 1=1';
+        const params = [];
+        
+        if (days !== 'all') {
+            whereClause += ' AND o.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)';
+            params.push(days);
+        }
+        if (status !== 'all') {
+            whereClause += ' AND o.status = ?';
+            params.push(status);
+        }
+
+        const conn = await pool.getConnection();
+        const queries = [
+            `SELECT COUNT(*) as total_orders FROM orders o ${whereClause}`,
+            `SELECT COALESCE(SUM(total_amount), 0) as total_revenue FROM orders o ${whereClause}`,
+            `SELECT COUNT(DISTINCT user_id) as active_customers FROM orders o ${whereClause}`,
+            `SELECT COALESCE(AVG(total_amount), 0) as avg_order_value FROM orders o ${whereClause}`,
+            `SELECT DAYNAME(o.created_at) as day_name, COUNT(*) as order_count 
+             FROM orders o ${whereClause} GROUP BY day_name 
+             ORDER BY FIELD(day_name, 'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')`,
+            `SELECT o.status, COALESCE(SUM(o.total_amount), 0) as total_amount 
+             FROM orders o ${whereClause} GROUP BY o.status ORDER BY total_amount DESC`,
+            `SELECT mi.name, SUM(oi.quantity) as quantity 
+             FROM order_items oi JOIN menu_items mi ON oi.menu_item_id = mi.id 
+             JOIN orders o ON oi.order_id = o.id ${whereClause} 
+             GROUP BY oi.menu_item_id, mi.name ORDER BY quantity DESC LIMIT 5`,
+            `SELECT u.username, COUNT(o.id) as order_count 
+             FROM orders o JOIN users u ON o.user_id = u.id ${whereClause} 
+             GROUP BY o.user_id, u.username ORDER BY order_count DESC LIMIT 5`
+        ];
+
+        const results = await Promise.all(queries.map(q => conn.execute(q, params)));
+        conn.release();
+
+        res.json({
+            total_orders: parseInt(results[0][0][0].total_orders),
+            total_revenue: parseFloat(results[1][0][0].total_revenue),
+            active_customers: parseInt(results[2][0][0].active_customers),
+            avg_order_value: parseFloat(results[3][0][0].avg_order_value),
+            order_trends: results[4][0],
+            revenue_by_status: results[5][0],
+            top_products: results[6][0],
+            customer_orders: results[7][0],
+            order_growth: 15,
+            revenue_growth: 28,
+            customer_growth: 12,
+            peak_day: results[4][0][0]?.day_name || 'Wednesday',
+            top_status: results[5][0][0]?.status || 'delivered',
+            delivered_revenue: parseFloat(results[5][0].find(r => r.status === 'delivered')?.total_amount || 0),
+            top_product_name: results[6][0][0]?.name || 'Tiramisu Cake',
+            total_items_sold: results[6][0].reduce((sum, r) => sum + parseInt(r.quantity), 0),
+            top_customer: results[7][0][0]?.username || 'johndoe',
+            repeat_customers: results[7][0].filter(c => c.order_count > 1).length
+        });
+    } catch (error) {
+        console.error('🚨 ANALYTICS ERROR:', error);
+        res.status(500).json({ error: 'Analytics failed', details: error.message });
     }
-    if (status !== 'all') {
-      whereClause += ' AND o.status = ?';
-      params.push(status);
-    }
-
-    const conn = await pool.getConnection();
-
-    // 🛠️ FIXED QUERIES - MySQL 8.0 compatible
-    const queries = [
-      `SELECT COUNT(*) as total_orders FROM orders o ${whereClause}`,
-      `SELECT COALESCE(SUM(total_amount), 0) as total_revenue FROM orders o ${whereClause}`,
-      `SELECT COUNT(DISTINCT user_id) as active_customers FROM orders o ${whereClause}`,
-      `SELECT COALESCE(AVG(total_amount), 0) as avg_order_value FROM orders o ${whereClause}`,
-      
-      // 🆙 FIXED: GROUP BY day_name instead of DAYOFWEEK
-      `SELECT DAYNAME(o.created_at) as day_name, COUNT(*) as order_count 
-       FROM orders o ${whereClause} 
-       GROUP BY day_name 
-       ORDER BY FIELD(day_name, 'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')`,
-       
-      `SELECT o.status, COALESCE(SUM(o.total_amount), 0) as total_amount 
-       FROM orders o ${whereClause} 
-       GROUP BY o.status 
-       ORDER BY total_amount DESC`,
-       
-      `SELECT mi.name, SUM(oi.quantity) as quantity 
-       FROM order_items oi 
-       JOIN menu_items mi ON oi.menu_item_id = mi.id 
-       JOIN orders o ON oi.order_id = o.id ${whereClause} 
-       GROUP BY oi.menu_item_id, mi.name 
-       ORDER BY quantity DESC LIMIT 5`,
-       
-      `SELECT u.username, COUNT(o.id) as order_count 
-       FROM orders o 
-       JOIN users u ON o.user_id = u.id ${whereClause} 
-       GROUP BY o.user_id, u.username 
-       ORDER BY order_count DESC LIMIT 5`
-    ];
-
-    const results = await Promise.all(queries.map(q => conn.execute(q, params)));
-    conn.release();
-
-    res.json({
-      total_orders: parseInt(results[0][0][0].total_orders),
-      total_revenue: parseFloat(results[1][0][0].total_revenue),
-      active_customers: parseInt(results[2][0][0].active_customers),
-      avg_order_value: parseFloat(results[3][0][0].avg_order_value),
-      order_trends: results[4][0],
-      revenue_by_status: results[5][0],
-      top_products: results[6][0],
-      customer_orders: results[7][0],
-      order_growth: 15,
-      revenue_growth: 28,
-      customer_growth: 12,
-      peak_day: results[4][0][0]?.day_name || 'Wednesday',
-      top_status: results[5][0][0]?.status || 'delivered',
-      delivered_revenue: parseFloat(results[5][0].find(r => r.status === 'delivered')?.total_amount || 0),
-      top_product_name: results[6][0][0]?.name || 'Tiramisu Cake',
-      total_items_sold: results[6][0].reduce((sum, r) => sum + parseInt(r.quantity), 0),
-      top_customer: results[7][0][0]?.username || 'johndoe',
-      repeat_customers: results[7][0].filter(c => c.order_count > 1).length
-    });
-
-  } catch (error) {
-    console.error('🚨 ANALYTICS ERROR:', error);
-    res.status(500).json({ error: 'Analytics failed', details: error.message });
-  }
 });
 
-// 📊 EXPORT REPORTS (CSV Downloads)
+// ✅ COMPLETE EXPORT REPORTS (PDF + CSV)
 app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
     try {
         const { type } = req.params;
         const conn = await pool.getConnection();
 
         if (type === 'orders') {
-            // Full Orders Report
+            // 📄 CSV Orders Export
             const [rows] = await conn.execute(`
-                SELECT 
-                    o.order_number,
-                    CONCAT(u.first_name, ' ', u.last_name) as customer,
-                    u.username,
-                    o.total_amount,
-                    o.status,
-                    o.delivery_address,
-                    o.payment_method,
-                    DATE_FORMAT(o.created_at, '%Y-%m-%d %H:%i') as order_date,
-                    TIME_FORMAT(TIMEDIFF(NOW(), o.created_at), '%i min ago') as time_ago
-                FROM orders o 
-                LEFT JOIN users u ON o.user_id = u.id 
-                ORDER BY o.created_at DESC
-            `);
+                SELECT o.order_number, CONCAT(u.first_name, ' ', u.last_name) as customer, u.username,
+                       o.total_amount, o.status, o.delivery_address, o.payment_method,
+                       DATE_FORMAT(o.created_at, '%Y-%m-%d %H:%i') as order_date
+                FROM orders o LEFT JOIN users u ON o.user_id = u.id ORDER BY o.created_at DESC`);
 
-            // Generate CSV
-            const csvHeader = ['Order #', 'Customer', 'Username', 'Amount', 'Status', 'Address', 'Payment', 'Date', 'Time Ago'];
+            const csvHeader = ['Order #', 'Customer', 'Username', 'Amount', 'Status', 'Address', 'Payment', 'Date'];
             const csvRows = rows.map(row => [
                 row.order_number,
                 `"${row.customer || 'N/A'}"`,
@@ -850,8 +572,7 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
                 row.status,
                 `"${row.delivery_address || 'Pickup'}"`,
                 row.payment_method || 'Cash',
-                row.order_date,
-                row.time_ago
+                row.order_date
             ]);
 
             const csvContent = [csvHeader, ...csvRows].map(row => row.join(',')).join('\n');
@@ -860,27 +581,221 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
             res.setHeader('Content-Disposition', `attachment; filename="hulyanas-orders-${new Date().toISOString().split('T')[0]}.csv"`);
             return res.send(csvContent);
 
+        } else if (type === 'dashboard') {
+            // ✅ FULL DASHBOARD PDF GENERATION
+            const [[totalOrders], [delivered], [revenue], [users], [menuItems]] = await Promise.all([
+                conn.execute(`SELECT COUNT(*) as count FROM orders`),
+                conn.execute(`SELECT COUNT(*) as count FROM orders WHERE status = 'delivered'`),
+                conn.execute(`SELECT COALESCE(SUM(total_amount), 0) as total FROM orders WHERE status != 'cancelled'`),
+                conn.execute(`SELECT COUNT(*) as count FROM users WHERE role = 'customer'`),
+                conn.execute(`SELECT COUNT(*) as count FROM menu_items WHERE is_available = TRUE`)
+            ]);
+
+            const browser = await puppeteer.launch({ 
+                headless: true,
+                args: ['--no-sandbox', '--disable-setuid-sandbox']
+            });
+            const page = await browser.newPage();
+
+            const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Hulyanas Hill - Dashboard Report</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            line-height: 1.6; 
+            color: #333; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 40px 20px;
+            background: #fafafa;
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 40px; 
+            border-bottom: 3px solid #1a1a1a; 
+            padding-bottom: 20px;
+        }
+        .header h1 { 
+            color: #1a1a1a; 
+            font-size: 32px; 
+            margin-bottom: 10px; 
+            font-weight: 700;
+        }
+        .logo { font-size: 48px; margin-bottom: 10px; }
+        .header p { 
+            color: #666; 
+            font-size: 16px; 
+        }
+        .stats-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
+            gap: 25px; 
+            margin: 40px 0; 
+        }
+        .stat-card { 
+            background: #fff; 
+            padding: 30px 20px; 
+            border-radius: 16px; 
+            border: 1px solid #e5e5e5; 
+            text-align: center; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            transition: transform 0.2s;
+        }
+        .stat-icon { 
+            font-size: 32px; 
+            margin-bottom: 15px; 
+            opacity: 0.8;
+        }
+        .stat-number { 
+            font-size: 36px; 
+            font-weight: 700; 
+            color: #1a1a1a; 
+            margin-bottom: 8px; 
+        }
+        .stat-label { 
+            color: #666; 
+            font-weight: 500; 
+            font-size: 14px; 
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .summary-section { 
+            background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%); 
+            padding: 30px; 
+            border-radius: 16px; 
+            margin: 40px 0; 
+            border-left: 5px solid #1a1a1a;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+        }
+        .summary-section h2 { 
+            color: #1a1a1a; 
+            margin-bottom: 20px; 
+            font-size: 24px; 
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .summary-item {
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #e5e5e5;
+        }
+        .summary-label { color: #666; font-weight: 500; }
+        .summary-value { font-size: 20px; font-weight: 700; color: #1a1a1a; margin-top: 5px; }
+        .footer { 
+            margin-top: 60px; 
+            padding-top: 30px; 
+            border-top: 1px solid #e5e5e5; 
+            text-align: center; 
+            color: #999; 
+            font-size: 14px; 
+        }
+        @media print { body { padding: 20px; background: white; } }
+        @page { margin: 20px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🍰</div>
+        <h1>Hulyanas Hill</h1>
+        <p>Admin Dashboard Report - Complete Business Summary</p>
+        <p><strong>Generated:</strong> ${new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}</p>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">📋</div>
+            <div class="stat-number">${parseInt(totalOrders[0].count).toLocaleString()}</div>
+            <div class="stat-label">Total Orders</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-number">${parseInt(delivered[0].count).toLocaleString()}</div>
+            <div class="stat-label">Delivered</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div class="stat-number">₱${parseFloat(revenue[0].total).toLocaleString('en-PH', {minimumFractionDigits: 2})}</div>
+            <div class="stat-label">Total Revenue</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-number">${parseInt(users[0].count).toLocaleString()}</div>
+            <div class="stat-label">Customers</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🍽️</div>
+            <div class="stat-number">${parseInt(menuItems[0].count).toLocaleString()}</div>
+            <div class="stat-label">Menu Items</div>
+        </div>
+    </div>
+
+    <div class="summary-section">
+        <h2>📊 Executive Summary</h2>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <div class="summary-label">Total Orders Processed</div>
+                <div class="summary-value">${parseInt(totalOrders[0].count).toLocaleString()}</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">Revenue Generated</div>
+                <div class="summary-value">₱${parseFloat(revenue[0].total).toLocaleString('en-PH', {minimumFractionDigits: 2})}</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">Successful Deliveries</div>
+                <div class="summary-value">${parseInt(delivered[0].count).toLocaleString()}</div>
+            </div>
+            <div class="summary-item">
+                <div class="summary-label">Active Customers</div>
+                <div class="summary-value">${parseInt(users[0].count).toLocaleString()}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p><strong>Hulyanas Hill Admin Dashboard</strong> | Professional Reporting System</p>
+        <p>Generated automatically by the Hulyanas Hill management system</p>
+    </div>
+</body>
+</html>`;
+
+            await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
+            
+            const pdfBuffer = await page.pdf({
+                format: 'A4',
+                printBackground: true,
+                margin: { top: '20px', right: '20px', bottom: '20px', left: '20px' }
+            });
+
+            await browser.close();
+
+            // ✅ SEND PROPER PDF
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="hulyanas-dashboard-${new Date().toISOString().split('T')[0]}.pdf"`);
+            res.setHeader('Content-Length', pdfBuffer.length);
+            return res.send(pdfBuffer);
+
         } else if (type === 'sales') {
-            // Sales by Product
+            // 📄 CSV Sales Export
             const [rows] = await conn.execute(`
-                SELECT 
-                    mi.name as product,
-                    mi.category,
-                    SUM(oi.quantity) as quantity_sold,
-                    SUM(oi.quantity * oi.price_at_order) as revenue,
-                    AVG(oi.price_at_order) as avg_price
-                FROM order_items oi
-                JOIN menu_items mi ON oi.menu_item_id = mi.id
+                SELECT mi.name as product, mi.category, SUM(oi.quantity) as quantity_sold,
+                       SUM(oi.quantity * oi.price_at_order) as revenue, AVG(oi.price_at_order) as avg_price
+                FROM order_items oi JOIN menu_items mi ON oi.menu_item_id = mi.id
                 JOIN orders o ON oi.order_id = o.id AND o.status != 'cancelled'
-                GROUP BY oi.menu_item_id, mi.name, mi.category
-                ORDER BY quantity_sold DESC
-            `);
+                GROUP BY oi.menu_item_id, mi.name, mi.category ORDER BY quantity_sold DESC`);
 
             const csvHeader = ['Product', 'Category', 'Quantity Sold', 'Revenue', 'Avg Price'];
             const csvRows = rows.map(row => [
-                `"${row.product}"`,
-                row.category,
-                row.quantity_sold,
+                `"${row.product}"`, row.category, row.quantity_sold,
                 `₱${parseFloat(row.revenue).toLocaleString('en-PH', {minimumFractionDigits: 2})}`,
                 `₱${parseFloat(row.avg_price).toLocaleString('en-PH', {minimumFractionDigits: 2})}`
             ]);
@@ -890,22 +805,6 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
             res.setHeader('Content-Type', 'text/csv');
             res.setHeader('Content-Disposition', `attachment; filename="hulyanas-sales-${new Date().toISOString().split('T')[0]}.csv"`);
             return res.send(csvContent);
-
-        } else if (type === 'dashboard') {
-            // Dashboard Summary (JSON for PDF generation)
-            const summary = await conn.execute(`
-                SELECT 
-                    COUNT(*) as total_orders,
-                    COALESCE(SUM(CASE WHEN status='delivered' THEN total_amount ELSE 0 END), 0) as delivered_revenue,
-                    COUNT(DISTINCT CASE WHEN status='delivered' THEN user_id END) as customers
-                FROM orders
-            `);
-            
-            res.json({
-                message: 'Dashboard PDF data ready',
-                summary: summary[0][0],
-                timestamp: new Date().toISOString()
-            });
         }
 
         conn.release();
@@ -916,9 +815,11 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
         res.status(500).json({ error: 'Export failed', details: error.message });
     }
 });
+
 // Start server
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
     console.log(`📊 Customer Dashboard: http://localhost:${PORT}/user/dashboard.html`);
     console.log(`👑 Admin Dashboard: http://localhost:${PORT}/admin/dashboard.html`);
+    console.log(`📄 PDF Export: POST /api/export/dashboard`);
 });
