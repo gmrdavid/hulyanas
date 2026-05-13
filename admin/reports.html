@@ -419,7 +419,7 @@
                 <div class="stat-icon"><i class="fas fa-star"></i></div>
                 <div class="stat-number" id="avgRating">₱0</div>
                 <div class="stat-change positive" id="ratingChange">Loading...</div>
-                <div class="stat-label">Avg Rating</div> <!-- Keep as-is if you want currency here -->
+                <div class="stat-label">Avg Order Value</div> <!-- Keep as-is if you want currency here -->
             </div>
         </div>
 
@@ -592,7 +592,7 @@
                 { el: 'totalOrders', target: data.total_orders || 0, format: 'number' },
                 { el: 'totalRevenue', target: data.total_revenue || 0, format: 'currency' },
                 { el: 'activeCustomers', target: data.active_customers || 0, format: 'number' },
-                { el: 'avgRating', target: data.avg_order_value || 0, format: 'currency' } // This is correct
+                { el: 'avgRating', target: data.avg_order_value || 0, format: 'currency' }
             ];
 
             elements.forEach(({ el, target, format }) => {
@@ -602,14 +602,22 @@
                 const timer = setInterval(() => {
                     current += increment;
                     if (current >= target) {
-                        element.textContent = formatNumber(target, format);
+                        if (format === 'currency') {
+                            element.textContent = `₱${Number(target).toLocaleString('en-PH', { 
+                                minimumFractionDigits: 2, maximumFractionDigits: 2 
+                            })}`;
+                        } else {
+                            element.textContent = Math.floor(target).toLocaleString();
+                        }
                         clearInterval(timer);
                         return;
                     }
-                    element.textContent = formatNumber(current, format);
+                    const display = format === 'currency' ? 
+                        `₱${Math.floor(current).toLocaleString()}` : 
+                        Math.floor(current).toLocaleString();
+                    element.textContent = display;
                 }, 20);
             });
-
 
             // Update change percentages
             document.getElementById('ordersChange').textContent = `+${data.order_growth || 0}%`;
