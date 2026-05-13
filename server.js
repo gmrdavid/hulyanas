@@ -1031,7 +1031,21 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // ===== END ANALYTICS ROUTES =====
-
+// 🧪 TEST ENDPOINT - Remove after testing
+app.get('/api/test-analytics', async (req, res) => {
+    try {
+        const conn = await pool.getConnection();
+        const [rows] = await conn.execute('SELECT COUNT(*) as orders FROM orders');
+        conn.release();
+        res.json({ 
+            message: '✅ Database connected!', 
+            orders: rows[0].orders,
+            tables: ['orders', 'users', 'menu_items', 'order_items']
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 // Start server
 app.listen(PORT, () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
