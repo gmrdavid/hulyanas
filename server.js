@@ -8,7 +8,8 @@ const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs').promises;
-const puppeteer = require('puppeteer'); // ✅ ADDED FOR PDF
+const jsPDF = require('jspdf'); // ✅ ONLY jsPDF
+const autoTable = require('jspdf-autotable'); // ✅ ONLY jsPDF autotable
 
 const app = express();
 const PORT = process.env.PORT;
@@ -550,38 +551,18 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // ✅ COMPLETE EXPORT ROUTES (PDF + CSV - Render Optimized)
+// ✅ PDF/CSV EXPORT (DEPLOYMENT PROOF!)
 app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
     try {
         const { type } = req.params;
         const conn = await pool.getConnection();
 
-        if (type === 'orders') {
-            // CSV Orders (unchanged)
-            const [rows] = await conn.execute(`
-                SELECT o.order_number, CONCAT(u.first_name, ' ', u.last_name) as customer, u.username,
-                       o.total_amount, o.status, o.payment_method, DATE_FORMAT(o.created_at, '%Y-%m-%d %H:%i') as order_date
-                FROM orders o LEFT JOIN users u ON o.user_id = u.id ORDER BY o.created_at DESC LIMIT 1000`);
+        console.log(`📄 Export requested: ${type}`);
 
-            const csvHeader = ['Order #', 'Customer', 'Username', 'Amount', 'Status', 'Payment', 'Date'];
-            const csvRows = rows.map(row => [
-                row.order_number || '',
-                `"${row.customer || 'N/A'}"`,
-                row.username || '',
-                `₱${parseFloat(row.total_amount || 0).toFixed(2)}`,
-                row.status || '',
-                row.payment_method || '',
-                row.order_date || ''
-            ]);
-
-            const csvContent = [csvHeader, ...csvRows].map(row => row.join(',')).join('\n');
-            res.set({
-                'Content-Type': 'text/csv',
-                'Content-Disposition': `attachment; filename="hulyanas-orders-${new Date().toISOString().split('T')[0]}.csv"`
-            });
-            return res.send(csvContent);
-
-        } else if (type === 'dashboard') {
-            // ✅ JSPDF DASHBOARD PDF (100% WORKING!)
+        if (type === 'dashboard') {
+            console.log('🎯 Generating Dashboard PDF...');
+            
+            // Get stats
             const [[totalOrders], [delivered], [revenue], [users], [menuItems], [pending]] = await Promise.all([
                 conn.execute(`SELECT COUNT(*) as count FROM orders`),
                 conn.execute(`SELECT COUNT(*) as count FROM orders WHERE status = 'delivered'`),
@@ -591,18 +572,21 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
                 conn.execute(`SELECT COUNT(*) as count FROM orders WHERE status IN ('pending', 'preparing')`)
             ]);
 
-            // Create PDF
-            const doc = new jsPDF();
+            console.log('📊 Stats loaded:', { totalOrders: totalOrders[0].count });
+
+            // ✅ CREATE PDF WITH JSPDF
+            const doc = new jsPDF('p', 'mm', 'a4');
             
             // Header
-            doc.setFontSize(24);
+            doc.setFillColor(26, 26, 26);
+            doc.rect(0, 0, 210, 40, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(28);
             doc.setFont('helvetica', 'bold');
-            doc.text('🍰 Hulyanas Hill', 105, 25, { align: 'center' });
+            doc.text('Hulyanas Hill', 105, 22, { align: 'center' });
             doc.setFontSize(16);
             doc.setFont('helvetica', 'normal');
-            doc.text('Dashboard Report', 105, 40, { align: 'center' });
-            doc.setFontSize(10);
-            doc.text(`Generated: ${new Date().toLocaleString('en-PH')}`, 105, 50, { align: 'center' });
+            doc.text('Dashboard Report', 105, 32, { align: 'center' });
 
             // Stats Table
             const statsData = [
@@ -615,47 +599,53 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
             ];
 
             autoTable(doc, {
-                startY: 65,
+                startY: 50,
                 head: [['Metric', 'Value']],
                 body: statsData,
                 theme: 'grid',
                 styles: { 
-                    fontSize: 12, 
-                    cellPadding: 8, 
+                    fontSize: 11, 
+                    cellPadding: 6, 
                     halign: 'center',
-                    fillColor: [26, 26, 26],
-                    textColor: [255, 255, 255],
-                    fontStyle: 'bold'
+                    minCellHeight: 10
                 },
                 headStyles: { 
                     fillColor: [26, 26, 26],
-                    textColor: [255, 255, 255]
+                    textColor: 255,
+                    fontSize: 12,
+                    fontStyle: 'bold'
                 },
                 alternateRowStyles: { fillColor: [248, 249, 250] },
-                columnStyles: { 0: { halign: 'left', fontStyle: 'bold' } },
-                margin: { left: 20, right: 20 }
+                columnStyles: { 
+                    0: { halign: 'left', fontStyle: 'bold', cellWidth: 90 },
+                    1: { halign: 'center', fontStyle: 'bold' }
+                },
+                margin: { top: 50, left: 15, right: 15 }
             });
 
-            // Summary Section
-            const finalY = doc.lastAutoTable.finalY + 20;
+            // Summary
+            const finalY = doc.lastAutoTable.finalY + 15;
+            doc.setTextColor(26, 26, 26);
             doc.setFontSize(18);
             doc.setFont('helvetica', 'bold');
-            doc.text('📊 Executive Summary', 20, finalY);
+            doc.text('📊 Executive Summary', 15, finalY);
             
             doc.setFontSize(12);
             doc.setFont('helvetica', 'normal');
-            doc.text(`Total Orders: ${parseInt(totalOrders[0].count).toLocaleString()}`, 20, finalY + 15);
-            doc.text(`Revenue: ₱${parseFloat(revenue[0].total).toLocaleString('en-PH', {minimumFractionDigits: 2})}`, 20, finalY + 25);
-            doc.text(`Deliveries: ${parseInt(delivered[0].count).toLocaleString()}`, 20, finalY + 35);
-            doc.text(`Active Customers: ${parseInt(users[0].count).toLocaleString()}`, 20, finalY + 45);
+            doc.text(`Total Orders: ${parseInt(totalOrders[0].count).toLocaleString()}`, 15, finalY + 12);
+            doc.text(`Revenue Generated: ₱${parseFloat(revenue[0].total).toLocaleString('en-PH', {minimumFractionDigits: 2})}`, 15, finalY + 22);
+            doc.text(`Successful Deliveries: ${parseInt(delivered[0].count).toLocaleString()}`, 15, finalY + 32);
+            doc.text(`Active Customers: ${parseInt(users[0].count).toLocaleString()}`, 15, finalY + 42);
 
             // Footer
             doc.setFontSize(10);
             doc.setFont('helvetica', 'italic');
-            doc.text('Hulyanas Hill Restaurant System | Professional Dashboard Report', 105, 280, { align: 'center' });
+            doc.setTextColor(150, 150, 150);
+            doc.text('Hulyanas Hill Restaurant System | Generated by Admin Dashboard', 105, 285, { align: 'center' });
 
             const pdfBuffer = doc.output('arraybuffer');
-            
+            console.log('✅ PDF Generated Successfully! Size:', pdfBuffer.byteLength);
+
             res.set({
                 'Content-Type': 'application/pdf',
                 'Content-Disposition': `attachment; filename="hulyanas-dashboard-${new Date().toISOString().split('T')[0]}.pdf"`,
@@ -663,52 +653,47 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
             });
             return res.send(Buffer.from(pdfBuffer));
 
-        } else if (type === 'sales') {
-            // CSV Sales (unchanged)
+        } else if (type === 'orders') {
+            // Simple CSV Orders
             const [rows] = await conn.execute(`
-                SELECT mi.name as product, mi.category, 
-                       SUM(oi.quantity) as quantity_sold,
-                       SUM(oi.quantity * oi.price_at_order) as revenue 
-                FROM order_items oi JOIN menu_items mi ON oi.menu_item_id = mi.id
-                JOIN orders o ON oi.order_id = o.id AND o.status != 'cancelled'
-                GROUP BY oi.menu_item_id ORDER BY quantity_sold DESC LIMIT 50`);
+                SELECT o.order_number, CONCAT(u.first_name, ' ', u.last_name) as customer,
+                       o.total_amount, o.status, o.payment_method, 
+                       DATE_FORMAT(o.created_at, '%Y-%m-%d %H:%i') as order_date
+                FROM orders o LEFT JOIN users u ON o.user_id = u.id 
+                ORDER BY o.created_at DESC LIMIT 1000`);
 
-            const csvHeader = ['Product', 'Category', 'Quantity Sold', 'Revenue'];
+            const csvHeader = ['Order #', 'Customer', 'Amount', 'Status', 'Payment', 'Date'];
             const csvRows = rows.map(row => [
-                `"${row.product || 'N/A'}"`,
-                row.category || 'N/A',
-                row.quantity_sold || 0,
-                `₱${parseFloat(row.revenue || 0).toLocaleString('en-PH', {minimumFractionDigits: 2})}`
+                row.order_number || '',
+                `"${row.customer || 'N/A'}"`,
+                `₱${parseFloat(row.total_amount || 0).toFixed(2)}`,
+                row.status || '',
+                row.payment_method || '',
+                row.order_date || ''
             ]);
 
             const csvContent = [csvHeader, ...csvRows].map(row => row.join(',')).join('\n');
+
             res.set({
                 'Content-Type': 'text/csv',
-                'Content-Disposition': `attachment; filename="hulyanas-sales-${new Date().toISOString().split('T')[0]}.csv"`
+                'Content-Disposition': `attachment; filename="hulyanas-orders-${new Date().toISOString().split('T')[0]}.csv"`
             });
             return res.send(csvContent);
+
+        } else {
+            res.status(400).json({ error: 'Use: dashboard, orders' });
         }
 
         conn.release();
-        res.status(400).json({ error: 'Use: orders, sales, dashboard' });
 
     } catch (error) {
         console.error('🚨 Export Error:', error);
-        res.status(500).json({ error: 'Export failed' });
+        res.status(500).json({ error: 'Export failed', details: error.message });
     }
 });
-// Start server
-const server = app.listen(PORT, () => {
-    console.log(`🚀 Hulyanas Hill Server running on port ${PORT}`);
-    console.log(`📱 Customer: http://localhost:${PORT}/user/dashboard.html`);
+// Start Server
+app.listen(PORT, () => {
+    console.log(`🚀 Hulyanas Hill running on port ${PORT}`);
     console.log(`👑 Admin: http://localhost:${PORT}/admin/dashboard.html`);
-    console.log(`📄 PDF Export: POST /api/export/dashboard`);
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-    console.log('SIGTERM received, shutting down gracefully');
-    server.close(() => {
-        console.log('Process terminated');
-    });
+    console.log(`📄 Test PDF: POST /api/export/dashboard`);
 });
