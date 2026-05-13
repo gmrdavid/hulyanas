@@ -242,13 +242,13 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
     }
 });
 
-// ADMIN MENU - SHOW ALL ITEMS (including deleted)
-app.get('/api/admin/menu', async (req, res) => {
+// ===== MENU ROUTES =====
+app.get('/api/menu', async (req, res) => {
     try {
         const conn = await pool.getConnection();
         const [rows] = await conn.execute(
             `SELECT id, name, description, price, category, image_url, is_available 
-             FROM menu_items ORDER BY category, name`
+             FROM menu_items WHERE is_available = TRUE ORDER BY category, name`
         );
         conn.release();
         res.json(rows);
