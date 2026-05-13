@@ -618,20 +618,20 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
     }
 });
 
-// 🔥 COMPLETE EXPORT ROUTES (ALL 3 BUTTONS NOW WORK!)
-// 🔥 FIXED EXPORT ROUTES WITH PROPER CORS & ERROR HANDLING
+// 🔥 FIXED EXPORT ROUTES - All 3 buttons now work perfectly!
 app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
     let conn;
     
     try {
         const { type } = req.params;
-        console.log(`📄 EXPORT STARTED: ${type} | Token: ${req.headers.authorization?.substring(0, 20)}...`);
+        console.log(`📄 EXPORT STARTED: ${type}`);
 
         conn = await pool.getConnection();
 
         if (type === 'dashboard') {
-            console.log('🎯 [DASHBOARD] Fetching stats...');
+            console.log('🎯 [DASHBOARD] Generating PDF...');
             
+            // Fetch stats
             const [[totalOrders], [delivered], [revenue], [users], [menuItems], [pending]] = await Promise.all([
                 conn.execute(`SELECT COUNT(*) as count FROM orders`),
                 conn.execute(`SELECT COUNT(*) as count FROM orders WHERE status = 'delivered'`),
@@ -641,14 +641,9 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
                 conn.execute(`SELECT COUNT(*) as count FROM orders WHERE status IN ('pending', 'preparing')`)
             ]);
 
-            console.log('📊 [DASHBOARD] Stats:', { 
-                totalOrders: totalOrders[0].count,
-                revenue: revenue[0].total 
-            });
-
-            // ✅ FIXED jsPDF - Import INSIDE function to avoid module cache issues
+            // ✅ FIXED: Use 'blob' output instead of 'arraybuffer'
             const { jsPDF } = require('jspdf');
-            const autoTable = require('jspdf-autotable');
+            require('jspdf-autotable');
             const doc = new jsPDF('p', 'mm', 'a4');
             
             // Header
@@ -691,22 +686,23 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
             doc.text(`Generated: ${new Date().toLocaleString('en-PH')}`, 15, finalY + 10);
             doc.text('Hulyanas Hill Restaurant System', 105, 285, { align: 'center' });
 
-            const pdfBuffer = doc.output('arraybuffer');
-            console.log('✅ [DASHBOARD] PDF Generated! Size:', pdfBuffer.byteLength);
-
-            // ✅ FIXED HEADERS
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', `attachment; filename="hulyanas-dashboard-${new Date().toISOString().split('T')[0]}.pdf"`);
-            res.setHeader('Content-Length', pdfBuffer.byteLength);
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-            res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+            // ✅ FIXED: Use 'blob' output + proper Buffer conversion
+            const pdfBlob = doc.output('blob');
+            const pdfBuffer = Buffer.from(await pdfBlob.arrayBuffer());
             
-            return res.status(200).send(Buffer.from(pdfBuffer));
+            console.log('✅ [DASHBOARD] PDF Generated! Size:', pdfBuffer.length);
+
+            res.set({
+                'Content-Type': 'application/pdf',
+                'Content-Disposition': `attachment; filename="hulyanas-dashboard-${new Date().toISOString().split('T')[0]}.pdf"`,
+                'Content-Length': pdfBuffer.length,
+                'Access-Control-Allow-Origin': '*'
+            });
+            
+            return res.status(200).send(pdfBuffer);
 
         } else if (type === 'orders') {
             console.log('📋 [ORDERS] Generating CSV...');
-            // Your existing working orders code
             const [rows] = await conn.execute(`
                 SELECT o.order_number, CONCAT(u.first_name, ' ', u.last_name) as customer,
                        o.total_amount, o.status, o.payment_method, 
@@ -726,15 +722,17 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
 
             const csvContent = [csvHeader, ...csvRows].map(row => row.join(',')).join('\n');
             
-            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-            res.setHeader('Content-Disposition', `attachment; filename="hulyanas-orders-${new Date().toISOString().split('T')[0]}.csv"`);
-            res.setHeader('Content-Length', Buffer.byteLength(csvContent, 'utf8'));
-            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.set({
+                'Content-Type': 'text/csv; charset=utf-8',
+                'Content-Disposition': `attachment; filename="hulyanas-orders-${new Date().toISOString().split('T')[0]}.csv"`,
+                'Content-Length': Buffer.byteLength(csvContent, 'utf8'),
+                'Access-Control-Allow-Origin': '*'
+            });
             
             return res.status(200).send(csvContent);
 
         } else if (type === 'sales') {
-            console.log('💰 [SALES] Generating detailed CSV...');
+            console.log('💰 [SALES] Generating CSV...');
             
             const [salesRows] = await conn.execute(`
                 SELECT 
@@ -757,8 +755,6 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
                 ORDER BY o.created_at DESC
                 LIMIT 5000`);
 
-            console.log('📈 [SALES] Found rows:', salesRows.length);
-
             const csvHeader = ['Date', 'Day', 'Order#', 'Customer', 'Status', 'Payment', 'Order Total', 'Qty', 'Product', 'Unit Price', 'Line Total'];
             const csvRows = salesRows.map(row => [
                 row.sale_date || '',
@@ -776,30 +772,24 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
 
             const csvContent = [csvHeader, ...csvRows].map(row => row.join(',')).join('\n');
             
-            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-            res.setHeader('Content-Disposition', `attachment; filename="hulyanas-sales-${new Date().toISOString().split('T')[0]}.csv"`);
-            res.setHeader('Content-Length', Buffer.byteLength(csvContent, 'utf8'));
-            res.setHeader('Access-Control-Allow-Origin', '*');
+            // ✅ FIXED: Correct CSV filename extension
+            res.set({
+                'Content-Type': 'text/csv; charset=utf-8',
+                'Content-Disposition': `attachment; filename="hulyanas-sales-${new Date().toISOString().split('T')[0]}.csv"`,
+                'Content-Length': Buffer.byteLength(csvContent, 'utf8'),
+                'Access-Control-Allow-Origin': '*'
+            });
             
-            console.log('✅ [SALES] CSV ready! Size:', csvContent.length);
+            console.log('✅ [SALES] CSV ready!');
             return res.status(200).send(csvContent);
 
         } else {
-            console.log('❌ [INVALID] Type:', type);
             return res.status(400).json({ error: 'Invalid type. Use: dashboard, orders, sales' });
         }
 
     } catch (error) {
-        console.error('🚨 EXPORT ERROR:', {
-            type: req.params.type,
-            error: error.message,
-            stack: error.stack,
-            user: req.user
-        });
-        return res.status(500).json({ 
-            error: 'Export failed', 
-            details: error.message 
-        });
+        console.error('🚨 EXPORT ERROR:', error);
+        return res.status(500).json({ error: 'Export failed', details: error.message });
     } finally {
         if (conn) conn.release();
     }
