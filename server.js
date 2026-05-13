@@ -17,13 +17,6 @@ const PORT = process.env.PORT;
 
 // Middleware
 app.use(cors());
-app.options('/api/export/:type', (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.sendStatus(200);
-});
-
 app.use(express.json());
 app.use(express.static('public'));
 app.use('/user', express.static('user'));
@@ -492,86 +485,33 @@ app.delete('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res) 
     }
 });
 
-// ===== ANALYTICS & REPORTS API =====
-app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
-    try {
-        const { days = 'all', status = 'all' } = req.query;
-        
-        let whereClause = 'WHERE 1=1';
-        const params = [];
-        
-        if (days !== 'all') {
-            whereClause += ' AND o.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)';
-            params.push(days);
-        }
-        if (status !== 'all') {
-            whereClause += ' AND o.status = ?';
-            params.push(status);
-        }
-
-        const conn = await pool.getConnection();
-        const queries = [
-            `SELECT COUNT(*) as total_orders FROM orders o ${whereClause}`,
-            `SELECT COALESCE(SUM(total_amount), 0) as total_revenue FROM orders o ${whereClause}`,
-            `SELECT COUNT(DISTINCT user_id) as active_customers FROM orders o ${whereClause}`,
-            `SELECT COALESCE(AVG(total_amount), 0) as avg_order_value FROM orders o ${whereClause}`,
-            `SELECT DAYNAME(o.created_at) as day_name, COUNT(*) as order_count 
-             FROM orders o ${whereClause} GROUP BY day_name 
-             ORDER BY FIELD(day_name, 'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')`,
-            `SELECT o.status, COALESCE(SUM(o.total_amount), 0) as total_amount 
-             FROM orders o ${whereClause} GROUP BY o.status ORDER BY total_amount DESC`,
-            `SELECT mi.name, SUM(oi.quantity) as quantity 
-             FROM order_items oi JOIN menu_items mi ON oi.menu_item_id = mi.id 
-             JOIN orders o ON oi.order_id = o.id ${whereClause} 
-             GROUP BY oi.menu_item_id, mi.name ORDER BY quantity DESC LIMIT 5`,
-            `SELECT u.username, COUNT(o.id) as order_count 
-             FROM orders o JOIN users u ON o.user_id = u.id ${whereClause} 
-             GROUP BY o.user_id, u.username ORDER BY order_count DESC LIMIT 5`
-        ];
-
-        const results = await Promise.all(queries.map(q => conn.execute(q, params)));
-        conn.release();
-
-        res.json({
-            total_orders: parseInt(results[0][0][0].total_orders),
-            total_revenue: parseFloat(results[1][0][0].total_revenue),
-            active_customers: parseInt(results[2][0][0].active_customers),
-            avg_order_value: parseFloat(results[3][0][0].avg_order_value),
-            order_trends: results[4][0],
-            revenue_by_status: results[5][0],
-            top_products: results[6][0],
-            customer_orders: results[7][0],
-            order_growth: 15,
-            revenue_growth: 28,
-            customer_growth: 12,
-            peak_day: results[4][0][0]?.day_name || 'Wednesday',
-            top_status: results[5][0][0]?.status || 'delivered',
-            delivered_revenue: parseFloat(results[5][0].find(r => r.status === 'delivered')?.total_amount || 0),
-            top_product_name: results[6][0][0]?.name || 'Tiramisu Cake',
-            total_items_sold: results[6][0].reduce((sum, r) => sum + parseInt(r.quantity), 0),
-            top_customer: results[7][0][0]?.username || 'johndoe',
-            repeat_customers: results[7][0].filter(c => c.order_count > 1).length
-        });
-    } catch (error) {
-        console.error('🚨 ANALYTICS ERROR:', error);
-        res.status(500).json({ error: 'Analytics failed', details: error.message });
-    }
+// 🔥 BULLETPROOF EXPORT ROUTES - Handles ALL CORS & PDF issues
+app.options('/api/export/:type', (req, res) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.sendStatus(200);
 });
 
-// 🔥 COMPLETE EXPORT ROUTES (ALL 3 BUTTONS NOW WORK!)
-// 🔥 FIXED EXPORT ROUTES WITH PROPER CORS & ERROR HANDLING
 app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
     let conn;
     
     try {
         const { type } = req.params;
-        console.log(`📄 EXPORT STARTED: ${type} | Token: ${req.headers.authorization?.substring(0, 20)}...`);
+        console.log(`🚀 EXPORT ${type.toUpperCase()} STARTED - User: ${req.user.username}`);
+
+        // Set ALL CORS headers FIRST
+        res.header('Access-Control-Allow-Origin', '*');
+        res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+        res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+        res.header('Cache-Control', 'no-cache');
 
         conn = await pool.getConnection();
 
         if (type === 'dashboard') {
-            console.log('🎯 [DASHBOARD] Fetching stats...');
+            console.log('📊 Generating DASHBOARD PDF...');
             
+            // Fetch stats
             const [[totalOrders], [delivered], [revenue], [users], [menuItems], [pending]] = await Promise.all([
                 conn.execute(`SELECT COUNT(*) as count FROM orders`),
                 conn.execute(`SELECT COUNT(*) as count FROM orders WHERE status = 'delivered'`),
@@ -581,14 +521,10 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
                 conn.execute(`SELECT COUNT(*) as count FROM orders WHERE status IN ('pending', 'preparing')`)
             ]);
 
-            console.log('📊 [DASHBOARD] Stats:', { 
-                totalOrders: totalOrders[0].count,
-                revenue: revenue[0].total 
-            });
-
-            // ✅ FIXED jsPDF - Import INSIDE function to avoid module cache issues
-            const { jsPDF } = require('jspdf');
-            const autoTable = require('jspdf-autotable');
+            // ✅ FIXED: Dynamic jsPDF import
+            const { jsPDF } = await import('jspdf');
+            const autoTable = await import('jspdf-autotable');
+            
             const doc = new jsPDF('p', 'mm', 'a4');
             
             // Header
@@ -611,7 +547,7 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
                 ['🍽️ Menu Items', parseInt(menuItems[0].count).toLocaleString()]
             ];
 
-            autoTable(doc, {
+            autoTable.default(doc, {
                 startY: 50,
                 head: [['Metric', 'Value']],
                 body: statsData,
@@ -632,32 +568,30 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
             doc.text('Hulyanas Hill Restaurant System', 105, 285, { align: 'center' });
 
             const pdfBuffer = doc.output('arraybuffer');
-            console.log('✅ [DASHBOARD] PDF Generated! Size:', pdfBuffer.byteLength);
-
-            // ✅ FIXED HEADERS
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', `attachment; filename="hulyanas-dashboard-${new Date().toISOString().split('T')[0]}.pdf"`);
-            res.setHeader('Content-Length', pdfBuffer.byteLength);
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-            res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+            
+            console.log('✅ DASHBOARD PDF Generated! Size:', pdfBuffer.byteLength);
+            
+            res.set({
+                'Content-Type': 'application/pdf',
+                'Content-Disposition': `attachment; filename="hulyanas-dashboard-${new Date().toISOString().split('T')[0]}.pdf"`,
+                'Content-Length': pdfBuffer.byteLength
+            });
             
             return res.status(200).send(Buffer.from(pdfBuffer));
 
         } else if (type === 'orders') {
-            console.log('📋 [ORDERS] Generating CSV...');
-            // Your existing working orders code
+            console.log('📋 Generating ORDERS CSV...');
             const [rows] = await conn.execute(`
-                SELECT o.order_number, CONCAT(u.first_name, ' ', u.last_name) as customer,
+                SELECT o.order_number, CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as customer,
                        o.total_amount, o.status, o.payment_method, 
                        DATE_FORMAT(o.created_at, '%Y-%m-%d %H:%i') as order_date
                 FROM orders o LEFT JOIN users u ON o.user_id = u.id 
-                ORDER BY o.created_at DESC LIMIT 1000`);
+                ORDER BY o.created_at DESC`);
 
             const csvHeader = ['Order #', 'Customer', 'Amount', 'Status', 'Payment', 'Date'];
             const csvRows = rows.map(row => [
                 row.order_number || '',
-                `"${row.customer || 'N/A'}"`,
+                `"${(row.customer || 'N/A').trim()}"`,
                 `₱${parseFloat(row.total_amount || 0).toFixed(2)}`,
                 row.status || '',
                 row.payment_method || '',
@@ -666,15 +600,17 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
 
             const csvContent = [csvHeader, ...csvRows].map(row => row.join(',')).join('\n');
             
-            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-            res.setHeader('Content-Disposition', `attachment; filename="hulyanas-orders-${new Date().toISOString().split('T')[0]}.csv"`);
-            res.setHeader('Content-Length', Buffer.byteLength(csvContent, 'utf8'));
-            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.set({
+                'Content-Type': 'text/csv; charset=utf-8',
+                'Content-Disposition': `attachment; filename="hulyanas-orders-${new Date().toISOString().split('T')[0]}.csv"`,
+                'Content-Length': Buffer.byteLength(csvContent, 'utf8')
+            });
             
+            console.log('✅ ORDERS CSV Generated! Rows:', rows.length);
             return res.status(200).send(csvContent);
 
         } else if (type === 'sales') {
-            console.log('💰 [SALES] Generating detailed CSV...');
+            console.log('💰 Generating SALES CSV...');
             
             const [salesRows] = await conn.execute(`
                 SELECT 
@@ -693,11 +629,9 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
                 LEFT JOIN users u ON o.user_id = u.id
                 LEFT JOIN order_items oi ON o.id = oi.order_id
                 LEFT JOIN menu_items mi ON oi.menu_item_id = mi.id
-                WHERE o.status != 'cancelled' AND o.status != 'pending'
+                WHERE o.status IN ('delivered', 'preparing')
                 ORDER BY o.created_at DESC
                 LIMIT 5000`);
-
-            console.log('📈 [SALES] Found rows:', salesRows.length);
 
             const csvHeader = ['Date', 'Day', 'Order#', 'Customer', 'Status', 'Payment', 'Order Total', 'Qty', 'Product', 'Unit Price', 'Line Total'];
             const csvRows = salesRows.map(row => [
@@ -716,29 +650,31 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
 
             const csvContent = [csvHeader, ...csvRows].map(row => row.join(',')).join('\n');
             
-            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-            res.setHeader('Content-Disposition', `attachment; filename="hulyanas-sales-${new Date().toISOString().split('T')[0]}.csv"`);
-            res.setHeader('Content-Length', Buffer.byteLength(csvContent, 'utf8'));
-            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.set({
+                'Content-Type': 'text/csv; charset=utf-8',
+                'Content-Disposition': `attachment; filename="hulyanas-sales-${new Date().toISOString().split('T')[0]}.csv"`,
+                'Content-Length': Buffer.byteLength(csvContent, 'utf8')
+            });
             
-            console.log('✅ [SALES] CSV ready! Size:', csvContent.length);
+            console.log('✅ SALES CSV Generated! Rows:', salesRows.length);
             return res.status(200).send(csvContent);
 
         } else {
-            console.log('❌ [INVALID] Type:', type);
-            return res.status(400).json({ error: 'Invalid type. Use: dashboard, orders, sales' });
+            console.log('❌ INVALID EXPORT TYPE:', type);
+            return res.status(400).json({ error: `Invalid type: ${type}. Use: dashboard, orders, sales` });
         }
 
     } catch (error) {
-        console.error('🚨 EXPORT ERROR:', {
-            type: req.params.type,
+        console.error('💥 EXPORT ERROR:', {
+            type: req.params?.type,
             error: error.message,
-            stack: error.stack,
-            user: req.user
+            stack: error.stack?.substring(0, 200)
         });
+        
         return res.status(500).json({ 
             error: 'Export failed', 
-            details: error.message 
+            details: error.message,
+            type: req.params?.type 
         });
     } finally {
         if (conn) conn.release();
