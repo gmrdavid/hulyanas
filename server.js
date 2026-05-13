@@ -17,11 +17,110 @@ const PORT = process.env.PORT;
 
 // Middleware
 app.use(cors());
+// 🩺 DIAGNOSTIC EXPORT ROUTES - Will show EXACT error
 app.options('/api/export/:type', (req, res) => {
+    console.log('🌐 OPTIONS request for export');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
     res.sendStatus(200);
+});
+
+app.post('/api/export/:type', async (req, res) => {
+    console.log('🚀 EXPORT HIT:', req.params.type);
+    console.log('📋 HEADERS:', req.headers);
+    console.log('🔑 TOKEN:', req.headers.authorization ? 'PRESENT' : 'MISSING');
+    
+    let conn;
+    try {
+        const { type } = req.params;
+        
+        // ✅ TEMPORARILY BYPASS AUTH FOR TESTING
+        conn = await pool.getConnection();
+        console.log('✅ DB Connected');
+
+        if (type === 'dashboard') {
+            console.log('🎯 DASHBOARD PDF...');
+            
+            // Simple PDF - NO jsPDF dependencies
+            const pdfContent = `
+Hulyanas Hill Dashboard Report
+Generated: ${new Date().toLocaleString('en-PH')}
+====================================
+
+DATABASE STATS:
+`;
+
+            // Fetch basic stats
+            const [[totalOrders]] = await conn.execute('SELECT COUNT(*) as count FROM orders');
+            const [[revenue]] = await conn.execute('SELECT COALESCE(SUM(total_amount), 0) as total FROM orders');
+            
+            pdfContent += `Total Orders: ${totalOrders[0].count}\n`;
+            pdfContent += `Total Revenue: ₱${parseFloat(revenue[0].total).toFixed(2)}\n`;
+            pdfContent += `Report Generated Successfully!\n`;
+
+            const pdfBuffer = Buffer.from(pdfContent, 'utf8');
+            
+            console.log('✅ PDF BUFFER CREATED:', pdfBuffer.length, 'bytes');
+            
+            res.set({
+                'Content-Type': 'application/pdf',
+                'Content-Disposition': `attachment; filename="test-dashboard.pdf"`,
+                'Content-Length': pdfBuffer.length.toString(),
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Expose-Headers': 'Content-Disposition'
+            });
+            
+            console.log('✅ SENDING PDF RESPONSE');
+            return res.status(200).send(pdfBuffer);
+
+        } else if (type === 'sales') {
+            console.log('💰 SALES CSV...');
+            
+            const [rows] = await conn.execute(`
+                SELECT order_number, total_amount, status, created_at 
+                FROM orders ORDER BY created_at DESC LIMIT 10`);
+
+            const csvContent = [
+                ['Order#', 'Amount', 'Status', 'Date'],
+                ...rows.map(row => [
+                    row.order_number || '',
+                    row.total_amount || 0,
+                    row.status || '',
+                    row.created_at || ''
+                ])
+            ].map(row => row.join(',')).join('\r\n');
+
+            const csvBuffer = Buffer.from(csvContent, 'utf8');
+            
+            console.log('✅ CSV BUFFER CREATED:', csvBuffer.length, 'bytes');
+            
+            res.set({
+                'Content-Type': 'text/csv; charset=utf-8',
+                'Content-Disposition': `attachment; filename="test-sales.csv"`,
+                'Content-Length': csvBuffer.length.toString(),
+                'Access-Control-Allow-Origin': '*'
+            });
+            
+            console.log('✅ SENDING CSV RESPONSE');
+            return res.status(200).send(csvBuffer);
+
+        } else {
+            console.log('❌ INVALID TYPE');
+            return res.status(400).json({ error: 'Use: dashboard or sales' });
+        }
+
+    } catch (error) {
+        console.error('💥 FULL ERROR:', error);
+        console.error('💥 ERROR STACK:', error.stack);
+        return res.status(500).json({ 
+            error: 'Export failed', 
+            details: error.message,
+            stack: error.stack 
+        });
+    } finally {
+        if (conn) conn.release();
+    }
 });
 
 app.use(express.json());
