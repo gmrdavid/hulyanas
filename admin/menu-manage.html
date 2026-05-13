@@ -455,25 +455,6 @@
     </nav>
 
     <div class="admin-content">
-        <!-- Add this right after <div class="content-header"> -->
-            <div style="margin-bottom:2rem;">
-                <div style="background:#fff;padding:1.5rem;border-radius:16px;border:1px solid #e5e5e5;">
-                    <div style="display:flex;gap:1rem;max-width:500px;margin:0 auto;flex-wrap:wrap;">
-                        <input type="text" id="searchInput" placeholder="🔍 Search menu items..." 
-                            style="flex:1;padding:1rem 1.25rem;border:1px solid #e0e0e0;border-radius:12px;font-size:1rem;">
-                        <select id="categoryFilter" style="padding:1rem 1.25rem;border:1px solid #e0e0e0;border-radius:12px;">
-                            <option value="">All Categories</option>
-                            <option value="drinks">Drinks</option>
-                            <option value="pizza">Pizza</option>
-                            <option value="pasta">Pasta</option>
-                            <option value="fries">Fries</option>
-                        </select>
-                        <button onclick="filterMenuItems()" class="btn" style="padding:1rem 2rem;">
-                            <i class="fas fa-search"></i> Filter
-                        </button>
-                    </div>
-                </div>
-            </div>
         <div class="content-header">
             <h1>Menu Management</h1>
             <button class="btn btn-primary" onclick="showAddModal()">
@@ -595,28 +576,20 @@
 
         // ✅ FIXED: Load menu items with image refresh
         async function loadMenuItems() {
-            const tbody = document.getElementById('menuItems');
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="6" style="text-align:center;padding:4rem;color:#666;">
-                        <i class="fas fa-spinner fa-spin" style="font-size:2rem;margin-bottom:1rem;"></i>
-                        Loading menu items...
-                    </td>
-                </tr>
-            `;
-            
             try {
                 const response = await fetch('/api/menu');
                 if (!response.ok) throw new Error('Failed to fetch menu items');
                 menuItems = await response.json();
                 console.log(`📋 Loaded ${menuItems.length} menu items`);
                 renderMenuTable(menuItems);
+                
+                // 🔥 KEY FIX: Refresh images after render
                 setTimeout(refreshAllImages, 300);
                 
             } catch (error) {
                 console.error('Error loading menu items:', error);
-                tbody.innerHTML = 
-                    '<tr><td colspan="6" style="text-align:center;padding:4rem;color:#721c24;background:#f8d7da;border-radius:12px;margin:1rem 0;">⚠️ Failed to load menu items. Please refresh the page.</td></tr>';
+                document.getElementById('menuItems').innerHTML = 
+                    '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#666;">Failed to load menu items. Please refresh.</td></tr>';
             }
         }
 
@@ -677,10 +650,6 @@
                     </tr>
                 `;
             }).join('');
-
-            // Add this at the end of renderMenuTable function
-            document.getElementById('totalItems').textContent = menuItems.length;
-            document.getElementById('availableItems').textContent = menuItems.filter(item => item.is_available == 1).length;
         }
 
         // Event delegation for table actions
@@ -870,27 +839,6 @@
                 window.location.href = 'login.html';
             }
         });
-
-        let filteredItems = [];
-
-        function filterMenuItems() {
-            const search = document.getElementById('searchInput').value.toLowerCase();
-            const category = document.getElementById('categoryFilter').value;
-            
-            filteredItems = menuItems.filter(item => {
-                const matchesSearch = !search || 
-                    item.name.toLowerCase().includes(search) || 
-                    (item.description || '').toLowerCase().includes(search);
-                const matchesCategory = !category || item.category === category;
-                return matchesSearch && matchesCategory;
-            });
-            
-            renderMenuTable(filteredItems);
-        }
-
-        // Real-time search
-        document.getElementById('searchInput').addEventListener('input', filterMenuItems);
-        document.getElementById('categoryFilter').addEventListener('change', filterMenuItems);
     </script>
 </body>
 </html>
