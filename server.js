@@ -305,47 +305,78 @@ app.put('/api/menu/:id', upload.single('image'), async (req, res) => {
     }
 });
 
-    // DELETE MENU ITEM - FIXED (ACTUAL DELETION)
-    app.delete('/api/menu/:id', async (req, res) => {
-        let conn;
-        try {
-            const { id } = req.params;
-            conn = await pool.getConnection();
-            
-            // Start transaction for data integrity
-            await conn.beginTransaction();
-            
-            // First, delete any order items associated with this menu item
-            await conn.execute(
-                `DELETE oi FROM order_items oi 
-                JOIN orders o ON oi.order_id = o.id 
-                WHERE oi.menu_item_id = ? AND o.status IN ('cancelled', 'delivered')`,
-                [id]
-            );
-            
-            // Delete the menu item itself
-            const [result] = await conn.execute(`DELETE FROM menu_items WHERE id = ?`, [id]);
-            
-            if (result.affectedRows === 0) {
-                await conn.rollback();
-                return res.status(404).json({ error: 'Menu item not found' });
-            }
-            
-            // Commit the transaction
-            await conn.commit();
+    // DELETE MENU ITEM - REPLACE THIS ENTIRE BLOCK
+app.delete('/api/menu/:id', async (req, res) => {
+    let conn;
+    try {
+        const { id } = req.params;
+        
+        console.log(`🗑️ DELETE REQUEST: menu item ID ${id}`); // Debug log
+        
+        conn = await pool.getConnection();
+        
+        // Start transaction
+        await conn.beginTransaction();
+        
+        // 1. Get the menu item first to check if it exists
+        const [menuItem] = await conn.execute(`SELECT id, image_url FROM menu_items WHERE id = ?`, [id]);
+        
+        if (menuItem.length === 0) {
+            await conn.rollback();
             conn.release();
-            
-            res.json({ message: 'Menu item permanently deleted successfully' });
-            
-        } catch (error) {
-            if (conn) {
-                await conn.rollback();
-                conn.release();
-            }
-            console.error('Delete menu item error:', error);
-            res.status(500).json({ error: error.message });
+            console.log(`❌ Menu item ${id} not found`);
+            return res.status(404).json({ error: 'Menu item not found' });
         }
-    });
+        
+        console.log(`✅ Found menu item: ${menuItem[0].name || menuItem[0].id}`);
+        
+        // 2. Delete associated order_items (only for completed/cancelled orders)
+        const [orderItemsDeleted] = await conn.execute(
+            `DELETE oi FROM order_items oi 
+             JOIN orders o ON oi.order_id = o.id 
+             WHERE oi.menu_item_id = ?`,
+            [id]
+        );
+        console.log(`🧹 Deleted ${orderItemsDeleted.affectedRows} order items`);
+        
+        // 3. Delete the menu item
+        const [result] = await conn.execute(`DELETE FROM menu_items WHERE id = ?`, [id]);
+        
+        console.log(`🎉 Menu item ${id} DELETED - affected rows: ${result.affectedRows}`);
+        
+        // 4. Delete the image file if it exists
+        const imagePath = menuItem[0].image_url ? `public${menuItem[0].image_url}` : null;
+        if (imagePath && imagePath.startsWith('/images/')) {
+            try {
+                await require('fs').promises.unlink(imagePath);
+                console.log(`🗑️ Deleted image: ${imagePath}`);
+            } catch (fileErr) {
+                console.log(`⚠️ Could not delete image ${imagePath}:`, fileErr.message);
+            }
+        }
+        
+        await conn.commit();
+        conn.release();
+        
+        res.json({ 
+            message: 'Menu item permanently deleted from database!',
+            deletedId: id,
+            affectedRows: result.affectedRows
+        });
+        
+    } catch (error) {
+        console.error('🚨 DELETE ERROR:', error);
+        if (conn) {
+            try {
+                await conn.rollback();
+            } catch (rollbackErr) {
+                console.error('Rollback failed:', rollbackErr);
+            }
+            conn.release();
+        }
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // ADMIN ACTIVITY
 app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
