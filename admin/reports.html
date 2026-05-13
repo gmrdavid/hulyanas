@@ -592,7 +592,7 @@
                 { el: 'totalOrders', target: data.total_orders || 0, format: 'number' },
                 { el: 'totalRevenue', target: data.total_revenue || 0, format: 'currency' },
                 { el: 'activeCustomers', target: data.active_customers || 0, format: 'number' },
-                { el: 'avgRating', target: data.avg_order_value || 0, format: 'currency' }
+                { el: 'avgRating', target: data.avg_order_value || 0, format: 'currency' } // This is correct
             ];
 
             elements.forEach(({ el, target, format }) => {
@@ -602,22 +602,14 @@
                 const timer = setInterval(() => {
                     current += increment;
                     if (current >= target) {
-                        if (format === 'currency') {
-                            element.textContent = `₱${Number(target).toLocaleString('en-PH', { 
-                                minimumFractionDigits: 2, maximumFractionDigits: 2 
-                            })}`;
-                        } else {
-                            element.textContent = Math.floor(target).toLocaleString();
-                        }
+                        element.textContent = formatNumber(target, format);
                         clearInterval(timer);
                         return;
                     }
-                    const display = format === 'currency' ? 
-                        `₱${Math.floor(current).toLocaleString()}` : 
-                        Math.floor(current).toLocaleString();
-                    element.textContent = display;
+                    element.textContent = formatNumber(current, format);
                 }, 20);
             });
+
 
             // Update change percentages
             document.getElementById('ordersChange').textContent = `+${data.order_growth || 0}%`;
