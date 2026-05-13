@@ -9,9 +9,8 @@ const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs').promises;
-const {jsPDF} = require('jspdf'); // ✅ ONLY jsPDF
-const autoTable = require('jspdf-autotable'); // ✅ ONLY jsPDF autotable
-require('jspdf-autotable');
+const { jsPDF } = require('jspdf');
+const autoTable = require('jspdf-autotable');
 
 const app = express();
 const PORT = process.env.PORT;
