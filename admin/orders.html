@@ -717,7 +717,7 @@
     let currentOrderId = null;
 
     // Load Orders from Database
-        async function loadOrders() {
+    async function loadOrders() {
         try {
             const token = localStorage.getItem('token');
             const response = await fetch('/api/admin/orders', {
@@ -728,11 +728,12 @@
 
             orders = await response.json();
             renderOrdersTable(orders);
-            await loadStats();  // ✅ Refresh stats after orders load
+            loadStats();
         } catch (error) {
             console.error('Error loading orders:', error);
         }
     }
+
     // Render Orders Table
     function renderOrdersTable(filteredOrders) {
         const tbody = document.getElementById('ordersList');
@@ -787,28 +788,16 @@
     }
 
     // Load Dashboard Stats
-    // ✅ CORRECT - Server-side real stats
-    async function loadStats() {
-        try {
-            const token = localStorage.getItem('token');
-            const response = await fetch('/api/admin/stats', {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            });
-            
-            const stats = await response.json();
-            
-            // Update stat cards with REAL server data
-            const statNumbers = document.querySelectorAll('.stat-number');
-            statNumbers[0].textContent = stats.totalOrders;           // Total (Preparing+Delivered)
-            statNumbers[1].textContent = stats.deliveredToday || 0;   // Delivered TODAY
-            statNumbers[2].textContent = stats.pendingToday || 0;     // Pending TODAY
-            statNumbers[3].textContent = `₱${stats.revenueToday}`;    // Revenue TODAY
-            
-        } catch (error) {
-            console.error('Error loading stats:', error);
-        }
+    function loadStats() {
+        const totalOrders = orders.length;
+        const delivered = orders.filter(o => o.status === 'delivered').length;
+        const pending = orders.filter(o => o.status === 'pending').length;
+        const revenue = orders.reduce((sum, order) => sum + parseFloat(order.total_amount), 0);
+        const stats = document.querySelectorAll('.stat-number');
+        stats[0].textContent = totalOrders;
+        stats[1].textContent = delivered;
+        stats[2].textContent = pending;
+        stats[3].textContent = `₱${revenue.toFixed(2)}`;
     }
 
     // Open View Modal
