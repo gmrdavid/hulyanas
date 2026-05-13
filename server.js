@@ -542,39 +542,71 @@ app.delete('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res) 
 // ===== ANALYTICS & REPORTS API =====
 app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
     try {
-       const { days = 'all', status = 'all' } = req.query;
+        const { days = 'all', status = 'all' } = req.query;
 
-        let whereClause = "WHERE o.status NOT IN ('cancelled', 'pending')";
+        // For total orders, revenue, avg value
+        let filteredWhereClause = "WHERE o.status NOT IN ('cancelled', 'pending')";
+        
+        // For analytics that should include all statuses
+        let normalWhereClause = 'WHERE 1=1';
+
         const params = [];
 
         if (days !== 'all') {
-            whereClause += ' AND o.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)';
+            filteredWhereClause += ' AND o.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)';
+            normalWhereClause += ' AND o.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)';
             params.push(days);
         }
 
         if (status !== 'all') {
-            whereClause += ' AND o.status = ?';
+            filteredWhereClause += ' AND o.status = ?';
+            normalWhereClause += ' AND o.status = ?';
             params.push(status);
         }
 
         const conn = await pool.getConnection();
+
         const queries = [
-            `SELECT COUNT(*) as total_orders FROM orders o ${whereClause}`,
-            `SELECT COALESCE(SUM(total_amount), 0) as total_revenue FROM orders o ${whereClause}`,
-            `SELECT COUNT(DISTINCT user_id) as active_customers FROM orders o ${whereClause}`,
-            `SELECT COALESCE(AVG(total_amount), 0) as avg_order_value FROM orders o ${whereClause}`,
+            // Excluding cancelled & pending
+            `SELECT COUNT(*) as total_orders 
+             FROM orders o ${filteredWhereClause}`,
+
+            `SELECT COALESCE(SUM(total_amount), 0) as total_revenue 
+             FROM orders o ${filteredWhereClause}`,
+
+            `SELECT COUNT(DISTINCT user_id) as active_customers 
+             FROM orders o ${filteredWhereClause}`,
+
+            `SELECT COALESCE(AVG(total_amount), 0) as avg_order_value 
+             FROM orders o ${filteredWhereClause}`,
+
+            // Normal analytics with all statuses
             `SELECT DAYNAME(o.created_at) as day_name, COUNT(*) as order_count 
-             FROM orders o ${whereClause} GROUP BY day_name 
+             FROM orders o ${normalWhereClause}
+             GROUP BY day_name 
              ORDER BY FIELD(day_name, 'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')`,
+
             `SELECT o.status, COALESCE(SUM(o.total_amount), 0) as total_amount 
-             FROM orders o ${whereClause} GROUP BY o.status ORDER BY total_amount DESC`,
+             FROM orders o ${normalWhereClause}
+             GROUP BY o.status 
+             ORDER BY total_amount DESC`,
+
             `SELECT mi.name, SUM(oi.quantity) as quantity 
-             FROM order_items oi JOIN menu_items mi ON oi.menu_item_id = mi.id 
-             JOIN orders o ON oi.order_id = o.id ${whereClause} 
-             GROUP BY oi.menu_item_id, mi.name ORDER BY quantity DESC LIMIT 5`,
+             FROM order_items oi
+             JOIN menu_items mi ON oi.menu_item_id = mi.id 
+             JOIN orders o ON oi.order_id = o.id 
+             ${normalWhereClause}
+             GROUP BY oi.menu_item_id, mi.name 
+             ORDER BY quantity DESC 
+             LIMIT 5`,
+
             `SELECT u.username, COUNT(o.id) as order_count 
-             FROM orders o JOIN users u ON o.user_id = u.id ${whereClause} 
-             GROUP BY o.user_id, u.username ORDER BY order_count DESC LIMIT 5`
+             FROM orders o 
+             JOIN users u ON o.user_id = u.id 
+             ${normalWhereClause}
+             GROUP BY o.user_id, u.username 
+             ORDER BY order_count DESC 
+             LIMIT 5`
         ];
 
         const results = await Promise.all(queries.map(q => conn.execute(q, params)));
