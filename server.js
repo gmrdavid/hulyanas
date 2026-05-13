@@ -549,14 +549,14 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
     }
 });
 
-// ✅ COMPLETE EXPORT REPORTS (PDF + CSV)
+// ✅ COMPLETE EXPORT ROUTES (PDF + CSV - Render Optimized)
 app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
     try {
         const { type } = req.params;
         const conn = await pool.getConnection();
 
         if (type === 'orders') {
-            // 📄 CSV Orders Export
+            // 📄 CSV Orders
             const [rows] = await conn.execute(`
                 SELECT o.order_number, CONCAT(u.first_name, ' ', u.last_name) as customer, u.username,
                        o.total_amount, o.status, o.delivery_address, o.payment_method,
@@ -568,11 +568,11 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
                 row.order_number,
                 `"${row.customer || 'N/A'}"`,
                 row.username || 'N/A',
-                `₱${parseFloat(row.total_amount).toLocaleString('en-PH', {minimumFractionDigits: 2})}`,
-                row.status,
+                `₱${parseFloat(row.total_amount || 0).toLocaleString('en-PH', {minimumFractionDigits: 2})}`,
+                row.status || 'N/A',
                 `"${row.delivery_address || 'Pickup'}"`,
                 row.payment_method || 'Cash',
-                row.order_date
+                row.order_date || 'N/A'
             ]);
 
             const csvContent = [csvHeader, ...csvRows].map(row => row.join(',')).join('\n');
@@ -582,20 +582,15 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
             return res.send(csvContent);
 
         } else if (type === 'dashboard') {
-            // ✅ FULL DASHBOARD PDF GENERATION
-            const [[totalOrders], [delivered], [revenue], [users], [menuItems]] = await Promise.all([
+            // ✅ BEAUTIFUL PDF DASHBOARD (Render Optimized)
+            const [[totalOrders], [delivered], [revenue], [users], [menuItems], [pending]] = await Promise.all([
                 conn.execute(`SELECT COUNT(*) as count FROM orders`),
                 conn.execute(`SELECT COUNT(*) as count FROM orders WHERE status = 'delivered'`),
                 conn.execute(`SELECT COALESCE(SUM(total_amount), 0) as total FROM orders WHERE status != 'cancelled'`),
                 conn.execute(`SELECT COUNT(*) as count FROM users WHERE role = 'customer'`),
-                conn.execute(`SELECT COUNT(*) as count FROM menu_items WHERE is_available = TRUE`)
+                conn.execute(`SELECT COUNT(*) as count FROM menu_items WHERE is_available = TRUE`),
+                conn.execute(`SELECT COUNT(*) as count FROM orders WHERE status = 'pending'`)
             ]);
-
-            const browser = await puppeteer.launch({ 
-                headless: true,
-                args: ['--no-sandbox', '--disable-setuid-sandbox']
-            });
-            const page = await browser.newPage();
 
             const htmlContent = `
 <!DOCTYPE html>
@@ -604,110 +599,32 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
     <meta charset="UTF-8">
     <title>Hulyanas Hill - Dashboard Report</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            line-height: 1.6; 
-            color: #333; 
-            max-width: 800px; 
-            margin: 0 auto; 
-            padding: 40px 20px;
-            background: #fafafa;
-        }
-        .header { 
-            text-align: center; 
-            margin-bottom: 40px; 
-            border-bottom: 3px solid #1a1a1a; 
-            padding-bottom: 20px;
-        }
-        .header h1 { 
-            color: #1a1a1a; 
-            font-size: 32px; 
-            margin-bottom: 10px; 
-            font-weight: 700;
-        }
-        .logo { font-size: 48px; margin-bottom: 10px; }
-        .header p { 
-            color: #666; 
-            font-size: 16px; 
-        }
-        .stats-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); 
-            gap: 25px; 
-            margin: 40px 0; 
-        }
-        .stat-card { 
-            background: #fff; 
-            padding: 30px 20px; 
-            border-radius: 16px; 
-            border: 1px solid #e5e5e5; 
-            text-align: center; 
-            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-            transition: transform 0.2s;
-        }
-        .stat-icon { 
-            font-size: 32px; 
-            margin-bottom: 15px; 
-            opacity: 0.8;
-        }
-        .stat-number { 
-            font-size: 36px; 
-            font-weight: 700; 
-            color: #1a1a1a; 
-            margin-bottom: 8px; 
-        }
-        .stat-label { 
-            color: #666; 
-            font-weight: 500; 
-            font-size: 14px; 
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .summary-section { 
-            background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%); 
-            padding: 30px; 
-            border-radius: 16px; 
-            margin: 40px 0; 
-            border-left: 5px solid #1a1a1a;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-        }
-        .summary-section h2 { 
-            color: #1a1a1a; 
-            margin-bottom: 20px; 
-            font-size: 24px; 
-        }
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-        .summary-item {
-            background: #fff;
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid #e5e5e5;
-        }
-        .summary-label { color: #666; font-weight: 500; }
-        .summary-value { font-size: 20px; font-weight: 700; color: #1a1a1a; margin-top: 5px; }
-        .footer { 
-            margin-top: 60px; 
-            padding-top: 30px; 
-            border-top: 1px solid #e5e5e5; 
-            text-align: center; 
-            color: #999; 
-            font-size: 14px; 
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 40px 20px; background: #fafafa; }
+        .header { text-align: center; margin-bottom: 40px; border-bottom: 4px solid #1a1a1a; padding-bottom: 30px; }
+        .logo { font-size: 56px; margin-bottom: 15px; }
+        .header h1 { color: #1a1a1a; font-size: 36px; margin-bottom: 10px; font-weight: 700; }
+        .header p { color: #666; font-size: 16px; margin-bottom: 5px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 25px; margin: 40px 0; }
+        .stat-card { background: #fff; padding: 30px 20px; border-radius: 16px; border: 1px solid #e5e5e5; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .stat-icon { font-size: 36px; margin-bottom: 15px; opacity: 0.9; }
+        .stat-number { font-size: 40px; font-weight: 800; color: #1a1a1a; margin-bottom: 10px; }
+        .stat-label { color: #666; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+        .summary-section { background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%); padding: 35px; border-radius: 20px; margin: 40px 0; border-left: 6px solid #1a1a1a; box-shadow: 0 15px 40px rgba(0,0,0,0.1); }
+        .summary-section h2 { color: #1a1a1a; margin-bottom: 25px; font-size: 28px; }
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; margin-top: 25px; }
+        .summary-item { background: #fff; padding: 25px; border-radius: 16px; border: 1px solid #e5e5e5; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .summary-label { color: #666; font-weight: 600; font-size: 15px; margin-bottom: 8px; }
+        .summary-value { font-size: 24px; font-weight: 800; color: #1a1a1a; }
+        .footer { margin-top: 70px; padding-top: 35px; border-top: 2px solid #e5e5e5; text-align: center; color: #999; font-size: 15px; }
         @media print { body { padding: 20px; background: white; } }
-        @page { margin: 20px; }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="logo">🍰</div>
         <h1>Hulyanas Hill</h1>
-        <p>Admin Dashboard Report - Complete Business Summary</p>
+        <p>Restaurant Management Dashboard Report</p>
         <p><strong>Generated:</strong> ${new Date().toLocaleString('en-PH', { timeZone: 'Asia/Manila' })}</p>
     </div>
 
@@ -721,6 +638,11 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
             <div class="stat-icon">✅</div>
             <div class="stat-number">${parseInt(delivered[0].count).toLocaleString()}</div>
             <div class="stat-label">Delivered</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">⏳</div>
+            <div class="stat-number">${parseInt(pending[0].count).toLocaleString()}</div>
+            <div class="stat-label">Pending</div>
         </div>
         <div class="stat-card">
             <div class="stat-icon">💰</div>
@@ -740,7 +662,7 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
     </div>
 
     <div class="summary-section">
-        <h2>📊 Executive Summary</h2>
+        <h2>📊 Executive Business Summary</h2>
         <div class="summary-grid">
             <div class="summary-item">
                 <div class="summary-label">Total Orders Processed</div>
@@ -758,46 +680,62 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
                 <div class="summary-label">Active Customers</div>
                 <div class="summary-value">${parseInt(users[0].count).toLocaleString()}</div>
             </div>
+            <div class="summary-item">
+                <div class="summary-label">Pending Orders</div>
+                <div class="summary-value">${parseInt(pending[0].count).toLocaleString()}</div>
+            </div>
         </div>
     </div>
 
     <div class="footer">
-        <p><strong>Hulyanas Hill Admin Dashboard</strong> | Professional Reporting System</p>
-        <p>Generated automatically by the Hulyanas Hill management system</p>
+        <p><strong>Hulyanas Hill Restaurant System</strong></p>
+        <p>Professional Dashboard Report | Generated by Admin Panel</p>
     </div>
 </body>
 </html>`;
 
-            await page.setContent(htmlContent, { waitUntil: 'networkidle0' });
-            
-            const pdfBuffer = await page.pdf({
+            const options = {
                 format: 'A4',
                 printBackground: true,
                 margin: { top: '20px', right: '20px', bottom: '20px', left: '20px' }
+            };
+
+            const pdfBuffer = await new Promise((resolve, reject) => {
+                pdf.generatePdf(htmlContent, options, (err, result) => {
+                    if (err) {
+                        console.error('PDF Error:', err);
+                        reject(err);
+                    } else {
+                        resolve(result);
+                    }
+                });
             });
 
-            await browser.close();
-
-            // ✅ SEND PROPER PDF
             res.setHeader('Content-Type', 'application/pdf');
             res.setHeader('Content-Disposition', `attachment; filename="hulyanas-dashboard-${new Date().toISOString().split('T')[0]}.pdf"`);
             res.setHeader('Content-Length', pdfBuffer.length);
             return res.send(pdfBuffer);
 
         } else if (type === 'sales') {
-            // 📄 CSV Sales Export
+            // 📄 CSV Sales
             const [rows] = await conn.execute(`
-                SELECT mi.name as product, mi.category, SUM(oi.quantity) as quantity_sold,
-                       SUM(oi.quantity * oi.price_at_order) as revenue, AVG(oi.price_at_order) as avg_price
-                FROM order_items oi JOIN menu_items mi ON oi.menu_item_id = mi.id
+                SELECT mi.name as product, mi.category, 
+                       SUM(oi.quantity) as quantity_sold,
+                       SUM(oi.quantity * oi.price_at_order) as revenue, 
+                       AVG(oi.price_at_order) as avg_price
+                FROM order_items oi 
+                JOIN menu_items mi ON oi.menu_item_id = mi.id
                 JOIN orders o ON oi.order_id = o.id AND o.status != 'cancelled'
-                GROUP BY oi.menu_item_id, mi.name, mi.category ORDER BY quantity_sold DESC`);
+                GROUP BY oi.menu_item_id, mi.name, mi.category 
+                ORDER BY quantity_sold DESC`);
 
             const csvHeader = ['Product', 'Category', 'Quantity Sold', 'Revenue', 'Avg Price'];
             const csvRows = rows.map(row => [
-                `"${row.product}"`, row.category, row.quantity_sold,
-                `₱${parseFloat(row.revenue).toLocaleString('en-PH', {minimumFractionDigits: 2})}`,
-                `₱${parseFloat(row.avg_price).toLocaleString('en-PH', {minimumFractionDigits: 2})}`
+                `"${row.product || 'N/A'}"`,
+                row.category || 'N/A',
+                row.quantity_sold || 0,
+                `₱${parseFloat(row.revenue || 0).toLocaleString('en-PH', {minimumFractionDigits: 2})}`,
+                `₱${parseFloat(row.avg_price || 0).toLocaleString('en-PH', {minimumFractionDigits: 2})}`
             ]);
 
             const csvContent = [csvHeader, ...csvRows].map(row => row.join(',')).join('\n');
@@ -808,7 +746,7 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
         }
 
         conn.release();
-        res.status(400).json({ error: 'Invalid export type. Use: orders, sales, dashboard' });
+        res.status(400).json({ error: 'Invalid export type: orders, sales, dashboard' });
 
     } catch (error) {
         console.error('🚨 Export Error:', error);
@@ -817,9 +755,17 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📊 Customer Dashboard: http://localhost:${PORT}/user/dashboard.html`);
-    console.log(`👑 Admin Dashboard: http://localhost:${PORT}/admin/dashboard.html`);
+const server = app.listen(PORT, () => {
+    console.log(`🚀 Hulyanas Hill Server running on port ${PORT}`);
+    console.log(`📱 Customer: http://localhost:${PORT}/user/dashboard.html`);
+    console.log(`👑 Admin: http://localhost:${PORT}/admin/dashboard.html`);
     console.log(`📄 PDF Export: POST /api/export/dashboard`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down gracefully');
+    server.close(() => {
+        console.log('Process terminated');
+    });
 });
