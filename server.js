@@ -305,19 +305,47 @@ app.put('/api/menu/:id', upload.single('image'), async (req, res) => {
     }
 });
 
-// DELETE MENU ITEM
-app.delete('/api/menu/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const conn = await pool.getConnection();
-        await conn.execute(`UPDATE menu_items SET is_available = 0 WHERE id = ?`, [id]);
-        conn.release();
-        res.json({ message: 'Menu item marked as unavailable' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: error.message });
-    }
-});
+    // DELETE MENU ITEM - FIXED (ACTUAL DELETION)
+    app.delete('/api/menu/:id', async (req, res) => {
+        let conn;
+        try {
+            const { id } = req.params;
+            conn = await pool.getConnection();
+            
+            // Start transaction for data integrity
+            await conn.beginTransaction();
+            
+            // First, delete any order items associated with this menu item
+            await conn.execute(
+                `DELETE oi FROM order_items oi 
+                JOIN orders o ON oi.order_id = o.id 
+                WHERE oi.menu_item_id = ? AND o.status IN ('cancelled', 'delivered')`,
+                [id]
+            );
+            
+            // Delete the menu item itself
+            const [result] = await conn.execute(`DELETE FROM menu_items WHERE id = ?`, [id]);
+            
+            if (result.affectedRows === 0) {
+                await conn.rollback();
+                return res.status(404).json({ error: 'Menu item not found' });
+            }
+            
+            // Commit the transaction
+            await conn.commit();
+            conn.release();
+            
+            res.json({ message: 'Menu item permanently deleted successfully' });
+            
+        } catch (error) {
+            if (conn) {
+                await conn.rollback();
+                conn.release();
+            }
+            console.error('Delete menu item error:', error);
+            res.status(500).json({ error: error.message });
+        }
+    });
 
 // ADMIN ACTIVITY
 app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
