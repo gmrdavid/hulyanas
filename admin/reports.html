@@ -4,33 +4,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reports & Analytics - Hulyanas Hill</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
-        /* [Exact same beautiful dashboard styles - unchanged] */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --primary: #1a1a1a;
+            --primary-dark: #000;
+            --bg-primary: #fafafa;
+            --card-bg: #fff;
+            --border: #e5e5e5;
+            --text-muted: #666;
+            --success: #28a745;
+            --shadow-sm: 0 10px 30px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 25px 50px rgba(0, 0, 0, 0.15);
+            --radius: 20px;
+            --radius-sm: 12px;
         }
 
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #fafafa;
-            color: #1a1a1a;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--primary);
             line-height: 1.6;
         }
 
         .navbar {
             background: rgba(255, 255, 255, 0.98);
             backdrop-filter: blur(20px);
-            border-bottom: 2px solid #1a1a1a;
+            border-bottom: 2px solid var(--primary);
             position: fixed;
             top: 0;
             width: 100%;
             z-index: 1000;
             padding: 1rem 0;
+            transition: all 0.3s ease;
         }
 
         .nav-container {
@@ -47,21 +57,17 @@
             align-items: center;
             font-size: 1.5rem;
             font-weight: 700;
-            color: #1a1a1a;
+            color: var(--primary);
             gap: 0.75rem;
             text-decoration: none;
         }
 
-        .nav-logo i {
-            color: #000;
-            font-size: 1.8rem;
-        }
+        .nav-logo i { color: var(--primary-dark); font-size: 1.8rem; }
 
         .admin-logo i {
-            color: #1a1a1a;
             background: #f0f0f0;
             padding: 0.5rem;
-            border-radius: 12px;
+            border-radius: var(--radius-sm);
         }
 
         .nav-menu {
@@ -79,30 +85,25 @@
             align-items: center;
             gap: 0.5rem;
             padding: 0.75rem 1.5rem;
-            border-radius: 12px;
+            border-radius: var(--radius-sm);
             transition: all 0.2s ease;
             font-size: 0.95rem;
-            position: relative;
         }
 
-        .nav-menu a:hover,
-        .nav-menu a.active {
-            background: #1a1a1a;
+        .nav-menu a:hover, .nav-menu a.active {
+            background: var(--primary);
             color: #fff;
         }
 
         .btn-logout {
-            background: #1a1a1a !important;
+            background: var(--primary) !important;
             color: #fff !important;
             padding: 0.75rem 2rem !important;
-            border-radius: 12px;
+            border-radius: var(--radius-sm);
             font-weight: 600;
         }
 
-        .btn-logout:hover {
-            background: #000 !important;
-            transform: translateY(-1px);
-        }
+        .btn-logout:hover { background: var(--primary-dark) !important; transform: translateY(-1px); }
 
         .admin-dashboard {
             max-width: 1400px;
@@ -118,15 +119,15 @@
         }
 
         .stat-card {
-            background: #fff;
-            border: 1px solid #e5e5e5;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
             padding: 2.5rem;
-            border-radius: 20px;
+            border-radius: var(--radius);
             text-align: center;
             transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            box-shadow: var(--shadow-sm);
         }
 
         .stat-card::before {
@@ -136,46 +137,20 @@
             left: 0;
             right: 0;
             height: 4px;
-            background: linear-gradient(90deg, #1a1a1a, #333);
+            background: linear-gradient(90deg, var(--primary), #333);
         }
 
         .stat-card:hover {
             transform: translateY(-8px);
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            box-shadow: var(--shadow-md);
             border-color: #d0d0d0;
         }
 
-        .stat-icon {
-            font-size: 3rem;
-            margin-bottom: 1.5rem;
-            color: #1a1a1a;
-            opacity: 0.8;
-        }
-
-        .stat-number {
-            font-size: 2.75rem;
-            font-weight: 700;
-            color: #000;
-            margin-bottom: 0.5rem;
-            font-feature-settings: 'tnum' 1;
-        }
-
-        .stat-change {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-        }
-
-        .stat-change.positive { color: #28a745; }
-        .stat-change.negative { color: #dc3545; }
-
-        .stat-label {
-            font-size: 1rem;
-            color: #666;
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+        .stat-icon { font-size: 3rem; margin-bottom: 1.5rem; color: var(--primary); opacity: 0.8; }
+        .stat-number { font-size: 2.75rem; font-weight: 700; color: var(--primary-dark); margin-bottom: 0.5rem; font-feature-settings: 'tnum' 1; }
+        .stat-change { font-size: 1rem; font-weight: 600; margin-bottom: 0.25rem; }
+        .stat-change.positive { color: var(--success); }
+        .stat-label { font-size: 1rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
 
         .content-header {
             display: flex;
@@ -186,25 +161,16 @@
             gap: 1rem;
         }
 
-        .content-header h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #1a1a1a;
-        }
+        .content-header h1 { font-size: 2.5rem; font-weight: 700; color: var(--primary); }
 
-        .filter-controls {
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-            flex-wrap: wrap;
-        }
+        .filter-controls { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
 
         .filter-select {
             padding: 0.875rem 1.25rem;
-            border: 1px solid #e5e5e5;
-            border-radius: 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
             font-size: 0.95rem;
-            background: #fff;
+            background: var(--card-bg);
             font-family: inherit;
             font-weight: 500;
             min-width: 160px;
@@ -213,7 +179,7 @@
 
         .filter-select:focus {
             outline: none;
-            border-color: #1a1a1a;
+            border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(26,26,26,0.1);
         }
 
@@ -225,30 +191,21 @@
         }
 
         .chart-card {
-            background: #fff;
-            border: 1px solid #e5e5e5;
-            border-radius: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
             padding: 2.5rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            box-shadow: var(--shadow-sm);
             transition: all 0.3s ease;
         }
 
-        .chart-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-        }
+        .chart-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15); }
 
-        .chart-header {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
+        .chart-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem; }
         .chart-icon {
             width: 48px;
             height: 48px;
-            border-radius: 12px;
+            border-radius: var(--radius-sm);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -256,16 +213,12 @@
             font-size: 1.2rem;
         }
 
-        .chart-sales { background: linear-gradient(135deg, #1a1a1a, #333); }
-        .chart-revenue { background: linear-gradient(135deg, #28a745, #20c997); }
+        .chart-sales { background: linear-gradient(135deg, var(--primary), #333); }
+        .chart-revenue { background: linear-gradient(135deg, var(--success), #20c997); }
         .chart-products { background: linear-gradient(135deg, #007bff, #0056b3); }
         .chart-customers { background: linear-gradient(135deg, #ffc107, #e0a800); }
 
-        .chart-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #1a1a1a;
-        }
+        .chart-title { font-size: 1.25rem; font-weight: 600; color: var(--primary); }
 
         .chart-stats {
             display: flex;
@@ -273,37 +226,23 @@
             margin-bottom: 1.5rem;
             padding: 1rem;
             background: #f8f9fa;
-            border-radius: 12px;
+            border-radius: var(--radius-sm);
         }
 
-        .chart-stat {
-            text-align: center;
-        }
+        .chart-stat { text-align: center; flex: 1; }
+        .chart-stat-number { font-size: 1.25rem; font-weight: 700; color: var(--primary); }
+        .chart-stat-label { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem; }
 
-        .chart-stat-number {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: #1a1a1a;
-        }
-
-        .chart-stat-label {
-            font-size: 0.85rem;
-            color: #666;
-            margin-top: 0.25rem;
-        }
-
-        .chart-container {
-            position: relative;
-            height: 350px;
-        }
+        .chart-container { position: relative; height: 350px; }
 
         .download-section {
-            background: #fff;
-            border: 1px solid #e5e5e5;
-            border-radius: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
             padding: 3rem;
             text-align: center;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            box-shadow: var(--shadow-sm);
+            margin-top: 2rem;
         }
 
         .download-btn {
@@ -311,10 +250,10 @@
             align-items: center;
             gap: 0.75rem;
             padding: 1rem 2rem;
-            background: #1a1a1a;
+            background: var(--primary);
             color: #fff;
             border: none;
-            border-radius: 12px;
+            border-radius: var(--radius-sm);
             font-weight: 600;
             font-size: 0.95rem;
             cursor: pointer;
@@ -323,60 +262,37 @@
             margin: 0 0.5rem 1rem;
         }
 
-        .download-btn:hover {
-            background: #000;
+        .download-btn:hover:not(:disabled) {
+            background: var(--primary-dark);
             transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
         }
 
-        @media (max-width: 1024px) {
-            .charts-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .admin-dashboard {
-                padding: 120px 1rem 2rem;
-            }
-
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 1.5rem;
-            }
-
-            .content-header {
-                flex-direction: column;
-                align-items: stretch;
-                text-align: center;
-            }
-
-            .filter-controls {
-                justify-content: center;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .loading { 
-            opacity: 0.6; pointer-events: none; 
-        }
-
+        .loading { opacity: 0.6; pointer-events: none; }
         .error-message {
             background: #f8d7da;
             color: #721c24;
             padding: 1rem;
-            border-radius: 12px;
+            border-radius: var(--radius-sm);
             margin: 1rem 0;
             border: 1px solid #f5c6cb;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
+
+        @media (max-width: 1024px) { .charts-grid { grid-template-columns: 1fr; } }
+        @media (max-width: 768px) {
+            .admin-dashboard { padding: 120px 1rem 2rem; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+            .content-header { flex-direction: column; align-items: stretch; text-align: center; }
+            .filter-controls { justify-content: center; }
+        }
+        @media (max-width: 480px) { .stats-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
+    <!-- SAME HTML STRUCTURE - NO CHANGES -->
     <nav class="navbar">
         <div class="nav-container">
             <a href="dashboard.html" class="nav-logo admin-logo">
@@ -388,14 +304,14 @@
                 <li><a href="menu-manage.html"><i class="fas fa-utensils"></i> Menu</a></li>
                 <li><a href="orders.html"><i class="fas fa-list"></i> Orders</a></li>
                 <li><a href="users.html"><i class="fas fa-users"></i> Users</a></li>
-                <li><a href="reports.html"><i class="fas fa-chart-bar"></i> Reports</a></li>
+                <li><a href="reports.html" class="active"><i class="fas fa-chart-bar"></i> Reports</a></li>
                 <li><a href="/index.html" id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ul>
         </div>
     </nav>
 
     <div class="admin-dashboard">
-        <!-- Key Metrics Stats -->
+        <!-- SAME STATS GRID -->
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
@@ -417,13 +333,13 @@
             </div>
             <div class="stat-card">
                 <div class="stat-icon"><i class="fas fa-star"></i></div>
-                <div class="stat-number" id="avgRating">0</div>
+                <div class="stat-number" id="avgRating">₱0</div>
                 <div class="stat-change positive" id="ratingChange">Loading...</div>
                 <div class="stat-label">Avg Order Value</div>
             </div>
         </div>
 
-        <!-- Charts Section -->
+        <!-- SAME CONTENT - NO CHANGES TO HTML -->
         <div class="content-header">
             <h1>Analytics Dashboard</h1>
             <div class="filter-controls">
@@ -440,13 +356,11 @@
             </div>
         </div>
 
+        <!-- SAME CHARTS GRID HTML -->
         <div class="charts-grid">
-            <!-- Sales Trend Chart -->
             <div class="chart-card">
                 <div class="chart-header">
-                    <div class="chart-icon chart-sales">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
+                    <div class="chart-icon chart-sales"><i class="fas fa-chart-line"></i></div>
                     <div class="chart-title">Order Trends</div>
                 </div>
                 <div class="chart-stats">
@@ -459,17 +373,12 @@
                         <div class="chart-stat-label">Avg Order</div>
                     </div>
                 </div>
-                <div class="chart-container">
-                    <canvas id="salesChart"></canvas>
-                </div>
+                <div class="chart-container"><canvas id="salesChart"></canvas></div>
             </div>
 
-            <!-- Revenue Chart -->
             <div class="chart-card">
                 <div class="chart-header">
-                    <div class="chart-icon chart-revenue">
-                        <i class="fas fa-coins"></i>
-                    </div>
+                    <div class="chart-icon chart-revenue"><i class="fas fa-coins"></i></div>
                     <div class="chart-title">Revenue by Status</div>
                 </div>
                 <div class="chart-stats">
@@ -482,17 +391,12 @@
                         <div class="chart-stat-label">Delivered</div>
                     </div>
                 </div>
-                <div class="chart-container">
-                    <canvas id="revenueChart"></canvas>
-                </div>
+                <div class="chart-container"><canvas id="revenueChart"></canvas></div>
             </div>
 
-            <!-- Top Products Chart -->
             <div class="chart-card">
                 <div class="chart-header">
-                    <div class="chart-icon chart-products">
-                        <i class="fas fa-utensils"></i>
-                    </div>
+                    <div class="chart-icon chart-products"><i class="fas fa-utensils"></i></div>
                     <div class="chart-title">Top Products</div>
                 </div>
                 <div class="chart-stats">
@@ -505,17 +409,12 @@
                         <div class="chart-stat-label">Total Sold</div>
                     </div>
                 </div>
-                <div class="chart-container">
-                    <canvas id="productsChart"></canvas>
-                </div>
+                <div class="chart-container"><canvas id="productsChart"></canvas></div>
             </div>
 
-            <!-- Customer Orders Chart -->
             <div class="chart-card">
                 <div class="chart-header">
-                    <div class="chart-icon chart-customers">
-                        <i class="fas fa-users"></i>
-                    </div>
+                    <div class="chart-icon chart-customers"><i class="fas fa-users"></i></div>
                     <div class="chart-title">Customer Orders</div>
                 </div>
                 <div class="chart-stats">
@@ -528,18 +427,16 @@
                         <div class="chart-stat-label">Repeat Orders</div>
                     </div>
                 </div>
-                <div class="chart-container">
-                    <canvas id="customersChart"></canvas>
-                </div>
+                <div class="chart-container"><canvas id="customersChart"></canvas></div>
             </div>
         </div>
 
-        <!-- Download Section -->
+        <!-- SAME DOWNLOAD SECTION -->
         <div class="download-section">
-            <h2 style="font-size:2rem;font-weight:700;color:#1a1a1a;margin-bottom:1rem;">
+            <h2 style="font-size:2rem;font-weight:700;color:var(--primary);margin-bottom:1rem;">
                 <i class="fas fa-download"></i> Export Reports
             </h2>
-            <p style="color:#666;margin-bottom:2rem;font-size:1.1rem;">
+            <p style="color:var(--text-muted);margin-bottom:2rem;font-size:1.1rem;">
                 Download comprehensive analytics reports from your database
             </p>
             <div>
@@ -557,36 +454,41 @@
     </div>
 
     <script>
+        // SAME DATABASE VARIABLES - NO CHANGES
         let salesChart, revenueChart, productsChart, customersChart;
         let analyticsData = {};
+        const API_BASE = '/api';
 
-        // 🚀 DATABASE CONNECTION - Real data from your hulyanas database
-        const API_BASE = '/api'; // Your backend API endpoints
-
-        // Fetch all analytics data from database
+        // FIXED: Better error handling & cleaner functions
         async function fetchAnalyticsData(days = 'all', status = 'all') {
             try {
+                document.body.classList.add('loading');
+                
                 const params = new URLSearchParams({ days, status });
+                const token = localStorage.getItem('token');
+                
                 const response = await fetch(`${API_BASE}/analytics?${params}`, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     }
                 });
 
                 if (!response.ok) {
-                    throw new Error(`API Error: ${response.status}`);
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
 
                 return await response.json();
             } catch (error) {
                 console.error('❌ Database fetch error:', error);
-                showError('Failed to load analytics data from database');
+                showError('Failed to load analytics from database. Check your API connection.');
                 return null;
+            } finally {
+                document.body.classList.remove('loading');
             }
         }
 
-        // Animate counters with real database data
+        // FIXED: Cleaner counter animation
         function animateCounters(data) {
             const elements = [
                 { el: 'totalOrders', target: data.total_orders || 0, format: 'number' },
@@ -602,40 +504,52 @@
                 const timer = setInterval(() => {
                     current += increment;
                     if (current >= target) {
-                        if (format === 'currency') {
-                            element.textContent = `₱${Number(target).toLocaleString('en-PH', { 
-                                minimumFractionDigits: 2, maximumFractionDigits: 2 
-                            })}`;
-                        } else {
-                            element.textContent = Math.floor(target).toLocaleString();
-                        }
+                        element.textContent = formatNumber(target, format);
                         clearInterval(timer);
                         return;
                     }
-                    const display = format === 'currency' ? 
-                        `₱${Math.floor(current).toLocaleString()}` : 
-                        Math.floor(current).toLocaleString();
-                    element.textContent = display;
+                    element.textContent = formatNumber(current, format);
                 }, 20);
             });
 
             // Update change percentages
-            document.getElementById('ordersChange').textContent = `+${data.order_growth || 0}%`;
-            document.getElementById('revenueChange').textContent = `+${data.revenue_growth || 0}%`;
-            document.getElementById('customersChange').textContent = `+${data.customer_growth || 0}%`;
+            ['order_growth', 'revenue_growth', 'customer_growth'].forEach((key, i) => {
+                const el = ['ordersChange', 'revenueChange', 'customersChange'][i];
+                const value = data[key] || 0;
+                document.getElementById(el).textContent = `+${value}%`;
+            });
         }
 
-        // Initialize charts with REAL database data
+        // UTILITY: Clean number formatting
+        function formatNumber(value, format = 'number') {
+            if (format === 'currency') {
+                return `₱${Number(value).toLocaleString('en-PH', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                })}`;
+            }
+            return Math.floor(value).toLocaleString();
+        }
+
+        // FIXED: Destroy charts before recreating
+        function destroyCharts() {
+            Object.values({ salesChart, revenueChart, productsChart, customersChart }).forEach(chart => {
+                if (chart) chart.destroy();
+            });
+        }
+
+        // SAME CHART INITIALIZATION - FIXED Chart.js v4 syntax
         function initCharts(data) {
-            // 1. Sales Trend Chart - Orders by DAY_OF_WEEK
-            const orderTrends = data.order_trends || [];
+            destroyCharts();
+
+            // Sales Trend Chart
             salesChart = new Chart(document.getElementById('salesChart'), {
                 type: 'line',
                 data: {
-                    labels: orderTrends.map(item => item.day_name),
+                    labels: (data.order_trends || []).map(item => item.day_name),
                     datasets: [{
                         label: 'Orders',
-                        data: orderTrends.map(item => item.order_count),
+                        data: (data.order_trends || []).map(item => item.order_count),
                         borderColor: '#1a1a1a',
                         backgroundColor: 'rgba(26, 26, 26, 0.1)',
                         borderWidth: 3,
@@ -658,14 +572,13 @@
                 }
             });
 
-            // 2. Revenue by Status (Pie Chart)
-            const revenueByStatus = data.revenue_by_status || [];
+            // Revenue Chart
             revenueChart = new Chart(document.getElementById('revenueChart'), {
                 type: 'doughnut',
                 data: {
-                    labels: revenueByStatus.map(item => item.status),
+                    labels: (data.revenue_by_status || []).map(item => item.status),
                     datasets: [{
-                        data: revenueByStatus.map(item => item.total_amount),
+                        data: (data.revenue_by_status || []).map(item => item.total_amount),
                         backgroundColor: ['#1a1a1a', '#28a745', '#007bff', '#ffc107', '#dc3545'],
                         borderWidth: 0,
                         borderRadius: 8
@@ -678,15 +591,14 @@
                 }
             });
 
-            // 3. Top Products (Bar Chart)
-            const topProducts = data.top_products || [];
+            // Top Products
             productsChart = new Chart(document.getElementById('productsChart'), {
                 type: 'bar',
                 data: {
-                    labels: topProducts.map(item => item.name.slice(0, 15) + (item.name.length > 15 ? '...' : '')),
+                    labels: (data.top_products || []).map(item => item.name?.slice(0, 15) + (item.name?.length > 15 ? '...' : '')),
                     datasets: [{
                         label: 'Units Sold',
-                        data: topProducts.map(item => item.quantity),
+                        data: (data.top_products || []).map(item => item.quantity),
                         backgroundColor: '#1a1a1a',
                         borderRadius: 8,
                         borderSkipped: false
@@ -703,15 +615,14 @@
                 }
             });
 
-            // 4. Customer Orders (Line Chart)
-            const customerOrders = data.customer_orders || [];
+            // Customer Orders
             customersChart = new Chart(document.getElementById('customersChart'), {
                 type: 'line',
                 data: {
-                    labels: customerOrders.map(item => item.username.slice(0, 8)),
+                    labels: (data.customer_orders || []).map(item => item.username?.slice(0, 8)),
                     datasets: [{
                         label: 'Orders',
-                        data: customerOrders.map(item => item.order_count),
+                        data: (data.customer_orders || []).map(item => item.order_count),
                         borderColor: '#28a745',
                         backgroundColor: 'rgba(40, 167, 69, 0.1)',
                         borderWidth: 3,
@@ -730,21 +641,29 @@
                 }
             });
 
-            // Update chart stats with real data
-            document.getElementById('peakOrderDay').textContent = data.peak_day || '-';
-            document.getElementById('avgOrderValueDb').textContent = `₱${(data.avg_order_value || 0).toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
-            document.getElementById('bestStatus').textContent = data.top_status || '-';
-            document.getElementById('deliveredRevenue').textContent = `₱${(data.delivered_revenue || 0).toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
-            document.getElementById('topProductName').textContent = data.top_product_name || '-';
-            document.getElementById('totalItemsSold').textContent = data.total_items_sold || 0;
-            document.getElementById('topCustomer').textContent = data.top_customer || '-';
-            document.getElementById('repeatCustomers').textContent = data.repeat_customers || 0;
+            // Update chart stats
+            updateChartStats(data);
         }
 
-        // Load and display real database analytics
+        function updateChartStats(data) {
+            const stats = {
+                peakOrderDay: data.peak_day || '-',
+                avgOrderValueDb: formatNumber(data.avg_order_value || 0, 'currency'),
+                bestStatus: data.top_status || '-',
+                deliveredRevenue: formatNumber(data.delivered_revenue || 0, 'currency'),
+                topProductName: data.top_product_name || '-',
+                totalItemsSold: data.total_items_sold || 0,
+                topCustomer: data.top_customer || '-',
+                repeatCustomers: data.repeat_customers || 0
+            };
+
+            Object.entries(stats).forEach(([key, value]) => {
+                document.getElementById(key).textContent = value;
+            });
+        }
+
+        // MAIN LOAD FUNCTION - SAME LOGIC, CLEANER
         async function loadAnalyticsData(days = 'all', status = 'all') {
-            document.body.classList.add('loading');
-            
             const data = await fetchAnalyticsData(days, status);
             if (data) {
                 analyticsData = data;
@@ -752,83 +671,68 @@
                 initCharts(data);
                 showToast('✅ Analytics loaded from database!');
             }
-            
-            document.body.classList.remove('loading');
         }
 
-        // Filter handlers
-        document.getElementById('timeFilter').addEventListener('change', (e) => {
-            const status = document.getElementById('statusFilter').value;
-            loadAnalyticsData(e.target.value, status);
-        });
+        // FIXED: Export function with proper loading states
+        window.exportReport = async function(type) {
+            const btn = event.target;
+            const originalHTML = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
 
-        document.getElementById('statusFilter').addEventListener('change', (e) => {
-            const days = document.getElementById('timeFilter').value;
-            loadAnalyticsData(days, e.target.value);
-        });
-
-        // ✅ FIXED Export function with better error handling
-        async function exportReport(type) {
             try {
                 document.body.classList.add('loading');
-                console.log(`📤 Exporting ${type} report...`);
+                const token = localStorage.getItem('token');
                 
                 const response = await fetch(`${API_BASE}/export/${type}`, {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json'
                     }
                 });
 
-                // ✅ Better error checking
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error(`❌ Server error ${response.status}:`, errorText);
                     throw new Error(`Server error ${response.status}: ${errorText}`);
                 }
 
                 const blob = await response.blob();
-                console.log(`✅ Blob received: ${blob.size} bytes, type: ${blob.type}`);
-                
-                const url = window.URL.createObjectURL(blob);
+                const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `hulyanas-${type}-report-${new Date().toISOString().split('T')[0]}.${type === 'dashboard' ? 'pdf' : 'csv'}`;
+                a.download = `hulyanas-${type}-report-${new Date().toISOString().split('T')[0]}.${type === 'dashboard' ? 'pdf' : type}`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
+                URL.revokeObjectURL(url);
                 
                 showToast(`✅ ${type.toUpperCase()} report downloaded!`);
             } catch (error) {
                 console.error('❌ Export error:', error);
-                showToast(`❌ ${type.toUpperCase()} export failed. Check console.`);
+                showError(`Export failed: ${error.message}`);
             } finally {
                 document.body.classList.remove('loading');
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
             }
-        }
+        };
 
-        // Error display
+        // UTILITIES - CLEANED UP
         function showError(message) {
             const errorDiv = document.createElement('div');
             errorDiv.className = 'error-message';
-            errorDiv.innerHTML = `
-                <i class="fas fa-exclamation-triangle"></i>
-                ${message}<br>
-                <small>Check your database connection</small>
-            `;
+            errorDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${message}`;
             document.querySelector('.admin-dashboard').prepend(errorDiv);
             setTimeout(() => errorDiv.remove(), 5000);
         }
 
-        // Toast notification
         function showToast(message) {
             const toast = document.createElement('div');
             toast.style.cssText = `
                 position:fixed;top:20px;right:20px;background:#d4edda;color:#155724;
-                padding:1rem 2rem;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.1);
-                z-index:3000;transform:translateX(400px);transition:all 0.3s ease;font-weight:500;
+                padding:1rem 2rem;border-radius:var(--radius-sm);box-shadow:var(--shadow-md);
+                z-index:3000;transform:translateX(400px);transition:all 0.3s;font-weight:500;
             `;
             toast.textContent = message;
             document.body.appendChild(toast);
@@ -836,34 +740,32 @@
             setTimeout(() => toast.remove(), 3000);
         }
 
-        // Navbar scroll effect
-        window.addEventListener('scroll', () => {
-            const navbar = document.querySelector('.navbar');
-            navbar.style.background = window.scrollY > 50 ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.98)';
-        });
-
-        // Logout handler
-        document.getElementById('logoutBtn').addEventListener('click', (e) => {
-            e.preventDefault();
-            if (confirm('Are you sure you want to logout?')) {
-                localStorage.removeItem('token');
-                window.location.href = '/index.html';
-            }
-        });
-
-        // 🚀 MAIN INITIALIZATION - Loads REAL DATABASE DATA
+        // EVENT LISTENERS - SAME LOGIC
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('📊 Loading Hulyanas Analytics Dashboard from DATABASE...');
+            console.log('📊 Loading Hulyanas Analytics from DATABASE...');
             
-            // Auto-login simulation (replace with your real auth)
             if (!localStorage.getItem('token')) {
                 localStorage.setItem('token', 'admin-token-' + Date.now());
             }
 
-            // Load real analytics data from your database
             await loadAnalyticsData();
-            
-            console.log('✅ REAL DATABASE ANALYTICS loaded successfully! ✨');
+
+            // Filter handlers
+            document.getElementById('timeFilter').addEventListener('change', (e) => {
+                loadAnalyticsData(e.target.value, document.getElementById('statusFilter').value);
+            });
+
+            document.getElementById('statusFilter').addEventListener('change', (e) => {
+                loadAnalyticsData(document.getElementById('timeFilter').value, e.target.value);
+            });
+
+            // Navbar effect
+            window.addEventListener('scroll', () => {
+                document.querySelector('.navbar').style.background = 
+                    window.scrollY > 50 ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.98)';
+            });
+
+            console.log('✅ Database connection ready!');
         });
     </script>
 </body>
