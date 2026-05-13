@@ -459,7 +459,7 @@ app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
         const conn = await pool.getConnection();
         const [[menuItems], [totalOrders], [revenue], [totalUsers]] = await Promise.all([
             conn.execute(`SELECT COUNT(*) as count FROM menu_items WHERE is_available = TRUE`),
-            conn.execute(`SELECT COUNT(*) as count FROM orders`),
+            conn.execute(`SELECT COUNT(*) as count FROM orders  WHERE status NOT IN ('cancelled', 'pending')`),
             conn.execute(`SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders WHERE status NOT IN ('cancelled', 'pending')`),
             conn.execute(`SELECT COUNT(*) as count FROM users WHERE role = 'customer'`)
         ]);
