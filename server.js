@@ -216,51 +216,25 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
 });
 
 // ===== DASHBOARD STATS =====
-app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
+app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
     try {
         const conn = await pool.getConnection();
-
-        const results = await Promise.all([
-            // ✅ Total Orders (USER only, exclude cancelled + pending)
-            conn.execute(
-                `SELECT COUNT(*) as count 
-                 FROM orders 
-                 WHERE user_id = ? 
-                 AND LOWER(status) NOT IN ('cancelled', 'pending')`,
-                [req.user.id]
-            ),
-
-            // 💰 Total Spent (USER only, exclude cancelled + pending)
-            conn.execute(
-                `SELECT COALESCE(SUM(total_amount), 0) AS total 
-                 FROM orders 
-                 WHERE user_id = ? 
-                 AND LOWER(status) NOT IN ('cancelled', 'pending')`,
-                [req.user.id]
-            ),
-
-            // 🍽️ Menu Items (ALL menu)
-            conn.execute(
-                `SELECT COUNT(*) as count 
-                 FROM menu_items`
-            )
+        const [[menuItems], [totalOrders], [revenue], [totalUsers]] = await Promise.all([
+            conn.execute(`SELECT COUNT(*) as count FROM menu_items WHERE is_available = TRUE`),
+            // ✅ FIXED: Only Preparing or Delivered
+            conn.execute(`SELECT COUNT(*) as count FROM orders WHERE LOWER(status) IN ('preparing', 'delivered')`),
+            conn.execute(`SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders WHERE status NOT IN ('cancelled', 'pending')`),
+            conn.execute(`SELECT COUNT(*) as count FROM users WHERE role = 'customer'`)
         ]);
-
         conn.release();
-
-        const totalOrders = results[0][0][0];
-        const totalSpent = results[1][0][0];
-        const menuItems = results[2][0][0];
-
+        
         res.json({
-            totalOrders: parseInt(totalOrders.count),
-            totalSpent: parseFloat(totalSpent.total).toFixed(2),
-            menuItems: parseInt(menuItems.count),
-            avgRating: 4.8
+            menuItems: parseInt(menuItems[0].count),
+            totalOrders: parseInt(totalOrders[0].count),  // ✅ Now correct!
+            revenue: parseFloat(revenue[0].revenue).toFixed(2),
+            totalUsers: parseInt(totalUsers[0].count)
         });
-
     } catch (error) {
-        console.error('Stats error:', error);
         res.status(500).json({ error: error.message });
     }
 });
