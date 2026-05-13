@@ -221,7 +221,7 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
         const conn = await pool.getConnection();
 
         const results = await Promise.all([
-            conn.execute(`SELECT COUNT(*) as count FROM orders WHERE user_id = ?`,[req.user.id]),
+            conn.execute(`SELECT COUNT(*) as count FROM orders WHERE user_id = ? AND status NOT IN ('cancelled', 'pending')`,[req.user.id]),
             conn.execute(`SELECT COALESCE(SUM(total_amount), 0) AS total FROM orders WHERE user_id = ? AND status NOT IN ('cancelled', 'pending')`,[req.user.id]),
             conn.execute(`SELECT COUNT(*) as count FROM orders WHERE user_id = ? AND status IN ('pending', 'preparing')`,[req.user.id])
         ]);
