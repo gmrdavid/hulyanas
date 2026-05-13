@@ -769,77 +769,79 @@ app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
             return res.status(200).send(csvContent);
 
         } else if (type === 'sales') {
-            console.log('💰 [SALES] Generating CSV...');
-            
-            const [salesRows] = await conn.execute(`
-                SELECT 
-                    DATE_FORMAT(o.created_at, '%Y-%m-%d') as sale_date,
-                    DAYNAME(o.created_at) as day_name,
-                    o.order_number,
-                    CONCAT_WS(' ', COALESCE(u.first_name, ''), COALESCE(u.last_name, '')) as customer,
-                    o.status, o.payment_method,
-                    ROUND(o.total_amount, 2) as order_total,
-                    oi.quantity, mi.name as product,
-                    ROUND(oi.price, 2) as unit_price,
-                    ROUND(oi.quantity * oi.price, 2) as line_total
-                FROM orders o 
-                LEFT JOIN users u ON o.user_id = u.id
-                LEFT JOIN order_items oi ON o.id = oi.order_id
-                LEFT JOIN menu_items mi ON oi.menu_item_id = mi.id
-                WHERE o.status IN ('delivered', 'preparing')
-                ORDER BY o.created_at DESC
-                LIMIT 5000`);
+            // Sales CSV
+            const [rows] = await conn.execute(`
+                SELECT DATE_FORMAT(o.created_at, '%Y-%m-%d') as sale_date,
+                       o.order_number, o.status, ROUND(o.total_amount, 2) as order_total
+                FROM orders o WHERE o.status IN ('delivered', 'preparing')
+                ORDER BY o.created_at DESC`);
 
-            const csvHeader = ['Date', 'Day', 'Order#', 'Customer', 'Status', 'Payment', 'Order Total', 'Qty', 'Product', 'Unit Price', 'Line Total'];
-            const csvRows = salesRows.map(row => [
+            const csvHeader = ['Date', 'Order #', 'Status', 'Total'];
+            const csvRows = rows.map(row => [
                 row.sale_date || '',
-                row.day_name || '',
                 row.order_number || '',
-                `"${(row.customer || 'Walk-in').trim().replace(/"/g, '""')}"`,
                 row.status || '',
-                row.payment_method || '',
-                row.order_total || 0,
-                row.quantity || 0,
-                `"${(row.product || 'N/A').replace(/"/g, '""')}"`,
-                row.unit_price || 0,
-                row.line_total || 0
+                parseFloat(row.order_total || 0).toFixed(2)
             ]);
 
             const csvContent = [csvHeader, ...csvRows].map(row => row.join(',')).join('\r\n');
-            
+            const csvBuffer = Buffer.from(csvContent, 'utf8');
+
             res.set({
                 'Content-Type': 'text/csv; charset=utf-8',
                 'Content-Disposition': `attachment; filename="Hulyanas-Sales-${new Date().toISOString().split('T')[0]}.csv"`,
-                'Content-Length': Buffer.byteLength(csvContent, 'utf8').toString(),
+                'Content-Length': csvBuffer.length.toString(),
                 'Access-Control-Allow-Origin': '*'
             });
-            
-            console.log(`✅ [SALES] CSV SUCCESS! Rows: ${salesRows.length}`);
-            return res.status(200).send(csvContent);
+
+            return res.status(200).send(csvBuffer);
 
         } else {
-            console.log(`❌ Invalid export type: ${type}`);
             return res.status(400).json({ error: 'Invalid type. Use: dashboard, orders, sales' });
         }
 
     } catch (error) {
-        console.error('🚨 EXPORT ERROR:', {
-            type: req.params?.type,
-            message: error.message,
-            stack: error.stack?.substring(0, 200)
-        });
-        return res.status(500).json({ 
-            error: 'Export failed', 
-            details: error.message 
-        });
+        console.error('Export error:', error);
+        res.status(500).json({ error: 'Export failed', details: error.message });
     } finally {
         if (conn) conn.release();
     }
 });
 
+// Health check
+app.get('/api/health', async (req, res) => {
+    try {
+        const conn = await pool.getConnection();
+        conn.release();
+        res.json({ status: 'OK', timestamp: new Date().toISOString() });
+    } catch (error) {
+        res.status(500).json({ status: 'DB_ERROR', error: error.message });
+    }
+});
+
+// 404 handler
+app.use('*', (req, res) => {
+    res.status(404).json({ error: 'Route not found' });
+});
+
+// Global error handler
+app.use((error, req, res, next) => {
+    console.error('Global error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+});
+
 // Start Server
-app.listen(PORT, () => {
-    console.log(`🚀 Hulyanas Hill running on port ${PORT}`);
-    console.log(`👑 Admin: http://localhost:${PORT}/admin/reports.html`);
-    console.log(`📊 Test exports: POST /api/export/dashboard, /orders, /sales`);
+const server = app.listen(PORT, () => {
+    console.log(`🚀 Hulyanas Hill Server running on port ${PORT}`);
+    console.log(`📱 Customer: http://localhost:${PORT}`);
+    console.log(`👑 Admin: http://localhost:${PORT}/admin`);
+    console.log(`🩺 Health: http://localhost:${PORT}/api/health`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+    console.log('SIGTERM received, shutting down gracefully');
+    server.close(() => {
+        console.log('Process terminated');
+    });
 });
