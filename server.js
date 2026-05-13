@@ -28,6 +28,7 @@ app.use(express.json());
 app.use(express.static('public'));
 app.use('/user', express.static('user'));
 app.use('/admin', express.static('admin'));
+app.use('/images', express.static(path.join(__dirname, 'public/images')));
 
 // MySQL Connection Pool
 const pool = mysql.createPool({
