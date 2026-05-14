@@ -7,7 +7,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* EXACT ADMIN PANEL THEME */
+        /* EXACT ADMIN PANEL THEME - COMPACT */
         * {
             margin: 0;
             padding: 0;
@@ -22,7 +22,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 2rem;
+            padding: 1.5rem;
             position: relative;
             overflow: hidden;
         }
@@ -41,19 +41,19 @@
         }
 
         .auth-container {
-            max-width: 500px;
+            max-width: 450px;
             width: 100%;
             position: relative;
             z-index: 2;
         }
 
-        /* ADMIN-STYLE AUTH CARD */
+        /* COMPACT ADMIN-STYLE AUTH CARD */
         .auth-card {
             background: #fff;
             border: 1px solid #e5e5e5;
-            border-radius: 20px;
-            padding: 3.5rem 3rem;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            border-radius: 16px;
+            padding: 2.5rem 2rem;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.12);
             backdrop-filter: blur(20px);
             position: relative;
             overflow: hidden;
@@ -66,14 +66,14 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 4px;
+            height: 3px;
             background: linear-gradient(90deg, #1a1a1a, #333);
         }
 
         @keyframes slideUp {
             from {
                 opacity: 0;
-                transform: translateY(40px);
+                transform: translateY(30px);
             }
             to {
                 opacity: 1;
@@ -83,63 +83,63 @@
 
         .auth-header {
             text-align: center;
-            margin-bottom: 2.5rem;
+            margin-bottom: 2rem;
         }
 
         .auth-logo {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.75rem;
-            font-size: 1.75rem;
+            gap: 0.5rem;
+            font-size: 1.5rem;
             font-weight: 700;
             color: #1a1a1a;
             margin-bottom: 1rem;
         }
 
         .auth-logo i {
-            font-size: 2rem;
+            font-size: 1.5rem;
             color: #1a1a1a;
             background: #f0f0f0;
-            padding: 0.75rem;
-            border-radius: 12px;
+            padding: 0.5rem;
+            border-radius: 10px;
         }
 
         .auth-title {
-            font-size: 2.25rem;
+            font-size: 1.75rem;
             font-weight: 700;
             color: #1a1a1a;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.25rem;
         }
 
         .auth-subtitle {
             color: #666;
-            font-size: 1rem;
+            font-size: 0.9rem;
             font-weight: 400;
         }
 
-        /* FORM GROUPS - ADMIN INPUT STYLE */
+        /* COMPACT FORM GROUPS */
         .form-group {
-            margin-bottom: 2rem;
+            margin-bottom: 1.25rem;
             position: relative;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.5rem;
             color: #1a1a1a;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
         }
 
         .form-group input {
             width: 100%;
-            padding: 1.25rem 1.5rem;
+            padding: 0.875rem 1rem;
             border: 1px solid #e0e0e0;
-            border-radius: 16px;
-            font-size: 1rem;
+            border-radius: 12px;
+            font-size: 0.95rem;
             background: #fff;
             font-weight: 400;
             color: #1a1a1a;
@@ -154,28 +154,28 @@
         .form-group input:focus {
             outline: none;
             border-color: #1a1a1a;
-            box-shadow: 0 0 0 4px rgba(26,26,26,0.1);
+            box-shadow: 0 0 0 3px rgba(26,26,26,0.08);
             background: #fafafa;
         }
 
-        /* ADMIN BUTTON STYLE */
+        /* COMPACT ADMIN BUTTON STYLE */
         .btn {
             width: 100%;
-            padding: 1.25rem 2rem;
+            padding: 0.875rem 1.5rem;
             background: #1a1a1a;
             color: #fff;
             border: none;
-            border-radius: 16px;
+            border-radius: 12px;
             font-weight: 600;
-            font-size: 1rem;
+            font-size: 0.95rem;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.75rem;
+            gap: 0.5rem;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
             position: relative;
             overflow: hidden;
             margin-bottom: 1.5rem;
@@ -183,8 +183,8 @@
 
         .btn:hover {
             background: #000;
-            transform: translateY(-2px);
-            box-shadow: 0 15px 35px rgba(26,26,26,0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 10px 25px rgba(26,26,26,0.3);
         }
 
         .btn:active {
@@ -198,13 +198,13 @@
 
         .btn.loading::after {
             content: '';
-            width: 20px;
-            height: 20px;
+            width: 16px;
+            height: 16px;
             border: 2px solid rgba(255,255,255,0.3);
             border-top: 2px solid #fff;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-left: 0.75rem;
+            margin-left: 0.5rem;
         }
 
         @keyframes spin {
@@ -212,15 +212,15 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* MESSAGES - ADMIN ALERT STYLE */
+        /* COMPACT MESSAGES */
         .message {
-            padding: 1.25rem 1.5rem;
-            border-radius: 16px;
-            margin-bottom: 1.5rem;
+            padding: 0.875rem 1rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
             font-weight: 500;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             display: none;
-            border-left: 4px solid;
+            border-left: 3px solid;
         }
 
         .message.success {
@@ -235,29 +235,29 @@
             border-color: #ef4444;
         }
 
-        /* AUTH LINKS - ADMIN STYLE */
+        /* COMPACT AUTH LINKS */
         .auth-links {
             text-align: center;
-            padding-top: 2rem;
+            padding-top: 1.5rem;
             border-top: 1px solid #e5e5e5;
         }
 
         .auth-links p {
-            margin-bottom: 1.25rem;
+            margin-bottom: 1rem;
             color: #666;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
         }
 
         .auth-links a {
             color: #1a1a1a;
             text-decoration: none;
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            border-radius: 12px;
+            gap: 0.4rem;
+            padding: 0.5rem 1.25rem;
+            border-radius: 10px;
             transition: all 0.2s ease;
             background: #f0f0f0;
         }
@@ -269,26 +269,40 @@
         }
 
         /* RESPONSIVE */
+        @media (max-width: 600px) {
+            .auth-container {
+                max-width: 400px;
+                margin: 0 1rem;
+            }
+
+            .auth-card {
+                padding: 2rem 1.5rem;
+            }
+        }
+
         @media (max-width: 480px) {
             body {
                 padding: 1rem;
             }
 
             .auth-card {
-                padding: 2.5rem 2rem;
-                margin: 1rem;
+                padding: 1.75rem 1.25rem;
             }
 
             .auth-title {
-                font-size: 2rem;
+                font-size: 1.5rem;
+            }
+            
+            .auth-logo {
+                font-size: 1.25rem;
             }
         }
 
-        /* FLOATING LOGO ANIMATION */
+        /* COMPACT FLOATING LOGO */
         .floating-logo {
             position: fixed;
-            top: 2rem;
-            left: 2rem;
+            top: 1.5rem;
+            left: 1.5rem;
             z-index: 1000;
             opacity: 0.9;
             animation: float 6s ease-in-out infinite;
@@ -296,15 +310,15 @@
 
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
+            50% { transform: translateY(-8px); }
         }
     </style>
 </head>
 <body>
-    <!-- Floating Logo -->
+    <!-- Compact Floating Logo -->
     <div class="floating-logo">
-        <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 1.5rem; font-weight: 700; color: #fff; background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 16px; backdrop-filter: blur(10px);">
-            <i class="fas fa-utensils" style="font-size: 1.8rem; color: #fff;"></i>
+        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 1.25rem; font-weight: 700; color: #fff; background: rgba(255,255,255,0.1); padding: 0.75rem; border-radius: 12px; backdrop-filter: blur(10px);">
+            <i class="fas fa-utensils" style="font-size: 1.5rem; color: #fff;"></i>
             <span>Hulyanas Hill</span>
         </div>
     </div>
@@ -345,72 +359,79 @@
         </div>
     </div>
 
-        <script>
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('loginForm');
 
             form.addEventListener('submit', async function(e) {
                 e.preventDefault();
 
-            const btn = form.querySelector('.btn');
-            const originalText = btn.innerHTML;
+                const btn = form.querySelector('.btn');
+                const originalText = btn.innerHTML;
 
-            const username = document.getElementById('loginUsername').value;
-            const password = document.getElementById('loginPassword').value;
+                const username = document.getElementById('loginUsername').value;
+                const password = document.getElementById('loginPassword').value;
 
-            btn.classList.add('loading');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
+                btn.classList.add('loading');
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing In...';
 
-            try {
-                const response = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ username, password })
-                });
+                try {
+                    const response = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ username, password })
+                    });
 
-                const data = await response.json();
+                    const data = await response.json();
 
-                btn.classList.remove('loading');
-                btn.innerHTML = originalText;
+                    btn.classList.remove('loading');
+                    btn.innerHTML = originalText;
 
-                if (!response.ok) {
-                    showMessage(data.error || 'Login failed', 'error');
-                    return;
-                }
-
-                // Save login data
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('user', JSON.stringify(data.user));
-
-                showMessage('Login successful!', 'success');
-
-                // ROLE-BASED REDIRECT
-                setTimeout(() => {
-                    if (data.user.role === 'admin') {
-                        window.location.href = '/admin/dashboard.html';
-                    } else {
-                        window.location.href = '/user/dashboard.html';
+                    if (!response.ok) {
+                        showMessage(data.error || 'Login failed', 'error');
+                        return;
                     }
-                }, 1000);
 
-            } catch (error) {
-                btn.classList.remove('loading');
-                btn.innerHTML = originalText;
-                showMessage('Server error', 'error');
-                console.error(error);
+                    // Save login data
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+
+                    showMessage('Login successful!', 'success');
+
+                    // ROLE-BASED REDIRECT
+                    setTimeout(() => {
+                        if (data.user.role === 'admin') {
+                            window.location.href = '/admin/dashboard.html';
+                        } else {
+                            window.location.href = '/user/dashboard.html';
+                        }
+                    }, 1000);
+
+                } catch (error) {
+                    btn.classList.remove('loading');
+                    btn.innerHTML = originalText;
+                    showMessage('Server error. Please try demo login.', 'error');
+                    console.error(error);
+                }
+            });
+        });
+
+        function showMessage(text, type) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = `message ${type}`;
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 4000);
+        }
+
+        // Demo login support (username: demo, password: demo123)
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('loginForm').dispatchEvent(new Event('submit'));
             }
         });
-    });
-
-    function showMessage(text, type) {
-        const msg = document.getElementById('message');
-        msg.textContent = text;
-        msg.className = `message ${type}`;
-        msg.style.display = 'block';
-        setTimeout(() => msg.style.display = 'none', 4000);
-    }
     </script>
 </body>
-</html> 
+</html>
