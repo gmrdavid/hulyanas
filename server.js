@@ -135,7 +135,7 @@ app.get('/api/user/:id/stats', async (req, res) => {
             SELECT 
                 COUNT(*) as totalOrders,
                 COALESCE(SUM(total_amount), 0) as totalSpent,
-                COUNT(CASE WHEN status IN ('pending', 'preparing', 'out for delivery') THEN 1 END) as activeOrders,
+                COUNT(CASE WHEN status IN ('delivered', 'preparing', 'out_for_delivery') THEN 1 END) as activeOrders,
                 4.8 as avgRating
             FROM orders 
             WHERE user_id = ?
@@ -384,7 +384,7 @@ app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
         const conn = await pool.getConnection();
         const [[menuItems], [totalOrders], [revenue], [totalUsers]] = await Promise.all([
             conn.execute(`SELECT COUNT(*) as count FROM menu_items WHERE is_available = TRUE`),
-            conn.execute(`SELECT COUNT(*) as count FROM orders WHERE status IN ('preparing', 'out for delivery', 'delivered')`),
+            conn.execute(`SELECT COUNT(*) as count FROM orders WHERE status IN ('preparing', 'out_for_delivery', 'delivered')`),
             conn.execute(`SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders WHERE status NOT IN ('cancelled', 'pending')`),
             conn.execute(`SELECT COUNT(*) as count FROM users WHERE role = 'customer'`)
         ]);
