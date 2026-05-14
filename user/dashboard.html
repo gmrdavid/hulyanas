@@ -460,63 +460,42 @@
         const currentUserId = parseInt(localStorage.getItem('userId')) || null;
 
         if (!currentUserId) {
-            window.location.href = '/index.html';
+            window.location.href = '/login.html';
         }
 
         // Initialize dashboard
         async function initDashboard() {
-            console.log('🔥 Starting dashboard init... Current userId:', currentUserId);
-            
             try {
-                // Test each endpoint individually
-                console.log('📡 Testing API endpoints...');
-                
-                const userResponse = await fetch(`/api/user/${currentUserId}`);
-                console.log('👤 User API:', userResponse.status, userResponse.statusText);
-                if (!userResponse.ok) throw new Error(`User API failed: ${userResponse.status}`);
-                
-                const statsResponse = await fetch(`/api/user/${currentUserId}/stats`);
-                console.log('📊 Stats API:', statsResponse.status, statsResponse.statusText);
-                if (!statsResponse.ok) throw new Error(`Stats API failed: ${statsResponse.status}`);
-                
-                const settingsResponse = await fetch('/api/settings');
-                console.log('⚙️ Settings API:', settingsResponse.status, settingsResponse.statusText);
-                
-                const navResponse = await fetch('/api/navigation');
-                console.log('🧭 Nav API:', navResponse.status, navResponse.statusText);
-                
-                const activityResponse = await fetch(`/api/user/${currentUserId}/activity`);
-                console.log('📋 Activity API:', activityResponse.status, activityResponse.statusText);
-
-                // All good - load data
-                const [userData, statsData, settingsData, navData, activities] = await Promise.all([
-                    userResponse.json(),
-                    statsResponse.json(),
-                    settingsResponse.ok ? settingsResponse.json() : {},
-                    navResponse.ok ? navResponse.json() : getDefaultNavigation(),
-                    activityResponse.json()
+                // Load all dashboard data
+                const [userData, statsData, settingsData, navData] = await Promise.all([
+                    fetchUserData(currentUserId),
+                    fetchUserStats(currentUserId),
+                    fetchSettings(),
+                    fetchNavigation()
                 ]);
 
-                console.log('✅ All data loaded:', { userData, statsData, activities: activities.length });
-
-                // Hide loading, show content
+                // Hide loading, show main content
                 document.getElementById('loadingState').style.display = 'none';
                 document.getElementById('mainContent').style.display = 'block';
 
-                // Populate everything
+                // Populate dynamic content
                 populateUserWelcome(userData);
                 populateNavigation(navData);
                 displayStats(statsData);
                 populateQuickActions();
                 populateSettings(settingsData);
+
+                // Fetch and display recent activity
+                const activities = await fetchRecentActivity(currentUserId);
                 displayRecentActivity(activities);
 
+                // Initialize animations
                 staggerAnimations();
                 animateCounters();
                 
             } catch (error) {
-                console.error('❌ Dashboard error:', error);
-                showError(`Failed to load: ${error.message}. Check console for details.`);
+                console.error('Error loading dashboard:', error);
+                showError('Failed to load dashboard data. Please try refreshing the page.');
             }
         }
 
@@ -613,24 +592,28 @@
             const statCards = [
                 {
                     icon: 'fas fa-shopping-cart',
-                    number: stats.totalOrders || stats.total_orders || 0,  // ✅ Handles both formats
+                    number: stats.total_orders || 0,
                     label: 'Total Orders',
+                    key: 'total_orders'
                 },
                 {
                     icon: 'fas fa-dollar-sign',
-                    number: parseFloat(stats.totalSpent || stats.total_spent || 0),
+                    number: parseFloat(stats.total_spent || 0),
                     label: 'Total Spent',
                     isCurrency: true,
+                    key: 'total_spent'
                 },
                 {
                     icon: 'fas fa-star',
-                    number: parseFloat(stats.avgRating || stats.average_rating || 0),
+                    number: parseFloat(stats.average_rating || 0),
                     label: 'Avg Rating',
+                    key: 'average_rating'
                 },
                 {
                     icon: 'fas fa-clock',
-                    number: stats.activeOrders || stats.active_orders || 0,
+                    number: stats.active_orders || 0,
                     label: 'Active Orders',
+                    key: 'active_orders'
                 }
             ];
 
