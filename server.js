@@ -236,6 +236,39 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
+/ 🆕 Settings API (for dynamic titles)
+app.get('/api/settings', async (req, res) => {
+    try {
+        // Return your site settings or defaults
+        res.json({
+            dashboard_welcome: "Here's what's happening with your account",
+            activity_title: "Recent Activity",
+            site_name: "Hulyanas Hill",
+            site_tagline: "Your favorite dining destination"
+        });
+    } catch (error) {
+        console.error('🚨 Settings error:', error);
+        res.status(500).json({ error: 'Failed to fetch settings' });
+    }
+});
+
+// 🆕 Navigation API (for dynamic navbar)
+app.get('/api/navigation', async (req, res) => {
+    res.json({
+        logo: {
+            icon: 'fas fa-utensils',
+            name: 'Hulyanas Hill'
+        },
+        menu: [
+            { title: 'Dashboard', icon: 'fas fa-home', href: 'dashboard.html', active: true },
+            { title: 'Menu', icon: 'fas fa-utensils', href: 'menu.html' },
+            { title: 'Cart', icon: 'fas fa-shopping-cart', href: 'cart.html' },
+            { title: 'Orders', icon: 'fas fa-list', href: 'orders.html' },
+            { title: 'Profile', icon: 'fas fa-user', href: 'profile.html' }
+        ]
+    });
+});
+
 // Login
 app.post('/api/login', async (req, res) => {
     try {
