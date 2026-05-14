@@ -10,7 +10,7 @@ const multer = require('multer');
 const fs = require('fs').promises;
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 
 // Middleware
 app.use(cors({
