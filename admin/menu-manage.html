@@ -615,13 +615,6 @@
             img.onerror = null; // Prevent infinite loop
         }
 
-        // Event delegation for table actions (CRITICAL FIX)
-        function attachTableListeners() {
-            const table = document.getElementById('menuTable');
-            table.removeEventListener('click', handleTableClick); // Prevent duplicates
-            table.addEventListener('click', handleTableClick);
-        }
-
         function handleTableClick(e) {
             const editBtn = e.target.closest('.action-edit');
             const deleteBtn = e.target.closest('.action-delete');
