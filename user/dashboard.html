@@ -600,28 +600,24 @@
             const statCards = [
                 {
                     icon: 'fas fa-shopping-cart',
-                    number: stats.total_orders || 0,
+                    number: stats.totalOrders || stats.total_orders || 0,  // ✅ Handles both formats
                     label: 'Total Orders',
-                    key: 'total_orders'
                 },
                 {
                     icon: 'fas fa-dollar-sign',
-                    number: parseFloat(stats.total_spent || 0),
+                    number: parseFloat(stats.totalSpent || stats.total_spent || 0),
                     label: 'Total Spent',
                     isCurrency: true,
-                    key: 'total_spent'
                 },
                 {
                     icon: 'fas fa-star',
-                    number: parseFloat(stats.average_rating || 0),
+                    number: parseFloat(stats.avgRating || stats.average_rating || 0),
                     label: 'Avg Rating',
-                    key: 'average_rating'
                 },
                 {
                     icon: 'fas fa-clock',
-                    number: stats.active_orders || 0,
+                    number: stats.activeOrders || stats.active_orders || 0,
                     label: 'Active Orders',
-                    key: 'active_orders'
                 }
             ];
 
