@@ -437,7 +437,7 @@
         <!-- Main content (hidden initially) -->
         <div id="mainContent" style="display: none;">
             <div class="welcome-section">
-                <h1>Welcome back, <span id="username">User</span>!</h1>
+                <h1>Welcome back, <span id="userName">User</span>!</h1>
                 <p>Here's your dashboard overview</p>
             </div>
 
@@ -485,50 +485,42 @@
     </div>
 
     <script>
+        // Database configuration
+        const DB_CONFIG = {
+            host: 'hulyanas-gliamaeriodavid9-fb68.a.aivencloud.com',
+            database: 'hulyanas',
+            username: 'your_username', // Replace with your Aiven username
+            password: 'your_password'  // Replace with your Aiven password
+        };
+
         // Get current user ID from localStorage or session
-       const token = localStorage.getItem('token');
-       const userId = localStorage.getItem('userId');
-
-       if (!token || !userId) {
-            console.log('🔐 No credentials found, redirecting to login...');
-            window.location.href = '/index.html';
-            return;  // Stop execution
-        }
-
-        // Parse REAL user ID from login
-        const currentUserId = parseInt(userId);
-        if (isNaN(currentUserId)) {
-            localStorage.clear();
-            window.location.href = '/index.html';
-            return;
-        }
+        const currentUserId = parseInt(localStorage.getItem('userId')) || 2; // Default to user 2 (John Doe)
 
         // Initialize dashboard
         async function initDashboard() {
             try {
+                // Hide loading, show main content
                 document.getElementById('loadingState').style.display = 'none';
                 document.getElementById('mainContent').style.display = 'block';
 
-                console.log(`📊 Loading data for User ID: ${currentUserId}`);
-
-                // REAL USER DATA from YOUR APIs
+                // Fetch user data
                 const userData = await fetchUserData(currentUserId);
-                document.getElementById('userName').textContent = userData.full_name;
+                document.getElementById('userName').textContent = `${userData.first_name} ${userData.last_name}`;
 
+                // Fetch and display stats
                 const stats = await fetchUserStats(currentUserId);
                 displayStats(stats);
 
+                // Fetch and display recent activity
                 const activities = await fetchRecentActivity(currentUserId);
                 displayRecentActivity(activities);
 
+                // Initialize animations
                 staggerAnimations();
-                animateCounters();
                 
             } catch (error) {
-                console.error('Dashboard error:', error);
-                showError('Failed to load your data. Please login again.');
-                localStorage.clear();
-                setTimeout(() => window.location.href = '/index.html', 2000);
+                console.error('Error loading dashboard:', error);
+                showError('Failed to load dashboard data. Please try refreshing the page.');
             }
         }
 
@@ -566,7 +558,7 @@
                 </div>
                 <div class="stat-card fade-in-up">
                     <div class="stat-icon">
-                        <i class="fas fa-peso-sign"></i>
+                        <i class="fas fa-dollar-sign"></i>
                     </div>
                     <div class="stat-number" data-target="${stats.totalSpent}">$0.00</div>
                     <div class="stat-label">Total Spent</div>
@@ -733,7 +725,7 @@
             e.preventDefault();
             if (confirm('Are you sure you want to logout?')) {
                 localStorage.removeItem('userId');
-                localStorage.removeItem('username');
+                localStorage.removeItem('userName');
                 window.location.href = '/index.html';
             }
         });
