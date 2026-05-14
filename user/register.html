@@ -398,23 +398,26 @@
         </div>
     </div>
 
- <script>
+<script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('registerForm');
     const btn = form.querySelector('.btn');
     const messageEl = document.getElementById('message');
-    const API_BASE = 'http://localhost:3000/api'; // Change if deploying
+    
+    // Your existing backend API base URL (adjust if needed)
+    const API_BASE = 'http://localhost:3000/api';
 
-    // Real-time validation
+    // Real-time validation with your backend
     const usernameInput = document.getElementById('username');
     const emailInput = document.getElementById('email');
     
-    usernameInput.addEventListener('blur', debounce(checkUsername, 500));
-    emailInput.addEventListener('blur', debounce(checkEmail, 500));
+    usernameInput.addEventListener('blur', debounce(checkUsernameAvailability, 500));
+    emailInput.addEventListener('blur', debounce(checkEmailAvailability, 500));
 
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
 
+        // Get form values
         const fullName = document.getElementById('fullName').value.trim();
         const phone = document.getElementById('phone').value.trim();
         const username = document.getElementById('username').value.trim();
@@ -438,50 +441,68 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        // Email validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             showMessage('Please enter a valid email address', 'error');
             return;
         }
 
-        // Show loading
+        // Show loading state
         const originalText = btn.innerHTML;
         btn.classList.add('loading');
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
+        btn.disabled = true;
 
         try {
+            // Split full name for your backend
+            const nameParts = fullName.split(' ');
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
+
             const response = await fetch(`${API_BASE}/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    fullName,
-                    phone: phone || null,
                     username,
                     email,
-                    password
+                    password,
+                    first_name: firstName,
+                    last_name: lastName,
+                    phone: phone || null
                 })
             });
 
             const data = await response.json();
 
+            // Reset button
             btn.classList.remove('loading');
             btn.innerHTML = originalText;
+            btn.disabled = false;
 
-            if (response.ok && data.success) {
-                showMessage('Account created successfully! Redirecting...', 'success');
+            if (response.ok) {
+                showMessage('Account created successfully! Redirecting to login...', 'success');
+                
+                // Store temp user info for login redirect (optional)
+                sessionStorage.setItem('justRegistered', 'true');
+                
                 setTimeout(() => {
                     window.location.href = 'login.html';
                 }, 1500);
             } else {
-                showMessage(data.error || 'Registration failed', 'error');
+                showMessage(data.error || 'Registration failed. Please try again.', 'error');
             }
         } catch (error) {
+            console.error('Registration error:', error);
+            
+            // Reset button
             btn.classList.remove('loading');
             btn.innerHTML = originalText;
+            btn.disabled = false;
+            
             showMessage('Network error. Please check if server is running.', 'error');
-            console.error('Registration error:', error);
         }
     });
 
@@ -492,54 +513,89 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (confirmPassword && password !== confirmPassword) {
             this.style.borderColor = '#ef4444';
+            this.style.boxShadow = '0 0 0 2px rgba(239, 68, 68, 0.2)';
         } else {
             this.style.borderColor = '#e0e0e0';
+            this.style.boxShadow = 'none';
         }
+    });
+
+    // Focus styles
+    const inputs = form.querySelectorAll('input');
+    inputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            this.parentNode.querySelector('label').style.color = '#1a1a1a';
+        });
     });
 });
 
-async function checkUsername() {
+// Check username availability (real-time)
+async function checkUsernameAvailability() {
     const username = document.getElementById('username').value.trim();
-    if (username.length < 3) return;
+    const input = document.getElementById('username');
+    
+    if (username.length < 3) {
+        input.style.borderColor = '#e0e0e0';
+        return;
+    }
 
     try {
-        const response = await fetch('http://localhost:3000/api/check-username', {
+        const response = await fetch(`${API_BASE}/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username })
+            body: JSON.stringify({
+                username,
+                email: '',
+                password: 'temp',
+                first_name: 'temp',
+                last_name: 'temp'
+            })
         });
+        
         const data = await response.json();
         
-        const input = document.getElementById('username');
-        if (data.exists) {
+        if (response.status === 400 && data.error?.includes('exists')) {
             input.style.borderColor = '#ef4444';
-            showMessage('Username already exists', 'error');
+            input.style.boxShadow = '0 0 0 2px rgba(239, 68, 68, 0.2)';
+            showMessage('Username already taken', 'error');
         } else {
             input.style.borderColor = '#22c55e';
+            input.style.boxShadow = '0 0 0 2px rgba(34, 197, 94, 0.2)';
         }
     } catch (error) {
         console.error('Username check failed:', error);
     }
 }
 
-async function checkEmail() {
+// Check email availability (real-time)
+async function checkEmailAvailability() {
     const email = document.getElementById('email').value.trim();
+    const input = document.getElementById('email');
+    
     if (!email) return;
 
     try {
-        const response = await fetch('http://localhost:3000/api/check-email', {
+        const response = await fetch(`${API_BASE}/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email })
+            body: JSON.stringify({
+                username: 'temp',
+                email,
+                password: 'temp',
+                first_name: 'temp',
+                last_name: 'temp'
+            })
         });
+        
         const data = await response.json();
         
-        const input = document.getElementById('email');
-        if (data.exists) {
+        if (response.status === 400 && data.error?.includes('exists')) {
             input.style.borderColor = '#ef4444';
+            input.style.boxShadow = '0 0 0 2px rgba(239, 68, 68, 0.2)';
             showMessage('Email already registered', 'error');
         } else {
             input.style.borderColor = '#22c55e';
+            input.style.boxShadow = '0 0 0 2px rgba(34, 197, 94, 0.2)';
         }
     } catch (error) {
         console.error('Email check failed:', error);
@@ -564,6 +620,7 @@ function showMessage(text, type) {
     msg.className = `message ${type}`;
     msg.style.display = 'block';
     
+    // Auto-hide after 5 seconds
     setTimeout(() => {
         msg.style.display = 'none';
     }, 5000);
@@ -571,7 +628,7 @@ function showMessage(text, type) {
 
 // Enter key support
 document.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !btn.classList.contains('loading')) {
         document.getElementById('registerForm').dispatchEvent(new Event('submit'));
     }
 });
