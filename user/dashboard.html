@@ -486,33 +486,49 @@
 
     <script>
         // Get current user ID from localStorage or session
-        const currentUserId = parseInt(localStorage.getItem('userId')) || 2; // Default to user 2 (John Doe)
+       const token = localStorage.getItem('token');
+       const userId = localStorage.getItem('userId');
+
+       if (!token || !userId) {
+            console.log('🔐 No credentials found, redirecting to login...');
+            window.location.href = '/index.html';
+            return;  // Stop execution
+        }
+
+        // Parse REAL user ID from login
+        const currentUserId = parseInt(userId);
+        if (isNaN(currentUserId)) {
+            localStorage.clear();
+            window.location.href = '/index.html';
+            return;
+        }
 
         // Initialize dashboard
         async function initDashboard() {
             try {
-                // Hide loading, show main content
                 document.getElementById('loadingState').style.display = 'none';
                 document.getElementById('mainContent').style.display = 'block';
 
-                // Fetch user data
-                const userData = await fetchUserData(currentUserId);
-                document.getElementById('username').textContent = `${userData.first_name} ${userData.last_name}`;
+                console.log(`📊 Loading data for User ID: ${currentUserId}`);
 
-                // Fetch and display stats
+                // REAL USER DATA from YOUR APIs
+                const userData = await fetchUserData(currentUserId);
+                document.getElementById('userName').textContent = userData.full_name;
+
                 const stats = await fetchUserStats(currentUserId);
                 displayStats(stats);
 
-                // Fetch and display recent activity
                 const activities = await fetchRecentActivity(currentUserId);
                 displayRecentActivity(activities);
 
-                // Initialize animations
                 staggerAnimations();
+                animateCounters();
                 
             } catch (error) {
-                console.error('Error loading dashboard:', error);
-                showError('Failed to load dashboard data. Please try refreshing the page.');
+                console.error('Dashboard error:', error);
+                showError('Failed to load your data. Please login again.');
+                localStorage.clear();
+                setTimeout(() => window.location.href = '/index.html', 2000);
             }
         }
 
@@ -550,7 +566,7 @@
                 </div>
                 <div class="stat-card fade-in-up">
                     <div class="stat-icon">
-                        <i class="fas fa-dollar-sign"></i>
+                        <i class="fas fa-peso-sign"></i>
                     </div>
                     <div class="stat-number" data-target="${stats.totalSpent}">$0.00</div>
                     <div class="stat-label">Total Spent</div>
