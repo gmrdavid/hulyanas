@@ -8,11 +8,7 @@ const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs').promises;
-
 const { Pool } = require('pg');
-const pool = new Pool({connectionString: process.env.DB_NAME,
-    ssl: { rejectUnauthorized: false }
-});
 
 const app = express();
 const PORT = process.env.PORT;
@@ -258,51 +254,45 @@ app.post('/api/register', async (req, res) => {
 
 // Add this route (place it with your other auth routes)
 // CHANGE PASSWORD ROUTE - Add this ONCE with your other routes
+// ADD THIS ONE ROUTE - NOTHING ELSE!
 app.post('/api/change-password', authenticateToken, async (req, res) => {
-    console.log('🔑 CHANGE PASSWORD ROUTE HIT');
+    console.log('🔑 CHANGE PASSWORD - MySQL');
     
     try {
         const { current_password, new_password } = req.body;
-        
-        if (!current_password || !new_password) {
-            return res.status(400).json({ error: 'Current and new password required' });
-        }
-        
         const userId = req.user.id;
-        console.log('User ID:', userId);
         
-        // MySQL query - column is password_hash
+        console.log('User ID:', userId, 'Passwords:', !!current_password, !!new_password);
+        
+        // YOUR EXISTING DB QUERY PATTERN - table=user, column=password_hash
         const userResult = await db.query('SELECT password_hash FROM user WHERE id = ?', [userId]);
-        console.log('User found:', userResult.length);
         
-        if (userResult.length === 0) {
+        if (!userResult || userResult.length === 0) {
+            console.log('❌ User not found');
             return res.status(404).json({ error: 'User not found' });
         }
         
-        const user = userResult[0];
-        console.log('Has password_hash:', !!user.password_hash);
+        const userPassword = userResult[0].password_hash;
+        console.log('Found password_hash:', !!userPassword);
         
         // Verify current password
-        const isCurrentValid = await bcrypt.compare(current_password, user.password_hash);
-        console.log('Current password valid:', isCurrentValid);
+        const isValid = await bcrypt.compare(current_password, userPassword);
+        console.log('Current password valid:', isValid);
         
-        if (!isCurrentValid) {
+        if (!isValid) {
             return res.status(401).json({ error: 'Current password is incorrect' });
         }
         
-        // Hash new password
+        // Update password
         const newHash = await bcrypt.hash(new_password, 10);
-        console.log('New hash created');
-        
-        // Update MySQL - table is 'user', column is 'password_hash'
         await db.query('UPDATE user SET password_hash = ? WHERE id = ?', [newHash, userId]);
-        console.log('✅ PASSWORD CHANGED!');
         
-        res.json({ success: true, message: 'Password changed successfully' });
+        console.log('✅ PASSWORD CHANGED SUCCESS!');
+        res.json({ success: true, message: 'Password updated!' });
         
     } catch (error) {
-        console.error('❌ ERROR:', error.message);
-        res.status(500).json({ error: 'Server error: ' + error.message });
+        console.error('❌ CHANGE PW ERROR:', error.message);
+        res.status(500).json({ error: error.message });
     }
 });
 
