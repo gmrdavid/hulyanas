@@ -650,52 +650,258 @@ app.delete('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res) 
 
 // Analytics
 app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
+    let conn;
+
     try {
         const { days = 'all', status = 'all' } = req.query;
-        let filteredWhereClause = "WHERE o.status NOT IN ('cancelled', 'pending')";
-        let normalWhereClause = 'WHERE 1=1';
+
+        conn = await pool.getConnection();
+
+        // =========================
+        // FILTERS
+        // =========================
+        let whereClause = `WHERE LOWER(o.status) != 'cancelled'`;
         const params = [];
 
         if (days !== 'all') {
-            filteredWhereClause += ' AND o.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)';
-            normalWhereClause += ' AND o.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)';
-            params.push(days);
+            whereClause += ` AND o.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`;
+            params.push(Number(days));
         }
 
         if (status !== 'all') {
-            filteredWhereClause += ' AND o.status = ?';
-            normalWhereClause += ' AND o.status = ?';
+            whereClause += ` AND LOWER(o.status) = LOWER(?)`;
             params.push(status);
         }
 
-        const conn = await pool.getConnection();
-        const queries = [
-            `SELECT COUNT(*) as total_orders FROM orders o ${filteredWhereClause}`,
-            `SELECT COALESCE(SUM(total_amount), 0) as total_revenue FROM orders o ${filteredWhereClause}`,
-            `SELECT COUNT(DISTINCT user_id) as active_customers FROM orders o ${filteredWhereClause}`,
-            `SELECT COALESCE(AVG(total_amount), 0) as avg_order_value FROM orders o ${filteredWhereClause}`,
-            `SELECT DAYNAME(o.created_at) as day_name, COUNT(*) as order_count FROM orders o ${normalWhereClause} GROUP BY day_name ORDER BY FIELD(day_name, 'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')`,
-            `SELECT o.status, COALESCE(SUM(o.total_amount), 0) as total_amount FROM orders o ${normalWhereClause} GROUP BY o.status ORDER BY total_amount DESC`,
-            `SELECT mi.name, SUM(oi.quantity) as quantity FROM order_items oi JOIN menu_items mi ON oi.menu_item_id = mi.id JOIN orders o ON oi.order_id = o.id ${normalWhereClause} GROUP BY oi.menu_item_id, mi.name ORDER BY quantity DESC LIMIT 5`,
-            `SELECT u.username, COUNT(o.id) as order_count FROM orders o JOIN users u ON o.user_id = u.id ${normalWhereClause} GROUP BY o.user_id, u.username ORDER BY order_count DESC LIMIT 5`
-        ];
+        // =========================
+        // TOTAL ORDERS
+        // =========================
+        const [totalOrdersResult] = await conn.execute(`
+            SELECT COUNT(*) AS total_orders
+            FROM orders o
+            ${whereClause}
+        `, params);
 
-        const results = await Promise.all(queries.map(q => conn.execute(q, params)));
-        conn.release();
+        // =========================
+        // TOTAL REVENUE
+        // =========================
+        const [revenueResult] = await conn.execute(`
+            SELECT COALESCE(SUM(o.total_amount), 0) AS total_revenue
+            FROM orders o
+            ${whereClause}
+            AND LOWER(o.status) = 'delivered'
+        `, params);
 
+        // =========================
+        // ACTIVE CUSTOMERS
+        // =========================
+        const [customersResult] = await conn.execute(`
+            SELECT COUNT(DISTINCT o.user_id) AS active_customers
+            FROM orders o
+            ${whereClause}
+        `, params);
+
+        // =========================
+        // AVG ORDER VALUE
+        // =========================
+        const [avgResult] = await conn.execute(`
+            SELECT COALESCE(AVG(o.total_amount), 0) AS avg_order_value
+            FROM orders o
+            ${whereClause}
+            AND LOWER(o.status) = 'delivered'
+        `, params);
+
+        // =========================
+        // ORDER TRENDS
+        // =========================
+        const [orderTrends] = await conn.execute(`
+            SELECT
+                DAYNAME(o.created_at) AS day_name,
+                COUNT(*) AS order_count
+            FROM orders o
+            ${whereClause}
+            GROUP BY DAYNAME(o.created_at)
+            ORDER BY order_count DESC
+        `, params);
+
+        const peakDay =
+            orderTrends.length > 0
+                ? orderTrends[0].day_name
+                : '-';
+
+        // =========================
+        // REVENUE BY STATUS
+        // =========================
+        const [revenueByStatus] = await conn.execute(`
+            SELECT
+                o.status,
+                COALESCE(SUM(o.total_amount), 0) AS total_amount
+            FROM orders o
+            ${whereClause}
+            GROUP BY o.status
+            ORDER BY total_amount DESC
+        `, params);
+
+        let topStatus = '-';
+
+        if (revenueByStatus.length > 0) {
+            topStatus = revenueByStatus[0].status;
+        }
+
+        const deliveredRevenue =
+            revenueByStatus.find(
+                item => item.status.toLowerCase() === 'delivered'
+            )?.total_amount || 0;
+
+        // =========================
+        // TOP PRODUCTS
+        // =========================
+        const [topProducts] = await conn.execute(`
+            SELECT
+                mi.name,
+                SUM(oi.quantity) AS quantity
+            FROM order_items oi
+            JOIN menu_items mi
+                ON oi.menu_item_id = mi.id
+            JOIN orders o
+                ON oi.order_id = o.id
+            ${whereClause}
+            GROUP BY oi.menu_item_id, mi.name
+            ORDER BY quantity DESC
+            LIMIT 5
+        `, params);
+
+        const topProductName =
+            topProducts.length > 0
+                ? topProducts[0].name
+                : '-';
+
+        const totalItemsSold =
+            topProducts.reduce(
+                (sum, item) => sum + Number(item.quantity),
+                0
+            );
+
+        // =========================
+        // CUSTOMER ORDERS
+        // =========================
+        const [customerOrders] = await conn.execute(`
+            SELECT
+                u.username,
+                COUNT(o.id) AS order_count
+            FROM orders o
+            JOIN users u
+                ON o.user_id = u.id
+            ${whereClause}
+            GROUP BY o.user_id, u.username
+            ORDER BY order_count DESC
+            LIMIT 5
+        `, params);
+
+        const topCustomer =
+            customerOrders.length > 0
+                ? customerOrders[0].username
+                : '-';
+
+        // =========================
+        // REPEAT CUSTOMERS
+        // =========================
+        const [repeatCustomersResult] = await conn.execute(`
+            SELECT COUNT(*) AS repeat_customers
+            FROM (
+                SELECT o.user_id
+                FROM orders o
+                ${whereClause}
+                GROUP BY o.user_id
+                HAVING COUNT(o.id) > 1
+            ) repeated
+        `, params);
+
+        // =========================
+        // GROWTH PERCENTAGES
+        // =========================
+        const [currentMonthOrders] = await conn.execute(`
+            SELECT COUNT(*) AS total
+            FROM orders
+            WHERE MONTH(created_at) = MONTH(CURRENT_DATE())
+        `);
+
+        const [previousMonthOrders] = await conn.execute(`
+            SELECT COUNT(*) AS total
+            FROM orders
+            WHERE MONTH(created_at) =
+            MONTH(CURRENT_DATE() - INTERVAL 1 MONTH)
+        `);
+
+        const calculateGrowth = (current, previous) => {
+            if (previous === 0) {
+                return current > 0 ? 100 : 0;
+            }
+
+            return Number(
+                (((current - previous) / previous) * 100)
+                .toFixed(1)
+            );
+        };
+
+        const orderGrowth = calculateGrowth(
+            currentMonthOrders[0].total,
+            previousMonthOrders[0].total
+        );
+
+        // =========================
+        // FINAL RESPONSE
+        // =========================
         res.json({
-            total_orders: parseInt(results[0][0][0].total_orders),
-            total_revenue: parseFloat(results[1][0][0].total_revenue),
-            active_customers: parseInt(results[2][0][0].active_customers),
-            avg_order_value: parseFloat(results[3][0][0].avg_order_value),
-            order_trends: results[4][0],
-            revenue_by_status: results[5][0],
-            top_products: results[6][0],
-            customer_orders: results[7][0]
+            total_orders:
+                totalOrdersResult[0].total_orders || 0,
+
+            total_revenue:
+                parseFloat(
+                    revenueResult[0].total_revenue || 0
+                ),
+
+            active_customers:
+                customersResult[0].active_customers || 0,
+
+            avg_order_value:
+                parseFloat(
+                    avgResult[0].avg_order_value || 0
+                ),
+
+            order_growth: orderGrowth,
+            revenue_growth: orderGrowth,
+            customer_growth: orderGrowth,
+
+            order_trends: orderTrends || [],
+            peak_day: peakDay,
+
+            revenue_by_status: revenueByStatus || [],
+            top_status: topStatus,
+            delivered_revenue: deliveredRevenue,
+
+            top_products: topProducts || [],
+            top_product_name: topProductName,
+            total_items_sold: totalItemsSold,
+
+            customer_orders: customerOrders || [],
+            top_customer: topCustomer,
+
+            repeat_customers:
+                repeatCustomersResult[0]
+                    .repeat_customers || 0
         });
+
     } catch (error) {
         console.error('🚨 Analytics error:', error);
-        res.status(500).json({ error: 'Analytics failed' });
+
+        res.status(500).json({
+            error: 'Analytics failed',
+            details: error.message
+        });
+
+    } finally {
+        if (conn) conn.release();
     }
 });
 
