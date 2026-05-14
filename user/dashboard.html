@@ -485,310 +485,204 @@
     </div>
 
     <script>
-        // ✅ NO HARDCODED VALUES - Uses JWT token from login
-        let currentUser = null;
-        let token = null;
+    // ✅ COMPLETE FIXED DASHBOARD - Works with your login flow
+    let currentUser = null;
+    let token = null;
 
-        // Initialize dashboard - checks login status first
-        async function initDashboard() {
-            try {
-                // Check if user is logged in
-                const userData = await checkAuthAndGetUser();
-                if (!userData) {
-                    window.location.href = '/index.html';
-                    return;
-                }
-
-                // Hide loading, show main content
-                document.getElementById('loadingState').style.display = 'none';
-                document.getElementById('mainContent').style.display = 'block';
-
-                // Update welcome message with REAL user data
-                document.getElementById('userName').textContent = userData.full_name || 'Customer';
-                
-                const totalOrders = userData.total_orders || 0;
-                const subtitle = totalOrders === 0 
-                    ? "Welcome! Start your first order today"
-                    : totalOrders === 1 
-                        ? `You've placed ${totalOrders} order with us`
-                        : `You've placed ${totalOrders} orders with us`;
-                document.getElementById('welcomeSubtitle').textContent = subtitle;
-
-                // Fetch and display stats from REAL DATABASE
-                const stats = await fetchUserStats(userData.id);
-                displayStats(stats);
-
-                // Fetch and display recent activity from REAL DATABASE
-                const activities = await fetchRecentActivity(userData.id);
-                displayRecentActivity(activities);
-
-                // Initialize animations
-                staggerAnimations();
-                animateCounters();
-                
-            } catch (error) {
-                console.error('Error loading dashboard:', error);
-                showError('Failed to load dashboard data. Please try refreshing the page.');
-            }
-        }
-
-        // ✅ Check authentication and get current user
-        async function checkAuthAndGetUser() {
-            try {
-                token = localStorage.getItem('token');
-                if (!token) {
-                    console.log('No token found, redirecting to login');
-                    return null;
-                }
-
-                // Get user data using the existing API endpoint
-                const response = await fetch(`/api/user/${localStorage.getItem('userId')}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Authentication failed');
-                }
-
-                currentUser = await response.json();
-                return currentUser;
-                
-            } catch (error) {
-                console.error('Auth check failed:', error);
-                localStorage.removeItem('token');
-                localStorage.removeItem('userId');
-                return null;
-            }
-        }
-
-        // ✅ Fetch user statistics from your REAL DATABASE
-        async function fetchUserStats(userId) {
-            const response = await fetch(`/api/user/${userId}/stats`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+    async function initDashboard() {
+        console.log('🔍 Dashboard init...');
+        
+        try {
+            // 1. Check localStorage
+            token = localStorage.getItem('token');
+            const userId = localStorage.getItem('userId');
             
-            if (!response.ok) throw new Error('Failed to fetch stats');
-            return await response.json();
-        }
-
-        // ✅ Fetch recent activity from your REAL DATABASE
-        async function fetchRecentActivity(userId) {
-            const response = await fetch(`/api/user/${userId}/activity`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            console.log('Storage check:', { hasToken: !!token, userId });
             
-            if (!response.ok) throw new Error('Failed to fetch activity');
-            return await response.json();
-        }
-
-        // Display stats cards - uses REAL database values
-        function displayStats(stats) {
-            const statsGrid = document.getElementById('statsGrid');
-            statsGrid.innerHTML = `
-                <div class="stat-card fade-in-up">
-                    <div class="stat-icon">
-                        <i class="fas fa-shopping-cart"></i>
-                    </div>
-                    <div class="stat-number" data-target="${stats.totalOrders}">0</div>
-                    <div class="stat-label">Total Orders</div>
-                </div>
-                <div class="stat-card fade-in-up">
-                    <div class="stat-icon">
-                        <i class="fas fa-dollar-sign"></i>
-                    </div>
-                    <div class="stat-number" data-target="${stats.totalSpent}">0.00</div>
-                    <div class="stat-label">Total Spent</div>
-                </div>
-                <div class="stat-card fade-in-up">
-                    <div class="stat-icon">
-                        <i class="fas fa-star"></i>
-                    </div>
-                    <div class="stat-number" data-target="${stats.avgRating}">0</div>
-                    <div class="stat-label">Avg Rating</div>
-                </div>
-                <div class="stat-card fade-in-up">
-                    <div class="stat-icon">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <div class="stat-number" data-target="${stats.activeOrders}">0</div>
-                    <div class="stat-label">Active Orders</div>
-                </div>
-            `;
-        }
-
-        // Display recent activity - uses REAL database activities
-        function displayRecentActivity(activities) {
-            const activityList = document.getElementById('activityList');
-            
-            if (activities.length === 0) {
-                activityList.innerHTML = `
-                    <div class="no-data">
-                        <i class="fas fa-inbox"></i>
-                        <h4>No recent activity</h4>
-                        <p>Your activity will appear here once you place orders</p>
-                    </div>
-                `;
+            if (!token || !userId) {
+                console.log('❌ No auth data');
+                window.location.href = '/index.html';
                 return;
             }
 
-            activityList.innerHTML = activities.map(activity => `
-                <div class="activity-item">
-                    <div class="activity-icon">
-                        ${getActivityIcon(activity.type, activity.action)}
-                    </div>
-                    <div class="activity-content">
-                        <h4>${activity.display_action || activity.action}</h4>
-                        <p>${formatActivityDetails(activity)} - ${formatDate(activity.created_at)}</p>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Get activity icon based on type
-        function getActivityIcon(type, action) {
-            const icons = {
-                'order': {
-                    'delivered': 'fas fa-check-circle',
-                    'New order placed': 'fas fa-shopping-cart',
-                    default: 'fas fa-list'
-                },
-                'user': 'fas fa-user',
-                default: 'fas fa-info-circle'
-            };
-
-            if (type === 'order') {
-                return icons[type][action] || icons[type].default || 'fas fa-list';
-            }
-            return icons[type] || icons.default;
-        }
-
-        // Format activity details from database
-        function formatActivityDetails(activity) {
-            if (activity.details && typeof activity.details === 'object') {
-                if (activity.details.order_number) {
-                    return `Order ${activity.details.order_number}`;
+            // 2. Get user profile (this endpoint checks role='customer')
+            const userResponse = await fetch(`/api/user/${userId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
                 }
+            });
+
+            console.log('User API:', userResponse.status);
+
+            if (!userResponse.ok) {
+                console.error('User API failed:', await userResponse.text());
+                localStorage.clear();
+                window.location.href = '/index.html';
+                return;
             }
-            return activity.action;
-        }
 
-        // Format date from database timestamp
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            const now = new Date();
-            const diffHours = Math.floor((now - date) / (1000 * 60 * 60));
+            currentUser = await userResponse.json();
+            console.log('✅ User loaded:', currentUser);
+
+            // 3. Show dashboard
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+
+            // 4. Update UI with REAL data
+            document.getElementById('userName').textContent = currentUser.full_name;
             
-            if (diffHours < 1) return 'Just now';
-            if (diffHours < 24) return `${diffHours}h ago`;
-            return date.toLocaleDateString();
-        }
+            const totalOrders = currentUser.total_orders || 0;
+            const subtitle = totalOrders === 0 
+                ? "Welcome! Start your first order today"
+                : totalOrders === 1 
+                ? `You've placed ${totalOrders} order`
+                : `You've placed ${totalOrders} orders`;
+            document.getElementById('welcomeSubtitle').textContent = subtitle;
 
-        // Animate stats counters from database values
-        function animateCounters() {
-            const counters = document.querySelectorAll('.stat-number');
-            counters.forEach(counter => {
-                const target = parseFloat(counter.getAttribute('data-target'));
-                const isCurrency = counter.textContent.includes('$') || counter.getAttribute('data-target').includes('.');
-                const updateCounter = () => {
-                    const start = 0;
-                    const increment = target / 100;
-                    let current = start;
-                    const timer = setInterval(() => {
-                        current += increment;
-                        if (isCurrency) {
-                            counter.textContent = `$${current.toFixed(2)}`;
-                        } else {
-                            counter.textContent = Math.floor(current);
-                        }
-                        if (current >= target) {
-                            clearInterval(timer);
-                            if (isCurrency) {
-                                counter.textContent = `$${parseFloat(target).toFixed(2)}`;
-                            } else {
-                                counter.textContent = Math.floor(target);
-                            }
-                        }
-                    }, 25);
-                };
-                const observer = new IntersectionObserver((entries) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            updateCounter();
-                            observer.unobserve(entry.target);
-                        }
-                    });
-                });
-                observer.observe(counter);
-            });
-        }
+            // 5. Load stats & activity PARALLEL
+            const [stats, activities] = await Promise.all([
+                fetch(`/api/user/${currentUser.id}/stats`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).then(r => r.json()),
+                fetch(`/api/user/${currentUser.id}/activity`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).then(r => r.json())
+            ]);
 
-        // Stagger animations
-        function staggerAnimations() {
-            const elements = document.querySelectorAll('.fade-in-up');
-            elements.forEach((el, index) => {
-                el.style.animationDelay = `${index * 0.1}s`;
-            });
-        }
-
-        // Show error message
-        function showError(message) {
+            displayStats(stats);
+            displayRecentActivity(activities);
+            
+            staggerAnimations();
+            setTimeout(animateCounters, 500);
+            
+        } catch (error) {
+            console.error('Dashboard error:', error);
             document.getElementById('loadingState').innerHTML = `
-                <i class="fas fa-exclamation-triangle" style="color: #ff6b6b;"></i>
-                <p>${message}</p>
-                <button onclick="location.reload()" style="background: #1a1a1a; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; margin-top: 1rem;">Retry</button>
+                <i class="fas fa-exclamation-triangle" style="color: #ff6b6b; font-size: 3rem;"></i>
+                <p>Session expired. <a href="/index.html">Login again</a></p>
             `;
         }
+    }
 
-        // Navbar scroll effect
-        window.addEventListener('scroll', () => {
-            const navbar = document.querySelector('.navbar');
-            if (window.scrollY > 50) {
-                navbar.style.background = 'rgba(255, 255, 255, 1)';
-                navbar.style.boxShadow = '0 2px 20px rgba(0, 0, 0, 0.08)';
-            } else {
-                navbar.style.background = 'rgba(255, 255, 255, 0.98)';
-                navbar.style.boxShadow = '0 1px 10px rgba(0, 0, 0, 0.05)';
-            }
-        });
+    function displayStats(stats) {
+        document.getElementById('statsGrid').innerHTML = `
+            <div class="stat-card fade-in-up">
+                <div class="stat-icon"><i class="fas fa-shopping-cart"></i></div>
+                <div class="stat-number" data-target="${stats.totalOrders || 0}">0</div>
+                <div class="stat-label">Total Orders</div>
+            </div>
+            <div class="stat-card fade-in-up">
+                <div class="stat-icon"><i class="fas fa-dollar-sign"></i></div>
+                <div class="stat-number" data-target="${parseFloat(stats.totalSpent || 0)}">0</div>
+                <div class="stat-label">Total Spent</div>
+            </div>
+            <div class="stat-card fade-in-up">
+                <div class="stat-icon"><i class="fas fa-star"></i></div>
+                <div class="stat-number" data-target="${(stats.avgRating || 0).toFixed(1)}">0</div>
+                <div class="stat-label">Avg Rating</div>
+            </div>
+            <div class="stat-card fade-in-up">
+                <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                <div class="stat-number" data-target="${stats.activeOrders || 0}">0</div>
+                <div class="stat-label">Active Orders</div>
+            </div>
+        `;
+    }
 
-        // Logout functionality
-        document.getElementById('logoutBtn').addEventListener('click', (e) => {
-            e.preventDefault();
-            if (confirm('Are you sure you want to logout?')) {
-                localStorage.removeItem('token');
-                localStorage.removeItem('userId');
-                localStorage.removeItem('userName');
-                window.location.href = '/index.html';
-            }
-        });
+    function displayRecentActivity(activities) {
+        const list = document.getElementById('activityList');
+        if (!activities || activities.length === 0) {
+            list.innerHTML = `
+                <div class="no-data">
+                    <i class="fas fa-inbox"></i>
+                    <h4>No recent activity</h4>
+                    <p>Activity appears here after orders</p>
+                </div>
+            `;
+            return;
+        }
 
-        // Enhanced card hover effects
-        document.addEventListener('click', (e) => {
-            if (e.target.closest('.dashboard-card, .stat-card')) {
-                e.target.closest('.dashboard-card, .stat-card').style.transform = 'translateY(-4px)';
-            }
-        });
+        list.innerHTML = activities.map(activity => `
+            <div class="activity-item">
+                <div class="activity-icon">
+                    <i class="${getActivityIcon(activity.type, activity.action)}"></i>
+                </div>
+                <div class="activity-content">
+                    <h4>${activity.display_action || activity.action}</h4>
+                    <p>${formatActivityDetails(activity)} - ${formatDate(activity.created_at)}</p>
+                </div>
+            </div>
+        `).join('');
+    }
 
-        document.addEventListener('mouseleave', (e) => {
-            if (e.target.closest('.dashboard-card, .stat-card')) {
-                e.target.closest('.dashboard-card, .stat-card').style.transform = 'translateY(0)';
-            }
-        });
+    function getActivityIcon(type, action) {
+        const icons = {
+            'order': action?.includes('delivered') ? 'fas fa-check-circle' : 'fas fa-shopping-cart',
+            'user': 'fas fa-user',
+            default: 'fas fa-info-circle'
+        };
+        return icons[type] || icons.default;
+    }
 
-        // Initialize when DOM is loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            // Check auth first, then load dashboard
-            initDashboard();
+    function formatActivityDetails(activity) {
+        if (activity.details?.order_number) return `Order ${activity.details.order_number}`;
+        return activity.action || 'Activity';
+    }
+
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        const diffMs = Date.now() - date;
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        return diffHours < 1 ? 'Just now' : diffHours < 24 ? `${diffHours}h ago` : date.toLocaleDateString();
+    }
+
+    function animateCounters() {
+        document.querySelectorAll('.stat-number').forEach(counter => {
+            const target = parseFloat(counter.dataset.target);
+            let current = 0;
+            const increment = target / 100;
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    counter.textContent = target.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 2});
+                    clearInterval(timer);
+                } else {
+                    counter.textContent = current.toFixed(1);
+                }
+            }, 20);
         });
-    </script>
+    }
+
+    function staggerAnimations() {
+        document.querySelectorAll('.fade-in-up').forEach((el, i) => {
+            el.style.animationDelay = `${i * 0.1}s`;
+        });
+    }
+
+    // Navbar effects
+    window.addEventListener('scroll', () => {
+        const navbar = document.querySelector('.navbar');
+        if (window.scrollY > 50) {
+            navbar.style.background = 'rgba(255,255,255,1)';
+            navbar.style.boxShadow = '0 2px 20px rgba(0,0,0,0.08)';
+        } else {
+            navbar.style.background = 'rgba(255,255,255,0.98)';
+            navbar.style.boxShadow = '0 1px 10px rgba(0,0,0,0.05)';
+        }
+    });
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', e => {
+        e.preventDefault();
+        if (confirm('Logout?')) {
+            localStorage.clear();
+            window.location.href = '/index.html';
+        }
+    });
+
+    // Init
+    document.addEventListener('DOMContentLoaded', initDashboard);
+</script>
 </body>
 </html>
