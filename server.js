@@ -678,8 +678,7 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
         // =========================
         const [totalOrdersResult] = await conn.execute(`
             SELECT COUNT(*) AS total_orders
-            FROM orders o
-            where o.status IN ('preparing', 'delivered')
+            FROM orders o ${whereClause}
         `, params);
 
         // =========================
