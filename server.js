@@ -249,40 +249,51 @@ app.post('/api/register', async (req, res) => {
 });
 
 // Add this route to your server.js (in the auth routes section)
+// Make sure you have these imports at top of server.js
+const bcrypt = require('bcryptjs');
+
+// Add this route (place it with your other auth routes)
 app.post('/api/change-password', authenticateToken, async (req, res) => {
+    console.log('🔑 /api/change-password called');
+    
     try {
         const { current_password, new_password } = req.body;
+        
+        // Validate input
+        if (!current_password || !new_password) {
+            return res.status(400).json({ error: 'Both passwords required' });
+        }
+        
+        if (new_password.length < 6) {
+            return res.status(400).json({ error: 'New password too short' });
+        }
+        
         const userId = req.user.id;
-
-        // Get user from database
-        const user = await db.query('SELECT * FROM users WHERE id = $1', [userId]);
-        if (user.rows.length === 0) {
+        
+        // Fetch user
+        const userResult = await db.query('SELECT password FROM users WHERE id = $1', [userId]);
+        if (userResult.rows.length === 0) {
             return res.status(404).json({ error: 'User not found' });
         }
-
-        const userData = user.rows[0];
-
-        // Verify current password
-        const isCurrentValid = await bcrypt.compare(current_password, userData.password);
-        if (!isCurrentValid) {
-            return res.status(401).json({ error: 'Current password is incorrect' });
+        
+        const user = userResult.rows[0];
+        
+        // Check current password
+        const isMatch = await bcrypt.compare(current_password, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ error: 'Current password incorrect' });
         }
-
-        // Hash new password
-        const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(new_password, saltRounds);
-
-        // Update password in database
-        await db.query('UPDATE users SET password = $1 WHERE id = $2', [hashedPassword, userId]);
-
-        res.json({ 
-            message: 'Password changed successfully',
-            success: true 
-        });
-
-    } catch (error) {
-        console.error('Change password error:', error);
-        res.status(500).json({ error: 'Failed to change password' });
+        
+        // Hash and update
+        const newHash = await bcrypt.hash(new_password, 10);
+        await db.query('UPDATE users SET password = $1 WHERE id = $2', [newHash, userId]);
+        
+        console.log('✅ Password changed for user:', userId);
+        res.json({ success: true, message: 'Password updated' });
+        
+    } catch (err) {
+        console.error('Change password error:', err);
+        res.status(500).json({ error: err.message });
     }
 });
 
