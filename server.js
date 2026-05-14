@@ -872,6 +872,7 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
             order_growth: orderGrowth,
             revenue_growth: orderGrowth,
             customer_growth: orderGrowth,
+            avg_order_value: avgResult,
 
             order_trends: orderTrends || [],
             peak_day: peakDay,
