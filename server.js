@@ -259,28 +259,26 @@ app.post('/api/change-password', authenticateToken, async (req, res) => {
     try {
         const { current_password, new_password } = req.body;
         
-        // Validate input
         if (!current_password || !new_password) {
-            console.log('❌ Missing passwords');
             return res.status(400).json({ error: 'Current and new password required' });
         }
         
         const userId = req.user.id;
         console.log('User ID:', userId);
         
-        // Get current user password
-        const userResult = await db.query('SELECT password FROM users WHERE id = $1', [userId]);
-        console.log('User found:', userResult.rows.length);
+        // MySQL query - column is password_hash
+        const userResult = await db.query('SELECT password_hash FROM user WHERE id = ?', [userId]);
+        console.log('User found:', userResult.length);
         
-        if (userResult.rows.length === 0) {
+        if (userResult.length === 0) {
             return res.status(404).json({ error: 'User not found' });
         }
         
-        const user = userResult.rows[0];
-        console.log('Has password:', !!user.password);
+        const user = userResult[0];
+        console.log('Has password_hash:', !!user.password_hash);
         
-        // Verify current password (bcrypt is already imported elsewhere)
-        const isCurrentValid = await bcrypt.compare(current_password, user.password);
+        // Verify current password
+        const isCurrentValid = await bcrypt.compare(current_password, user.password_hash);
         console.log('Current password valid:', isCurrentValid);
         
         if (!isCurrentValid) {
@@ -291,9 +289,9 @@ app.post('/api/change-password', authenticateToken, async (req, res) => {
         const newHash = await bcrypt.hash(new_password, 10);
         console.log('New hash created');
         
-        // Update database
-        await db.query('UPDATE users SET password = $1 WHERE id = $2', [newHash, userId]);
-        console.log('✅ DATABASE UPDATED!');
+        // Update MySQL - table is 'user', column is 'password_hash'
+        await db.query('UPDATE user SET password_hash = ? WHERE id = ?', [newHash, userId]);
+        console.log('✅ PASSWORD CHANGED!');
         
         res.json({ success: true, message: 'Password changed successfully' });
         
