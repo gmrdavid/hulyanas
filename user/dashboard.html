@@ -459,10 +459,6 @@
         // Get current user ID from localStorage
         const currentUserId = parseInt(localStorage.getItem('userId')) || null;
 
-        if (!currentUserId) {
-            window.location.href = '/login.html';
-        }
-
         // Initialize dashboard
         async function initDashboard() {
             try {
