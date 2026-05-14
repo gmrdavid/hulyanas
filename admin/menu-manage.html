@@ -717,43 +717,59 @@
         }
 
         // Save item (Add/Update)
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('menuForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                try {
-                    const formData = new FormData();
-                    formData.append('name', document.getElementById('itemName').value.trim());
-                    formData.append('description', document.getElementById('itemDescription').value.trim());
-                    formData.append('price', parseFloat(document.getElementById('itemPrice').value));
-                    formData.append('category', document.getElementById('itemCategory').value);
-                    formData.append('is_available', document.getElementById('itemStatus').value === 'available' ? '1' : '0');
+        document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('menuForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
 
-                    const imageFile = document.getElementById('itemImage').files[0];
-                    if (imageFile) formData.append('image', imageFile);
+        try {
+            const formData = new FormData();
 
-                    const url = currentEditId ? `/api/menu/${currentEditId}` : '/api/menu';
-                    const response = await fetch(url, {
-                        method: currentEditId ? 'PUT' : 'POST',
-                        body: formData
-                    });
+            formData.append('name', document.getElementById('itemName').value.trim());
+            formData.append('description', document.getElementById('itemDescription').value.trim());
 
-                    if (!response.ok) {
-                        const errorData = await response.json().catch(() => ({}));
-                        throw new Error(errorData.message || 'Failed to save item');
-                    }
+            const priceValue = document.getElementById('itemPrice').value;
+            formData.append('price', priceValue ? parseFloat(priceValue) : 0);
 
-                    const result = await response.json();
-                    showToast(result.message || (currentEditId ? 'Item updated!' : 'Item added!'), 'success');
-                    hideMenuModal();
-                    await loadMenuItems(); // Always refresh from server
+            formData.append('category', document.getElementById('itemCategory').value);
+            formData.append(
+                'is_available',
+                document.getElementById('itemStatus').value === 'available' ? '1' : '0'
+            );
 
-                } catch (error) {
-                    console.error('Save error:', error);
-                    showToast('Error: ' + error.message, 'error');
-                }
+            const imageFile = document.getElementById('itemImage').files[0];
+            if (imageFile) formData.append('image', imageFile);
+
+            // ✅ FIX: use POST for both, with method override
+            formData.append('_method', currentEditId ? 'PUT' : 'POST');
+
+            const url = currentEditId ? `/api/menu/${currentEditId}` : '/api/menu';
+
+            const response = await fetch(url, {
+                method: 'POST',
+                body: formData
             });
 
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to save item');
+            }
+
+            const result = await response.json();
+
+            showToast(
+                result.message || (currentEditId ? 'Item updated!' : 'Item added!'),
+                'success'
+            );
+
+            hideMenuModal();
+            await loadMenuItems();
+
+        } catch (error) {
+            console.error('Save error:', error);
+            showToast('Error: ' + error.message, 'error');
+        }
+    });
+});
             // Image preview
             document.getElementById('itemImage').addEventListener('change', (e) => {
                 const file = e.target.files[0];
