@@ -798,7 +798,7 @@
     // Total Orders (pending + delivered only)
     const totalOrders = orders.filter(order =>
         order.status === 'delivered' ||
-        order.status === 'out for delivery' ||
+        order.status === 'out_for_delivery' ||
         order.status === 'preparing'
     ).length;
 
@@ -825,7 +825,7 @@
     const revenue = orders
         .filter(order =>
             order.status === 'delivered' ||
-            order.status === 'out for delivery' ||
+            order.status === 'out_for_delivery' ||
             order.status === 'preparing'
         )
         .reduce(
