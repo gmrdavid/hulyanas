@@ -49,27 +49,33 @@ const pool = mysql.createPool({
 const JWT_SECRET = process.env.JWT_SECRET || 'hulyanas_secret_key_2024_secure_change_this';
 
 // Multer setup
-const storage = multer.diskStorage({
-    destination: async (req, file, cb) => {
-        try {
-            await fs.mkdir('public/images', { recursive: true });
-            cb(null, 'public/images/');
-        } catch (err) {
-            cb(err, '');
+    const storage = multer.diskStorage({
+        destination: async (req, file, cb) => {
+            const uploadDir = path.join(__dirname, 'public', 'images');
+            try {
+                await fs.mkdir(uploadDir, { recursive: true });
+                console.log(`📁 Saving to: ${uploadDir}`); // Debug
+                cb(null, uploadDir);
+            } catch (err) {
+                console.error('❌ Directory creation failed:', err);
+                cb(err, '');
+            }
+        },
+        filename: (req, file, cb) => {
+            const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
+            console.log(`🖼️  Saving file: ${uniqueName}`); // Debug
+            cb(null, uniqueName);
         }
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname));
-    }
-});
-const upload = multer({ 
-    storage,
-    limits: { fileSize: 5 * 1024 * 1024 },
-    fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) cb(null, true);
-        else cb(new Error('Only image files'), false);
-    }
-});
+    });
+
+    const upload = multer({ 
+        storage,
+        limits: { fileSize: 5 * 1024 * 1024 },
+        fileFilter: (req, file, cb) => {
+            if (file.mimetype.startsWith('image/')) cb(null, true);
+            else cb(new Error('Only image files'), false);
+        }
+    });
 
 // Auth middleware
 const authenticateToken = async (req, res, next) => {
