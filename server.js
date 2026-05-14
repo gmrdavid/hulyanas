@@ -248,31 +248,32 @@ app.post('/api/register', async (req, res) => {
     }
 });
 
-// Add this route to your server.js (in the auth routes section)
-// Make sure you have these imports at top of server.js
-
-// Add this route (place it with your other auth routes)
-// CHANGE PASSWORD ROUTE - Add this ONCE with your other routes
 // ADD THIS ONE ROUTE - NOTHING ELSE!
 app.post('/api/change-password', authenticateToken, async (req, res) => {
     console.log('🔑 CHANGE PASSWORD - MySQL');
+    
+    let conn; // Add connection variable
     
     try {
         const { current_password, new_password } = req.body;
         const userId = req.user.id;
         
-        console.log('User ID:', userId, 'Passwords:', !!current_password, !!new_password);
+        console.log('User ID:', userId);
         
-        // YOUR EXISTING DB QUERY PATTERN - table=user, column=password_hash
-        const userResult = await db.query('SELECT password_hash FROM user WHERE id = ?', [userId]);
+        // Use pool.getConnection() like ALL other routes
+        conn = await pool.getConnection();
         
-        if (!userResult || userResult.length === 0) {
-            console.log('❌ User not found');
+        // MySQL: table=users, column=password_hash (from your schema)
+        const [userResult] = await conn.execute('SELECT password_hash FROM users WHERE id = ?', [userId]);
+        
+        console.log('User found:', userResult.length);
+        
+        if (userResult.length === 0) {
             return res.status(404).json({ error: 'User not found' });
         }
         
         const userPassword = userResult[0].password_hash;
-        console.log('Found password_hash:', !!userPassword);
+        console.log('Has password_hash:', !!userPassword);
         
         // Verify current password
         const isValid = await bcrypt.compare(current_password, userPassword);
@@ -284,14 +285,21 @@ app.post('/api/change-password', authenticateToken, async (req, res) => {
         
         // Update password
         const newHash = await bcrypt.hash(new_password, 10);
-        await db.query('UPDATE user SET password_hash = ? WHERE id = ?', [newHash, userId]);
+        const [updateResult] = await conn.execute(
+            'UPDATE users SET password_hash = ? WHERE id = ?', 
+            [newHash, userId]
+        );
         
-        console.log('✅ PASSWORD CHANGED SUCCESS!');
+        console.log('Rows updated:', updateResult.affectedRows);
+        console.log('✅ PASSWORD CHANGED!');
+        
         res.json({ success: true, message: 'Password updated!' });
         
     } catch (error) {
-        console.error('❌ CHANGE PW ERROR:', error.message);
+        console.error('❌ ERROR:', error.message);
         res.status(500).json({ error: error.message });
+    } finally {
+        if (conn) conn.release(); // Always release connection
     }
 });
 
