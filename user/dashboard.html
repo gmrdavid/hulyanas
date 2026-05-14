@@ -437,7 +437,7 @@
         <!-- Main content (hidden initially) -->
         <div id="mainContent" style="display: none;">
             <div class="welcome-section">
-                <h1>Welcome back, <span id="userName">User</span>!</h1>
+                <h1>Welcome back, <span id="username">User</span>!</h1>
                 <p>Here's your dashboard overview</p>
             </div>
 
@@ -505,7 +505,7 @@
 
                 // Fetch user data
                 const userData = await fetchUserData(currentUserId);
-                document.getElementById('userName').textContent = `${userData.first_name} ${userData.last_name}`;
+                document.getElementById('username').textContent = `${userData.first_name} ${userData.last_name}`;
 
                 // Fetch and display stats
                 const stats = await fetchUserStats(currentUserId);
@@ -725,7 +725,7 @@
             e.preventDefault();
             if (confirm('Are you sure you want to logout?')) {
                 localStorage.removeItem('userId');
-                localStorage.removeItem('userName');
+                localStorage.removeItem('username');
                 window.location.href = '/index.html';
             }
         });
