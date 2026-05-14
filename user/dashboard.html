@@ -8,7 +8,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* All existing styles remain the same */
+        /* All existing styles remain the same - keeping your beautiful design */
         * {
             margin: 0;
             padding: 0;
@@ -412,17 +412,11 @@
 <body>
     <nav class="navbar">
         <div class="nav-container">
-            <div class="nav-logo">
-                <i class="fas fa-utensils"></i>
-                <span>Hulyanas Hill</span>
+            <div class="nav-logo" id="navLogo">
+                <!-- Logo will be populated from database -->
             </div>
-            <ul class="nav-menu">
-                <li><a href="dashboard.html"><i class="fas fa-home"></i> Dashboard</a></li>
-                <li><a href="menu.html"><i class="fas fa-utensils"></i> Menu</a></li>
-                <li><a href="cart.html"><i class="fas fa-shopping-cart"></i> Cart</a></li>
-                <li><a href="orders.html"><i class="fas fa-list"></i> Orders</a></li>
-                <li><a href="profile.html"><i class="fas fa-user"></i> Profile</a></li>
-                <li><a href="/index.html" id="logoutBtn" class="btn-logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            <ul class="nav-menu" id="navMenu">
+                <!-- Navigation will be populated from database -->
             </ul>
         </div>
     </nav>
@@ -438,14 +432,208 @@
         <div id="mainContent" style="display: none;">
             <div class="welcome-section">
                 <h1>Welcome back, <span id="userName">User</span>!</h1>
-                <p>Here's your dashboard overview</p>
+                <p id="welcomeSubtitle">Here's your dashboard overview</p>
             </div>
 
             <div class="stats-grid" id="statsGrid">
                 <!-- Stats will be populated by JavaScript -->
             </div>
 
-            <div class="dashboard-grid">
+            <div class="dashboard-grid" id="dashboardGrid">
+                <!-- Quick action cards will be populated by JavaScript -->
+            </div>
+
+            <div class="recent-activity fade-in-up" id="recentActivity">
+                <div class="activity-header">
+                    <h3 id="activityTitle">Recent Activity</h3>
+                    <a href="orders.html" id="viewAllLink">View All →</a>
+                </div>
+                <div id="activityList">
+                    <!-- Activities will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get current user ID from localStorage
+        const currentUserId = parseInt(localStorage.getItem('userId')) || null;
+
+        if (!currentUserId) {
+            window.location.href = '/login.html';
+        }
+
+        // Initialize dashboard
+        async function initDashboard() {
+            try {
+                // Load all dashboard data
+                const [userData, statsData, settingsData, navData] = await Promise.all([
+                    fetchUserData(currentUserId),
+                    fetchUserStats(currentUserId),
+                    fetchSettings(),
+                    fetchNavigation()
+                ]);
+
+                // Hide loading, show main content
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+
+                // Populate dynamic content
+                populateUserWelcome(userData);
+                populateNavigation(navData);
+                displayStats(statsData);
+                populateQuickActions();
+                populateSettings(settingsData);
+
+                // Fetch and display recent activity
+                const activities = await fetchRecentActivity(currentUserId);
+                displayRecentActivity(activities);
+
+                // Initialize animations
+                staggerAnimations();
+                animateCounters();
+                
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                showError('Failed to load dashboard data. Please try refreshing the page.');
+            }
+        }
+
+        // Fetch user data from database
+        async function fetchUserData(userId) {
+            const response = await fetch(`/api/users/${userId}`);
+            if (!response.ok) throw new Error('Failed to fetch user data');
+            return await response.json();
+        }
+
+        // Fetch user statistics from database
+        async function fetchUserStats(userId) {
+            const response = await fetch(`/api/users/${userId}/stats`);
+            if (!response.ok) throw new Error('Failed to fetch stats');
+            return await response.json();
+        }
+
+        // Fetch system settings
+        async function fetchSettings() {
+            const response = await fetch('/api/settings');
+            if (!response.ok) return {};
+            return await response.json();
+        }
+
+        // Fetch navigation configuration
+        async function fetchNavigation() {
+            const response = await fetch('/api/navigation');
+            if (!response.ok) return getDefaultNavigation();
+            return await response.json();
+        }
+
+        // Default navigation fallback
+        function getDefaultNavigation() {
+            return {
+                logo: {
+                    icon: 'fas fa-utensils',
+                    name: 'Hulyanas Hill'
+                },
+                menu: [
+                    { title: 'Dashboard', icon: 'fas fa-home', href: 'dashboard.html', active: true },
+                    { title: 'Menu', icon: 'fas fa-utensils', href: 'menu.html' },
+                    { title: 'Cart', icon: 'fas fa-shopping-cart', href: 'cart.html' },
+                    { title: 'Orders', icon: 'fas fa-list', href: 'orders.html' },
+                    { title: 'Profile', icon: 'fas fa-user', href: 'profile.html' }
+                ]
+            };
+        }
+
+        // Fetch recent activity from database
+        async function fetchRecentActivity(userId) {
+            const response = await fetch(`/api/users/${userId}/activity`);
+            if (!response.ok) throw new Error('Failed to fetch activity');
+            return await response.json();
+        }
+
+        // Populate user welcome section
+        function populateUserWelcome(userData) {
+            document.getElementById('userName').textContent = `${userData.first_name} ${userData.last_name}`;
+        }
+
+        // Populate navigation from database
+        function populateNavigation(navData) {
+            const navLogo = document.getElementById('navLogo');
+            const navMenu = document.getElementById('navMenu');
+
+            navLogo.innerHTML = `
+                <i class="${navData.logo.icon}"></i>
+                <span>${navData.logo.name}</span>
+            `;
+
+            navMenu.innerHTML = navData.menu.map(item => `
+                <li><a href="${item.href}" ${item.active ? 'style="background: #f0f0f0; color: #1a1a1a;"' : ''}>
+                    <i class="${item.icon}"></i> ${item.title}
+                </a></li>
+            `).join('') + `
+                <li><a href="/index.html" id="logoutBtn" class="btn-logout">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a></li>
+            `;
+        }
+
+        // Populate settings (titles, etc.)
+        function populateSettings(settings) {
+            const welcomeSubtitle = document.getElementById('welcomeSubtitle');
+            const activityTitle = document.getElementById('activityTitle');
+            
+            welcomeSubtitle.textContent = settings.dashboard_welcome || "Here's your dashboard overview";
+            activityTitle.textContent = settings.activity_title || "Recent Activity";
+        }
+
+        // Display stats cards from database
+        function displayStats(stats) {
+            const statsGrid = document.getElementById('statsGrid');
+            const statCards = [
+                {
+                    icon: 'fas fa-shopping-cart',
+                    number: stats.total_orders || 0,
+                    label: 'Total Orders',
+                    key: 'total_orders'
+                },
+                {
+                    icon: 'fas fa-dollar-sign',
+                    number: parseFloat(stats.total_spent || 0),
+                    label: 'Total Spent',
+                    isCurrency: true,
+                    key: 'total_spent'
+                },
+                {
+                    icon: 'fas fa-star',
+                    number: parseFloat(stats.average_rating || 0),
+                    label: 'Avg Rating',
+                    key: 'average_rating'
+                },
+                {
+                    icon: 'fas fa-clock',
+                    number: stats.active_orders || 0,
+                    label: 'Active Orders',
+                    key: 'active_orders'
+                }
+            ];
+
+            statsGrid.innerHTML = statCards.map(stat => `
+                <div class="stat-card fade-in-up">
+                    <div class="stat-icon">
+                        <i class="${stat.icon}"></i>
+                    </div>
+                    <div class="stat-number" data-target="${stat.number}" data-is-currency="${stat.isCurrency || false}">
+                        ${stat.isCurrency ? '$0.00' : '0'}
+                    </div>
+                    <div class="stat-label">${stat.label}</div>
+                </div>
+            `).join('');
+        }
+
+        // Populate quick action cards
+        function populateQuickActions() {
+            const dashboardGrid = document.getElementById('dashboardGrid');
+            dashboardGrid.innerHTML = `
                 <div class="dashboard-card fade-in-up">
                     <i class="fas fa-utensils"></i>
                     <h3>Browse Menu</h3>
@@ -470,126 +658,19 @@
                     <p>Manage your account information</p>
                     <a href="profile.html" class="card-btn">Edit Profile <i class="fas fa-arrow-right"></i></a>
                 </div>
-            </div>
-
-            <div class="recent-activity fade-in-up" id="recentActivity">
-                <div class="activity-header">
-                    <h3>Recent Activity</h3>
-                    <a href="orders.html">View All →</a>
-                </div>
-                <div id="activityList">
-                    <!-- Activities will be populated by JavaScript -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Database configuration
-        const DB_CONFIG = {
-            host: 'hulyanas-gliamaeriodavid9-fb68.a.aivencloud.com',
-            database: 'hulyanas',
-            username: 'your_username', // Replace with your Aiven username
-            password: 'your_password'  // Replace with your Aiven password
-        };
-
-        // Get current user ID from localStorage or session
-        const currentUserId = parseInt(localStorage.getItem('userId')) || 2; // Default to user 2 (John Doe)
-
-        // Initialize dashboard
-        async function initDashboard() {
-            try {
-                // Hide loading, show main content
-                document.getElementById('loadingState').style.display = 'none';
-                document.getElementById('mainContent').style.display = 'block';
-
-                // Fetch user data
-                const userData = await fetchUserData(currentUserId);
-                document.getElementById('userName').textContent = `${userData.first_name} ${userData.last_name}`;
-
-                // Fetch and display stats
-                const stats = await fetchUserStats(currentUserId);
-                displayStats(stats);
-
-                // Fetch and display recent activity
-                const activities = await fetchRecentActivity(currentUserId);
-                displayRecentActivity(activities);
-
-                // Initialize animations
-                staggerAnimations();
-                
-            } catch (error) {
-                console.error('Error loading dashboard:', error);
-                showError('Failed to load dashboard data. Please try refreshing the page.');
-            }
-        }
-
-        // Fetch user data
-        async function fetchUserData(userId) {
-            const response = await fetch(`/api/user/${userId}`);
-            if (!response.ok) throw new Error('Failed to fetch user data');
-            return await response.json();
-        }
-
-        // Fetch user statistics
-        async function fetchUserStats(userId) {
-            const response = await fetch(`/api/user/${userId}/stats`);
-            if (!response.ok) throw new Error('Failed to fetch stats');
-            return await response.json();
-        }
-
-        // Fetch recent activity
-        async function fetchRecentActivity(userId) {
-            const response = await fetch(`/api/user/${userId}/activity`);
-            if (!response.ok) throw new Error('Failed to fetch activity');
-            return await response.json();
-        }
-
-        // Display stats cards
-        function displayStats(stats) {
-            const statsGrid = document.getElementById('statsGrid');
-            statsGrid.innerHTML = `
-                <div class="stat-card fade-in-up">
-                    <div class="stat-icon">
-                        <i class="fas fa-shopping-cart"></i>
-                    </div>
-                    <div class="stat-number" data-target="${stats.totalOrders}">${stats.totalOrders}</div>
-                    <div class="stat-label">Total Orders</div>
-                </div>
-                <div class="stat-card fade-in-up">
-                    <div class="stat-icon">
-                        <i class="fas fa-dollar-sign"></i>
-                    </div>
-                    <div class="stat-number" data-target="${stats.totalSpent}">$0.00</div>
-                    <div class="stat-label">Total Spent</div>
-                </div>
-                <div class="stat-card fade-in-up">
-                    <div class="stat-icon">
-                        <i class="fas fa-star"></i>
-                    </div>
-                    <div class="stat-number" data-target="${stats.avgRating || 0}">0</div>
-                    <div class="stat-label">Avg Rating</div>
-                </div>
-                <div class="stat-card fade-in-up">
-                    <div class="stat-icon">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <div class="stat-number" data-target="${stats.activeOrders}">0</div>
-                    <div class="stat-label">Active Orders</div>
-                </div>
             `;
         }
 
-        // Display recent activity
+        // Display recent activity from database
         function displayRecentActivity(activities) {
             const activityList = document.getElementById('activityList');
             
-            if (activities.length === 0) {
+            if (!activities || activities.length === 0) {
                 activityList.innerHTML = `
                     <div class="no-data">
                         <i class="fas fa-inbox"></i>
                         <h4>No recent activity</h4>
-                        <p>Your activity will appear here</p>
+                        <p>Your activity will appear here once you start ordering</p>
                     </div>
                 `;
                 return;
@@ -598,35 +679,38 @@
             activityList.innerHTML = activities.map(activity => `
                 <div class="activity-item">
                     <div class="activity-icon">
-                        ${getActivityIcon(activity.type, activity.action)}
+                        <i class="${getActivityIcon(activity.type, activity.action)}"></i>
                     </div>
                     <div class="activity-content">
                         <h4>${activity.action}</h4>
-                        <p>${formatActivityDetails(activity)} - ${formatDate(activity.created_at)}</p>
+                        <p>${formatActivityDetails(activity)} • ${formatDate(activity.created_at)}</p>
                     </div>
                 </div>
             `).join('');
         }
 
-        // Get activity icon
+        // Get activity icon based on database values
         function getActivityIcon(type, action) {
             const icons = {
                 'order': {
-                    'delivered': 'fas fa-check-circle',
                     'New order placed': 'fas fa-shopping-cart',
+                    'Order delivered': 'fas fa-check-circle',
+                    'Order cancelled': 'fas fa-times-circle',
                     default: 'fas fa-list'
                 },
                 'user': 'fas fa-user',
+                'menu': 'fas fa-utensils',
+                'system': 'fas fa-cog',
                 default: 'fas fa-info-circle'
             };
 
-            if (type === 'order') {
-                return icons[type][action] || icons[type].default;
+            if (type === 'order' && icons[type][action]) {
+                return icons[type][action];
             }
             return icons[type] || icons.default;
         }
 
-        // Format activity details
+        // Format activity details from database JSON
         function formatActivityDetails(activity) {
             if (activity.details) {
                 try {
@@ -634,40 +718,49 @@
                     if (details.order_number) {
                         return `Order ${details.order_number}`;
                     }
+                    if (details.email) {
+                        return `Email: ${details.email}`;
+                    }
                 } catch (e) {
-                    // Fallback
+                    console.warn('Failed to parse activity details:', activity.details);
                 }
             }
-            return activity.action;
+            return 'Activity details not available';
         }
 
-        // Format date
+        // Format date from database timestamp
         function formatDate(dateString) {
             const date = new Date(dateString);
             const now = new Date();
-            const diffHours = Math.floor((now - date) / (1000 * 60 * 60));
+            const diffMs = now - date;
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
             
             if (diffHours < 1) return 'Just now';
             if (diffHours < 24) return `${diffHours}h ago`;
-            return date.toLocaleDateString();
+            if (diffHours < 168) return `${Math.floor(diffHours / 24)}d ago`;
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
         }
 
-        // Animate stats counters
+        // Animate stats counters from database values
         function animateCounters() {
             const counters = document.querySelectorAll('.stat-number');
             counters.forEach(counter => {
                 const target = parseFloat(counter.getAttribute('data-target'));
-                const isCurrency = counter.textContent.includes('$');
+                const isCurrency = counter.getAttribute('data-is-currency') === 'true';
+                
                 const updateCounter = () => {
-                    const start = 0;
+                    let current = 0;
                     const increment = target / 100;
-                    let current = start;
                     const timer = setInterval(() => {
                         current += increment;
                         if (isCurrency) {
-                            counter.textContent = `$${current.toFixed(2)}`;
+                            counter.textContent = `$${Math.min(current, target).toFixed(2)}`;
                         } else {
-                            counter.textContent = Math.ceil(current);
+                            counter.textContent = Math.floor(Math.min(current, target));
                         }
                         if (current >= target) {
                             clearInterval(timer);
@@ -679,6 +772,7 @@
                         }
                     }, 25);
                 };
+
                 const observer = new IntersectionObserver((entries) => {
                     entries.forEach(entry => {
                         if (entry.isIntersecting) {
@@ -702,11 +796,16 @@
         // Show error message
         function showError(message) {
             document.getElementById('loadingState').innerHTML = `
-                <i class="fas fa-exclamation-triangle" style="color: #ff6b6b;"></i>
-                <p>${message}</p>
-                <button onclick="location.reload()" style="background: #1a1a1a; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; margin-top: 1rem;">Retry</button>
+                <i class="fas fa-exclamation-triangle" style="color: #ff6b6b; font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">${message}</p>
+                <button onclick="location.reload()" style="background: #1a1a1a; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 8px; cursor: pointer; font-weight: 500;">Retry</button>
             `;
         }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(initDashboard, 800); // Realistic loading time
+        });
 
         // Navbar scroll effect
         window.addEventListener('scroll', () => {
@@ -716,37 +815,20 @@
                 navbar.style.boxShadow = '0 2px 20px rgba(0, 0, 0, 0.08)';
             } else {
                 navbar.style.background = 'rgba(255, 255, 255, 0.98)';
-                navbar.style.boxShadow = '0 1px 10px rgba(0, 0, 0, 0.05)';
+                navbar.style.boxShadow = 'none';
             }
         });
 
-        // Logout functionality
-        document.getElementById('logoutBtn').addEventListener('click', (e) => {
-            e.preventDefault();
-            if (confirm('Are you sure you want to logout?')) {
-                localStorage.removeItem('userId');
-                localStorage.removeItem('userName');
-                window.location.href = '/index.html';
-            }
-        });
-
-        // Enhanced card hover effects
+        // Global logout handler (delegated)
         document.addEventListener('click', (e) => {
-            if (e.target.closest('.dashboard-card, .stat-card')) {
-                e.target.closest('.dashboard-card, .stat-card').style.transform = 'translateY(-4px)';
+            if (e.target.id === 'logoutBtn' || e.target.closest('#logoutBtn')) {
+                e.preventDefault();
+                if (confirm('Are you sure you want to logout?')) {
+                    localStorage.removeItem('userId');
+                    localStorage.removeItem('userName');
+                    window.location.href = '/index.html';
+                }
             }
-        });
-
-        document.addEventListener('mouseleave', (e) => {
-            if (e.target.closest('.dashboard-card, .stat-card')) {
-                e.target.closest('.dashboard-card, .stat-card').style.transform = 'translateY(0)';
-            }
-        });
-
-        // Initialize when DOM is loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            // Set a timeout to simulate loading
-            setTimeout(initDashboard, 1000);
         });
     </script>
 </body>
