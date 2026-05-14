@@ -22,7 +22,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 2rem;
+            padding: 1.5rem;
             position: relative;
             overflow: hidden;
         }
@@ -42,19 +42,19 @@
         }
 
         .auth-container {
-            max-width: 550px;
+            max-width: 450px;
             width: 100%;
             position: relative;
             z-index: 2;
         }
 
-        /* ADMIN-STYLE AUTH CARD */
+        /* COMPACT ADMIN-STYLE AUTH CARD */
         .auth-card {
             background: #fff;
             border: 1px solid #e5e5e5;
-            border-radius: 20px;
-            padding: 4rem 3.5rem;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            border-radius: 16px;
+            padding: 2.5rem 2rem;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.12);
             backdrop-filter: blur(20px);
             position: relative;
             overflow: hidden;
@@ -67,14 +67,14 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 4px;
+            height: 3px;
             background: linear-gradient(90deg, #1a1a1a, #333);
         }
 
         @keyframes slideUp {
             from {
                 opacity: 0;
-                transform: translateY(40px);
+                transform: translateY(30px);
             }
             to {
                 opacity: 1;
@@ -84,47 +84,47 @@
 
         .auth-header {
             text-align: center;
-            margin-bottom: 3rem;
+            margin-bottom: 2rem;
         }
 
         .auth-logo {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.75rem;
-            font-size: 1.75rem;
+            gap: 0.5rem;
+            font-size: 1.5rem;
             font-weight: 700;
             color: #1a1a1a;
-            margin-bottom: 1.25rem;
+            margin-bottom: 1rem;
         }
 
         .auth-logo i {
-            font-size: 2rem;
+            font-size: 1.5rem;
             color: #1a1a1a;
             background: #f0f0f0;
-            padding: 0.75rem;
-            border-radius: 12px;
+            padding: 0.5rem;
+            border-radius: 10px;
         }
 
         .auth-title {
-            font-size: 2.25rem;
+            font-size: 1.75rem;
             font-weight: 700;
             color: #1a1a1a;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.25rem;
         }
 
         .auth-subtitle {
             color: #666;
-            font-size: 1rem;
+            font-size: 0.9rem;
             font-weight: 400;
         }
 
-        /* FORM ROW - ADMIN GRID STYLE */
+        /* COMPACT FORM ROW */
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            margin-bottom: 1.5rem;
+            gap: 1rem;
+            margin-bottom: 1rem;
         }
 
         .form-group {
@@ -137,20 +137,20 @@
 
         .form-group label {
             display: block;
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.5rem;
             color: #1a1a1a;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
         }
 
         .form-group input {
             width: 100%;
-            padding: 1.25rem 1.5rem;
+            padding: 0.875rem 1rem;
             border: 1px solid #e0e0e0;
-            border-radius: 16px;
-            font-size: 1rem;
+            border-radius: 12px;
+            font-size: 0.95rem;
             background: #fff;
             font-weight: 400;
             color: #1a1a1a;
@@ -165,37 +165,37 @@
         .form-group input:focus {
             outline: none;
             border-color: #1a1a1a;
-            box-shadow: 0 0 0 4px rgba(26,26,26,0.1);
+            box-shadow: 0 0 0 3px rgba(26,26,26,0.08);
             background: #fafafa;
         }
 
-        /* ADMIN BUTTON STYLE */
+        /* COMPACT ADMIN BUTTON STYLE */
         .btn {
             width: 100%;
-            padding: 1.25rem 2rem;
+            padding: 0.875rem 1.5rem;
             background: #1a1a1a;
             color: #fff;
             border: none;
-            border-radius: 16px;
+            border-radius: 12px;
             font-weight: 600;
-            font-size: 1rem;
+            font-size: 0.95rem;
             cursor: pointer;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.75rem;
+            gap: 0.5rem;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.3px;
             position: relative;
             overflow: hidden;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
 
         .btn:hover {
             background: #000;
-            transform: translateY(-2px);
-            box-shadow: 0 15px 35px rgba(26,26,26,0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 10px 25px rgba(26,26,26,0.3);
         }
 
         .btn:active {
@@ -209,13 +209,13 @@
 
         .btn.loading::after {
             content: '';
-            width: 20px;
-            height: 20px;
+            width: 16px;
+            height: 16px;
             border: 2px solid rgba(255,255,255,0.3);
             border-top: 2px solid #fff;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-left: 0.75rem;
+            margin-left: 0.5rem;
         }
 
         @keyframes spin {
@@ -223,15 +223,15 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* MESSAGES - ADMIN ALERT STYLE */
+        /* COMPACT MESSAGES */
         .message {
-            padding: 1.25rem 1.5rem;
-            border-radius: 16px;
-            margin-bottom: 1.5rem;
+            padding: 0.875rem 1rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
             font-weight: 500;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             display: none;
-            border-left: 4px solid;
+            border-left: 3px solid;
         }
 
         .message.success {
@@ -246,29 +246,29 @@
             border-color: #ef4444;
         }
 
-        /* AUTH LINKS - ADMIN STYLE */
+        /* COMPACT AUTH LINKS */
         .auth-links {
             text-align: center;
-            padding-top: 2rem;
+            padding-top: 1.5rem;
             border-top: 1px solid #e5e5e5;
         }
 
         .auth-links p {
-            margin-bottom: 1.25rem;
+            margin-bottom: 1rem;
             color: #666;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
         }
 
         .auth-links a {
             color: #1a1a1a;
             text-decoration: none;
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            border-radius: 12px;
+            gap: 0.4rem;
+            padding: 0.5rem 1.25rem;
+            border-radius: 10px;
             transition: all 0.2s ease;
             background: #f0f0f0;
         }
@@ -283,16 +283,16 @@
         @media (max-width: 600px) {
             .form-row {
                 grid-template-columns: 1fr;
-                gap: 1.25rem;
+                gap: 0.875rem;
             }
             
             .auth-container {
-                max-width: 450px;
+                max-width: 400px;
+                margin: 0 1rem;
             }
 
             .auth-card {
-                padding: 3rem 2.5rem;
-                margin: 1rem;
+                padding: 2rem 1.5rem;
             }
         }
 
@@ -302,19 +302,23 @@
             }
 
             .auth-card {
-                padding: 2.5rem 2rem;
+                padding: 1.75rem 1.25rem;
             }
 
             .auth-title {
-                font-size: 2rem;
+                font-size: 1.5rem;
+            }
+            
+            .auth-logo {
+                font-size: 1.25rem;
             }
         }
 
         /* FLOATING LOGO */
         .floating-logo {
             position: fixed;
-            top: 2rem;
-            left: 2rem;
+            top: 1.5rem;
+            left: 1.5rem;
             z-index: 1000;
             opacity: 0.9;
             animation: float 6s ease-in-out infinite;
@@ -322,15 +326,15 @@
 
         @keyframes float {
             0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
+            50% { transform: translateY(-8px); }
         }
     </style>
 </head>
 <body>
     <!-- Floating Logo -->
     <div class="floating-logo">
-        <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 1.5rem; font-weight: 700; color: #fff; background: rgba(255,255,255,0.1); padding: 1rem; border-radius: 16px; backdrop-filter: blur(10px);">
-            <i class="fas fa-utensils" style="font-size: 1.8rem; color: #fff;"></i>
+        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 1.25rem; font-weight: 700; color: #fff; background: rgba(255,255,255,0.1); padding: 0.75rem; border-radius: 12px; backdrop-filter: blur(10px);">
+            <i class="fas fa-utensils" style="font-size: 1.5rem; color: #fff;"></i>
             <span>Hulyanas Hill</span>
         </div>
     </div>
