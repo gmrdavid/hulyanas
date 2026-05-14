@@ -466,12 +466,19 @@
         // Initialize dashboard
         async function initDashboard() {
             try {
-                // Load all dashboard data
-                const [userData, statsData, settingsData, navData] = await Promise.all([
-                    fetchUserData(currentUserId),
-                    fetchUserStats(currentUserId),
+                // Load all dashboard data - FIXED ENDPOINTS
+                const [userResponse, statsResponse, settingsResponse, navResponse] = await Promise.all([
+                    fetch(`/api/user/${currentUserId}`),
+                    fetch(`/api/user/${currentUserId}/stats`),
                     fetchSettings(),
                     fetchNavigation()
+                ]);
+
+                const [userData, statsData, settingsData, navData] = await Promise.all([
+                    userResponse.json(),
+                    statsResponse.json(),
+                    settingsResponse.ok ? settingsResponse.json() : {},
+                    navResponse.ok ? navResponse.json() : getDefaultNavigation()
                 ]);
 
                 // Hide loading, show main content
@@ -481,12 +488,13 @@
                 // Populate dynamic content
                 populateUserWelcome(userData);
                 populateNavigation(navData);
-                displayStats(statsData);
+                displayStats(statsData);  // Now uses your real stats format
                 populateQuickActions();
                 populateSettings(settingsData);
 
                 // Fetch and display recent activity
-                const activities = await fetchRecentActivity(currentUserId);
+                const activitiesResponse = await fetch(`/api/user/${currentUserId}/activity`);
+                const activities = await activitiesResponse.json();
                 displayRecentActivity(activities);
 
                 // Initialize animations
