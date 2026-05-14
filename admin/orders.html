@@ -789,16 +789,53 @@
 
     // Load Dashboard Stats
     function loadStats() {
-        const totalOrders = orders.length;
-        const delivered = orders.filter(o => o.status === 'delivered').length;
-        const pending = orders.filter(o => o.status === 'pending').length;
-        const revenue = orders.reduce((sum, order) => sum + parseFloat(order.total_amount), 0);
-        const stats = document.querySelectorAll('.stat-number');
-        stats[0].textContent = totalOrders;
-        stats[1].textContent = delivered;
-        stats[2].textContent = pending;
-        stats[3].textContent = `₱${revenue.toFixed(2)}`;
-    }
+
+    const today = new Date().toISOString().split('T')[0];
+
+    // Total Orders (pending + delivered only)
+    const totalOrders = orders.filter(order =>
+        order.status === 'pending' ||
+        order.status === 'delivered'
+    ).length;
+
+    // Delivered Orders
+    const delivered = orders.filter(order =>
+        order.status === 'delivered'
+    ).length;
+
+    // Pending Orders TODAY
+    const pendingToday = orders.filter(order => {
+
+        const orderDate = new Date(order.created_at)
+            .toISOString()
+            .split('T')[0];
+
+        return (
+            order.status === 'pending' &&
+            orderDate === today
+        );
+
+    }).length;
+
+    // Revenue (pending + delivered only)
+    const revenue = orders
+        .filter(order =>
+            order.status === 'pending' ||
+            order.status === 'delivered'
+        )
+        .reduce(
+            (sum, order) =>
+                sum + parseFloat(order.total_amount || 0),
+            0
+        );
+
+    const stats = document.querySelectorAll('.stat-number');
+
+    stats[0].textContent = totalOrders;
+    stats[1].textContent = delivered;
+    stats[2].textContent = pendingToday;
+    stats[3].textContent = `₱${revenue.toFixed(2)}`;
+}
 
     // Open View Modal
     function openOrderModal(id) {
