@@ -25,10 +25,10 @@ app.options('*', (req, res) => {
 });
 
 app.use(express.json({ limit: '10mb' }));
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 app.use('/user', express.static('user'));
 app.use('/admin', express.static('admin'));
-app.use('/images', express.static(path.join(__dirname, 'public/images')));
+app.use('/images', express.static(path.join(__dirname, 'public', 'images')));
 
 // MySQL Connection Pool
 const pool = mysql.createPool({
@@ -478,7 +478,7 @@ app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
 app.post('/api/menu', authenticateToken, isAdmin, upload.single('image'), async (req, res) => {
     try {
         const { name, description, price, category, is_available } = req.body;
-        const image_url = req.file ? `/images/${req.file.filename}` : null;
+        const image_url = req.file ? `/images/${req.file.filename}` : null;  // Fixed path!
 
         const conn = await pool.getConnection();
         const [result] = await conn.execute(
