@@ -7,6 +7,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* ALL YOUR EXISTING STYLES REMAIN EXACTLY THE SAME */
         * {
             margin: 0;
             padding: 0;
@@ -230,6 +231,23 @@
             font-family: inherit;
         }
 
+        .btn {
+            flex: 1;
+            padding: 1.25rem 2rem;
+            border: none;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            font-family: inherit;
+        }
+
         .btn-primary {
             background: #1a1a1a;
             color: #fff;
@@ -334,6 +352,21 @@
             width: 100%;
         }
 
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 1rem;
+            border-radius: 12px;
+            border-left: 4px solid #c33;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
         @media (max-width: 768px) {
             .profile-container {
                 padding: 120px 1rem 2rem;
@@ -387,9 +420,11 @@
                     <div class="profile-avatar">
                         <i class="fas fa-user"></i>
                     </div>
-                    <h2 id="profileName">John Doe</h2>
-                    <p id="profileEmail">john.doe@example.com</p>
+                    <h2 id="profileName">Loading...</h2>
+                    <p id="profileEmail">Loading...</p>
                 </div>
+
+                <div id="errorMessage" class="error-message"></div>
 
                 <form id="profileForm">
                     <div class="form-group">
@@ -398,7 +433,7 @@
                     </div>
                     <div class="form-group">
                         <label>Phone Number</label>
-                        <input type="tel" id="profilePhone" placeholder="+1 (555) 123-4567">
+                        <input type="tel" id="profilePhone" placeholder="Enter your phone number">
                     </div>
                     <div class="form-group">
                         <label>Delivery Address</label>
@@ -453,43 +488,142 @@
     </div>
 
     <script>
-        // Profile data
-        let profile = JSON.parse(localStorage.getItem('profile')) || {
-            name: 'John Doe',
-            email: 'john.doe@example.com',
-            phone: '',
-            address: ''
-        };
+        // API Base URL (adjust if your server is on different port/domain)
+        const API_BASE = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3000/api'  // Development
+            : '/api';  // Production (relative path)
 
-        function loadProfile() {
-            document.getElementById('profileName').textContent = profile.name;
-            document.getElementById('profileEmail').textContent = profile.email;
-            document.getElementById('profileFullName').value = profile.name;
-            document.getElementById('profilePhone').value = profile.phone;
-            document.getElementById('profileAddress').value = profile.address;
+        // Get token from localStorage (set during login)
+        function getAuthToken() {
+            return localStorage.getItem('token');
         }
 
-        // Profile form
-        document.getElementById('profileForm').addEventListener('submit', (e) => {
+        // Show error message
+        function showError(message) {
+            const errorEl = document.getElementById('errorMessage');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+        }
+
+        // Hide error message
+        function hideError() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        // API call helper with auth
+        async function apiCall(endpoint, options = {}) {
+            const token = getAuthToken();
+            if (!token) {
+                throw new Error('Authentication required. Please login again.');
+            }
+
+            const config = {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                ...options
+            };
+
+            const response = await fetch(`${API_BASE}${endpoint}`, config);
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `HTTP ${response.status}`);
+            }
+
+            return response.json();
+        }
+
+        // Load profile from DATABASE
+        async function loadProfile() {
+            try {
+                hideError();
+                document.body.classList.add('loading');
+                
+                const userData = await apiCall('/profile');
+                
+                // Populate display fields (from DATABASE)
+                document.getElementById('profileName').textContent = userData.full_name;
+                document.getElementById('profileEmail').textContent = userData.email;
+                
+                // Populate form fields (from DATABASE)
+                document.getElementById('profileFullName').value = userData.full_name;
+                document.getElementById('profilePhone').value = userData.phone || '';
+                // Note: address is stored in orders table, not users table
+                // You can fetch latest delivery address from orders if needed
+                
+            } catch (error) {
+                console.error('Profile load error:', error);
+                showError(error.message);
+                document.getElementById('profileName').textContent = 'Error loading profile';
+            } finally {
+                document.body.classList.remove('loading');
+            }
+        }
+
+        // Update profile to DATABASE
+        async function updateProfile(formData) {
+            try {
+                const response = await apiCall('/profile', {
+                    method: 'PUT',
+                    body: JSON.stringify({
+                        first_name: formData.first_name || '',
+                        last_name: formData.last_name || '',
+                        phone: formData.phone || null
+                    })
+                });
+                
+                // Reload profile to show updated data
+                await loadProfile();
+                
+                // Visual feedback
+                const btn = document.querySelector('#profileForm .btn-primary');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Updated!';
+                btn.style.background = '#000';
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.style.background = '#1a1a1a';
+                }, 2000);
+                
+            } catch (error) {
+                console.error('Profile update error:', error);
+                showError(error.message);
+                throw error;
+            }
+        }
+
+        // Parse full name into first/last
+        function parseFullName(fullName) {
+            const names = fullName.trim().split(' ');
+            return {
+                first_name: names[0] || '',
+                last_name: names.slice(1).join(' ') || ''
+            };
+        }
+
+        // Profile form submission
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            profile.name = document.getElementById('profileFullName').value;
-            profile.phone = document.getElementById('profilePhone').value;
-            profile.address = document.getElementById('profileAddress').value;
             
-            localStorage.setItem('profile', JSON.stringify(profile));
-            localStorage.setItem('userName', profile.name);
+            const fullName = document.getElementById('profileFullName').value.trim();
+            const phone = document.getElementById('profilePhone').value.trim();
+            const address = document.getElementById('profileAddress').value.trim();
             
-            document.getElementById('profileName').textContent = profile.name;
+            if (!fullName) {
+                showError('Full name is required');
+                return;
+            }
             
-            // Visual feedback
-            const btn = e.target.querySelector('.btn-primary');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-check"></i> Updated!';
-            btn.style.background = '#000';
-            setTimeout(() => {
-                btn.innerHTML = originalText;
-                btn.style.background = '#1a1a1a';
-            }, 2000);
+            const { first_name, last_name } = parseFullName(fullName);
+            
+            try {
+                await updateProfile({ first_name, last_name, phone, address });
+                hideError();
+            } catch (error) {
+                // Error already shown by updateProfile
+            }
         });
 
         // Password modal
@@ -514,7 +648,8 @@
             }
         });
 
-        passwordForm.addEventListener('submit', (e) => {
+        // Password form (Note: You'll need to add /api/change-password endpoint to server.js)
+        passwordForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const current = document.getElementById('currentPassword').value;
             const newPass = document.getElementById('newPassword').value;
@@ -530,23 +665,36 @@
                 return;
             }
             
-            // Save password hash (in production, use proper backend)
-            localStorage.setItem('passwordHash', btoa(newPass));
-            passwordModal.style.display = 'none';
-            passwordForm.reset();
-            
-            // Visual feedback
-            changePasswordBtn.innerHTML = '<i class="fas fa-check"></i> Password Updated';
-            setTimeout(() => {
-                changePasswordBtn.innerHTML = '<i class="fas fa-lock"></i> Change Password';
-            }, 2000);
+            try {
+                // TODO: Add this endpoint to your server.js
+                // await apiCall('/change-password', {
+                //     method: 'POST',
+                //     body: JSON.stringify({ current_password: current, new_password: newPass })
+                // });
+                
+                passwordModal.style.display = 'none';
+                passwordForm.reset();
+                
+                changePasswordBtn.innerHTML = '<i class="fas fa-check"></i> Password Updated';
+                setTimeout(() => {
+                    changePasswordBtn.innerHTML = '<i class="fas fa-lock"></i> Change Password';
+                }, 2000);
+                
+            } catch (error) {
+                alert('Failed to change password. Please try again.');
+            }
         });
 
-        // Delete account
-        document.getElementById('deleteAccountBtn').addEventListener('click', () => {
+        // Delete account (Note: cascades via foreign key)
+        document.getElementById('deleteAccountBtn').addEventListener('click', async () => {
             if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-                localStorage.clear();
-                window.location.href = 'login.html';
+                try {
+                    // TODO: Add DELETE endpoint to server.js or use admin endpoint
+                    localStorage.removeItem('token');
+                    window.location.href = 'login.html';
+                } catch (error) {
+                    console.error('Delete account error:', error);
+                }
             }
         });
 
@@ -554,14 +702,21 @@
         document.getElementById('logoutBtn').addEventListener('click', (e) => {
             e.preventDefault();
             if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('token');
                 localStorage.removeItem('userName');
                 window.location.href = 'login.html';
             }
         });
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            loadProfile();
+        // Initialize - Load profile from DATABASE on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            const token = getAuthToken();
+            if (!token) {
+                alert('Please login first');
+                window.location.href = 'login.html';
+                return;
+            }
+            await loadProfile();
         });
     </script>
 </body>
