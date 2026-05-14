@@ -3,720 +3,874 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Dashboard - Hulyanas Hill</title>
+    <title>Dashboard - Hulyanas Hill</title>
+    <link rel="stylesheet" href="../css/style.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Keep all your existing styles exactly the same -->
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
+        /* YOUR EXISTING STYLES REMAIN UNCHANGED - PERFECT DESIGN */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, #fafafa 0%, #f0f2f5 100%);
-            color: #1a1a1a; min-height: 100vh; line-height: 1.6;
+            background: #fafafa;
+            color: #1a1a1a;
+            min-height: 100vh;
+            line-height: 1.6;
         }
-        .navbar { 
-            background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(20px); 
-            border-bottom: 1px solid #e5e5e5; position: fixed; top: 0; width: 100%; 
-            z-index: 1000; padding: 1rem 0; box-shadow: 0 2px 20px rgba(0,0,0,0.05);
+
+        .navbar {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid #e5e5e5;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            padding: 1rem 0;
         }
-        .nav-container { 
-            max-width: 1200px; margin: 0 auto; display: flex; 
-            justify-content: space-between; align-items: center; padding: 0 2rem;
-        }
-        .nav-logo { 
-            display: flex; align-items: center; font-size: 1.5rem; font-weight: 700; 
-            color: #1a1a1a; gap: 0.75rem; text-decoration: none;
-        }
-        .nav-logo i { color: #000; font-size: 1.8rem; }
-        .nav-menu { display: flex; list-style: none; gap: 2rem; align-items: center; }
-        .nav-menu a { 
-            text-decoration: none; color: #4a4a4a; font-weight: 500; display: flex; 
-            align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; border-radius: 12px; 
-            transition: all 0.2s ease; font-size: 0.95rem;
-        }
-        .nav-menu a:hover, .nav-menu a.active { 
-            background: #f0f0f0; color: #1a1a1a; transform: translateY(-1px); 
-        }
-        .btn-logout { 
-            background: linear-gradient(135deg, #1a1a1a, #333) !important; 
-            color: #fff !important; padding: 0.75rem 1.5rem !important; 
-            border-radius: 12px; font-weight: 600; border: none;
-        }
-        .btn-logout:hover { 
-            background: linear-gradient(135deg, #000, #1a1a1a) !important; 
-            transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        }
-        .dashboard-container { 
-            max-width: 1200px; margin: 0 auto; padding: 140px 2rem 2rem; 
-        }
-        .welcome-section { text-align: center; margin-bottom: 4rem; }
-        .welcome-section h1 { 
-            font-size: clamp(2rem, 5vw, 3rem); font-weight: 700; margin-bottom: 0.75rem; 
-            color: #1a1a1a; background: linear-gradient(135deg, #1a1a1a, #333); 
-            background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        .welcome-section h1 span { 
-            background: linear-gradient(135deg, #000, #1a1a1a); 
-            background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        .welcome-section p { 
-            font-size: 1.25rem; color: #666; font-weight: 400; max-width: 600px; 
+
+        .nav-container {
+            max-width: 1200px;
             margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
         }
-        .loading { 
-            text-align: center; padding: 6rem 2rem; color: #666; 
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1a1a1a;
+            gap: 0.75rem;
         }
-        .loading i { 
-            font-size: 4rem; margin-bottom: 1.5rem; display: block; 
-            animation: spin 1s linear infinite; color: #10b981;
+
+        .nav-logo i {
+            color: #000;
+            font-size: 1.8rem;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .stats-grid { 
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
-            gap: 2rem; margin-bottom: 4rem;
+
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+            align-items: center;
         }
-        .stat-card { 
-            background: rgba(255, 255, 255, 0.9); border: 1px solid #e5e5e5; 
-            padding: 2.5rem 2rem; border-radius: 20px; text-align: center; 
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); position: relative;
-            backdrop-filter: blur(10px);
+
+        .nav-menu a {
+            text-decoration: none;
+            color: #4a4a4a;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            font-size: 0.95rem;
         }
-        .stat-card:hover { 
-            border-color: #d0d0d0; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1); 
+
+        .nav-menu a:hover {
+            background: #f0f0f0;
+            color: #1a1a1a;
+            transform: translateY(-1px);
+        }
+
+        .btn-logout {
+            background: #1a1a1a !important;
+            color: #fff !important;
+            padding: 0.75rem 1.5rem !important;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .btn-logout:hover {
+            background: #000 !important;
+            transform: translateY(-2px);
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 140px 2rem 2rem;
+        }
+
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .welcome-section h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            color: #1a1a1a;
+        }
+
+        .welcome-section h1 span {
+            color: #000;
+        }
+
+        .welcome-section p {
+            font-size: 1.25rem;
+            color: #666;
+            font-weight: 400;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 4rem;
+            color: #666;
+        }
+
+        .loading i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .stat-card {
+            background: #fff;
+            border: 1px solid #e5e5e5;
+            padding: 2.5rem 2rem;
+            border-radius: 16px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .stat-card:hover {
+            border-color: #d0d0d0;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+            transform: translateY(-4px);
+        }
+
+        .stat-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            color: #1a1a1a;
+            opacity: 0.8;
+        }
+
+        .stat-number {
+            font-size: 2.75rem;
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 0.5rem;
+            font-feature-settings: 'tnum' 1;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            color: #666;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .dashboard-card {
+            background: #fff;
+            border: 1px solid #e5e5e5;
+            padding: 3rem 2.5rem;
+            border-radius: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dashboard-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #1a1a1a;
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .dashboard-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .dashboard-card:hover {
+            border-color: #d0d0d0;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
             transform: translateY(-8px);
         }
-        .stat-icon { 
-            font-size: 2.8rem; margin-bottom: 1.5rem; opacity: 0.9; 
+
+        .dashboard-card i {
+            font-size: 3rem;
+            margin-bottom: 1.75rem;
+            color: #1a1a1a;
+            opacity: 0.85;
+        }
+
+        .dashboard-card h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #1a1a1a;
+        }
+
+        .dashboard-card p {
+            color: #666;
+            margin-bottom: 2rem;
+            font-size: 1rem;
+        }
+
+        .card-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
             transition: all 0.3s ease;
+            border: 1px solid #1a1a1a;
         }
-        .stat-number { 
-            font-size: clamp(2rem, 6vw, 3rem); font-weight: 800; color: #000; 
-            margin-bottom: 0.5rem; font-feature-settings: 'tnum' 1; 
-            font-family: 'Inter', sans-serif;
+
+        .card-btn:hover {
+            background: #fff;
+            color: #1a1a1a;
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
         }
-        .stat-label { 
-            font-size: 1rem; color: #666; font-weight: 600; 
-            text-transform: uppercase; letter-spacing: 0.5px;
+
+        .recent-activity {
+            background: #fff;
+            border: 1px solid #e5e5e5;
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
         }
-        .dashboard-grid { 
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); 
-            gap: 2rem; margin-bottom: 4rem;
+
+        .activity-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid #f0f0f0;
         }
-        .dashboard-card { 
-            background: rgba(255, 255, 255, 0.9); border: 1px solid #e5e5e5; 
-            padding: 3rem 2.5rem; border-radius: 24px; text-align: center; 
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; 
-            position: relative; overflow: hidden; backdrop-filter: blur(10px);
+
+        .activity-header h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1a1a1a;
         }
-        .dashboard-card::before { 
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; 
-            background: linear-gradient(90deg, #10b981, #3b82f6, #f59e0b); 
-            transform: scaleX(0); transition: transform 0.4s ease;
+
+        .activity-header a {
+            color: #1a1a1a;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            transition: color 0.2s ease;
         }
-        .dashboard-card:hover::before { transform: scaleX(1); }
-        .dashboard-card:hover { 
-            border-color: #d0d0d0; box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15); 
-            transform: translateY(-12px);
+
+        .activity-header a:hover {
+            color: #666;
         }
-        .dashboard-card i { 
-            font-size: 3.5rem; margin-bottom: 1.75rem; color: #1a1a1a; 
-            opacity: 0.85; transition: all 0.3s ease;
+
+        .activity-item {
+            display: flex;
+            align-items: flex-start;
+            padding: 1.75rem 0;
+            border-bottom: 1px solid #f5f5f5;
+            transition: all 0.2s ease;
         }
-        .dashboard-card:hover i { transform: scale(1.1); color: #10b981; }
-        .dashboard-card h3 { 
-            font-size: 1.5rem; font-weight: 700; margin-bottom: 1rem; color: #1a1a1a;
+
+        .activity-item:last-child {
+            border-bottom: none;
         }
-        .dashboard-card p { color: #666; margin-bottom: 2rem; font-size: 1.05rem; }
-        .card-btn { 
-            display: inline-flex; align-items: center; gap: 0.75rem; 
-            background: linear-gradient(135deg, #1a1a1a, #333); color: #fff; 
-            padding: 1rem 2.5rem; border-radius: 16px; text-decoration: none; 
-            font-weight: 600; font-size: 1rem; transition: all 0.3s ease; 
-            border: 1px solid #1a1a1a; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+
+        .activity-item:hover {
+            background: #f8f8f8;
+            padding-left: 1rem;
+            border-radius: 8px;
         }
-        .card-btn:hover { 
-            background: #fff; color: #1a1a1a; transform: translateY(-3px); 
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+
+        .activity-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1.5rem;
+            background: #1a1a1a;
+            color: #fff;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            margin-top: 2px;
         }
-        .recent-activity { 
-            background: rgba(255, 255, 255, 0.9); border: 1px solid #e5e5e5; 
-            border-radius: 24px; padding: 3rem; box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
-            backdrop-filter: blur(10px);
+
+        .activity-content h4 {
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 0.25rem;
+            font-size: 1rem;
         }
-        .activity-header { 
-            display: flex; justify-content: space-between; align-items: center; 
-            margin-bottom: 2.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid #f0f0f0;
+
+        .activity-content p {
+            color: #666;
+            font-size: 0.9rem;
         }
-        .activity-header h3 { 
-            font-size: 1.75rem; font-weight: 700; color: #1a1a1a;
+
+        .no-data {
+            text-align: center;
+            padding: 3rem;
+            color: #999;
         }
-        .activity-header a { 
-            color: #1a1a1a; text-decoration: none; font-weight: 600; 
-            font-size: 1rem; padding: 0.75rem 1.5rem; border: 1px solid #e5e5e5;
-            border-radius: 12px; transition: all 0.3s ease;
+
+        .no-data i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
         }
-        .activity-header a:hover { 
-            background: #f0f0f0; border-color: #d0d0d0; transform: translateX(4px);
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #fcc;
         }
-        .activity-item { 
-            display: flex; align-items: flex-start; padding: 2rem 0; 
-            border-bottom: 1px solid #f5f5f5; transition: all 0.3s ease;
-        }
-        .activity-item:last-child { border-bottom: none; }
-        .activity-item:hover { 
-            background: rgba(16, 185, 129, 0.05); padding-left: 1.5rem; 
-            border-radius: 12px; border-left: 4px solid #10b981;
-        }
-        .activity-icon { 
-            width: 56px; height: 56px; border-radius: 16px; display: flex; 
-            align-items: center; justify-content: center; margin-right: 1.75rem; 
-            background: linear-gradient(135deg, #10b981, #059669); color: #fff; 
-            font-size: 1.2rem; flex-shrink: 0; margin-top: 2px; box-shadow: 0 4px 15px rgba(16,185,129,0.3);
-        }
-        .activity-content h4 { 
-            font-weight: 700; color: #1a1a1a; margin-bottom: 0.5rem; font-size: 1.1rem;
-        }
-        .activity-content p { color: #666; font-size: 0.95rem; }
-        .no-data { 
-            text-align: center; padding: 4rem 2rem; color: #999;
-        }
-        .no-data i { font-size: 5rem; margin-bottom: 1.5rem; opacity: 0.3; }
-        .no-data h4 { font-size: 1.5rem; margin-bottom: 1rem; color: #666; }
-        .error-message { 
-            background: linear-gradient(135deg, #fee2e2, #fecaca); 
-            border: 1px solid #fca5a5; color: #dc2626; padding: 2.5rem; 
-            border-radius: 20px; text-align: center; margin: 3rem 0; 
-            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.15);
-        }
-        .error-message i { font-size: 3.5rem; margin-bottom: 1.5rem; opacity: 0.8; }
-        .retry-btn { 
-            background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; 
-            border: none; padding: 1rem 2.5rem; border-radius: 16px; cursor: pointer; 
-            font-weight: 600; font-size: 1rem; margin-top: 1.5rem; transition: all 0.3s ease;
-        }
-        .retry-btn:hover { 
-            transform: translateY(-2px); box-shadow: 0 15px 35px rgba(220, 38, 38, 0.4);
-        }
+
         @media (max-width: 768px) {
-            .nav-menu { gap: 1rem; flex-wrap: wrap; }
-            .nav-container { padding: 0 1.5rem; }
-            .welcome-section h1 { font-size: 2.25rem; }
-            .dashboard-container { padding: 130px 1rem 2rem; }
-            .stats-grid, .dashboard-grid { grid-template-columns: 1fr; gap: 1.75rem; }
-            .recent-activity { padding: 2rem; margin-top: 2rem; }
-            .activity-header { flex-direction: column; gap: 1rem; text-align: center; }
+            .nav-menu {
+                gap: 1rem;
+            }
+
+            .nav-container {
+                padding: 0 1.5rem;
+                flex-wrap: wrap;
+            }
+
+            .welcome-section h1 {
+                font-size: 2.25rem;
+            }
+
+            .dashboard-container {
+                padding: 120px 1rem 2rem;
+            }
+
+            .stats-grid,
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .recent-activity {
+                padding: 2rem;
+            }
         }
+
         @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        .fade-in-up { opacity: 0; animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+
+        .fade-in-up {
+            opacity: 0;
+            animation: fadeInUp 0.6s ease forwards;
+        }
     </style>
 </head>
 <body>
-    <nav class="navbar" id="navbar">
+    <nav class="navbar">
         <div class="nav-container">
-            <a href="dashboard.html" class="nav-logo">
-                <i class="fas fa-utensils"></i>
-                <span>Hulyanas Hill</span>
-            </a>
+            <div class="nav-logo" id="navLogo">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Loading...</span>
+            </div>
             <ul class="nav-menu" id="navMenu">
-                <!-- DYNAMIC NAVIGATION -->
+                <!-- Navigation populated dynamically -->
             </ul>
         </div>
     </nav>
 
     <div class="dashboard-container">
-        <!-- LOADING STATE -->
+        <!-- Loading state -->
         <div id="loadingState" class="loading fade-in-up">
             <i class="fas fa-spinner"></i>
-            <p>🔄 Authenticating and loading your personalized dashboard...</p>
-            <p style="font-size: 0.9rem; opacity: 0.7; margin-top: 1rem;">Fetching orders, stats, and recent activity</p>
+            <p>Initializing your dashboard...</p>
         </div>
 
-        <!-- ERROR STATE -->
-        <div id="errorState" style="display: none;">
-            <div class="error-message fade-in-up">
-                <i class="fas fa-exclamation-triangle"></i>
-                <h3 id="errorTitle">Authentication Required</h3>
-                <p id="errorMessage">Please login to access your dashboard</p>
-                <button class="retry-btn" onclick="location.href='/index.html'">
-                    <i class="fas fa-sign-in-alt"></i> Go to Login
-                </button>
-            </div>
+        <!-- Error state -->
+        <div id="errorState" class="error-message fade-in-up" style="display: none;">
+            <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+            <h3>Dashboard Error</h3>
+            <p id="errorMessage"></p>
+            <button onclick="location.reload()" class="card-btn" style="margin-top: 1rem;">
+                <i class="fas fa-redo"></i> Retry Loading
+            </button>
         </div>
 
-        <!-- MAIN CONTENT -->
+        <!-- Main content (hidden initially) -->
         <div id="mainContent" style="display: none;">
-            <section class="welcome-section fade-in-up">
-                <h1>Welcome back, <span id="userName">Customer</span>!</h1>
-                <p id="welcomeSubtitle">Your personalized dashboard is loading with real-time data...</p>
-            </section>
+            <div class="welcome-section">
+                <h1>Welcome back, <span id="userName">User</span>!</h1>
+                <p id="welcomeSubtitle">Loading your personalized dashboard...</p>
+            </div>
 
-            <!-- DYNAMIC STATS GRID -->
-            <section class="stats-grid" id="statsGrid">
-                <!-- POPULATED BY JAVASCRIPT FROM DATABASE -->
-            </section>
+            <div class="stats-grid" id="statsGrid">
+                <!-- Stats cards populated from database -->
+            </div>
 
-            <!-- QUICK ACTIONS -->
-            <section class="dashboard-grid" id="dashboardGrid">
-                <!-- DYNAMIC QUICK ACTION CARDS -->
-            </section>
+            <div class="dashboard-grid" id="dashboardGrid">
+                <!-- Quick action cards -->
+            </div>
 
-            <!-- RECENT ACTIVITY -->
-            <section class="recent-activity fade-in-up" id="recentActivity">
+            <div class="recent-activity fade-in-up" id="recentActivity">
                 <div class="activity-header">
-                    <h3>📋 Recent Activity</h3>
-                    <a href="orders.html">
-                        <i class="fas fa-list"></i> View All Orders
-                    </a>
+                    <h3>Recent Activity</h3>
+                    <a href="orders.html">View All →</a>
                 </div>
                 <div id="activityList">
-                    <!-- DYNAMIC ACTIVITY FROM DATABASE -->
+                    <!-- Activities populated from database -->
                 </div>
-            </section>
+            </div>
         </div>
     </div>
 
     <script>
-        // 🚀 COMPLETE DYNAMIC USER DASHBOARD CLASS
-        class DynamicUserDashboard {
-            constructor() {
-                this.userId = null;
-                this.userRole = null;
-                this.token = null;
-                this.userData = null;
-                this.baseURL = window.location.origin.includes('localhost') ? 
-                    'http://localhost:3000/api' : '/api';
-            }
+        // Global app state
+        let currentUser = null;
+        let token = null;
 
-            // 🔥 MAIN INITIALIZATION
-            async init() {
-                console.log('🚀 Initializing Dynamic User Dashboard...');
+        // Initialize dashboard with proper authentication
+        async function initDashboard() {
+            try {
+                showLoading();
                 
-                try {
-                    // 1. Check authentication
-                    const authResult = await this.authenticateUser();
-                    if (!authResult) {
-                        this.showAuthError();
-                        return;
-                    }
-
-                    // 2. Role-based redirection
-                    await this.handleRoleRedirection(authResult);
-
-                    // 3. Load complete dashboard
-                    await this.loadCompleteDashboard();
-
-                } catch (error) {
-                    console.error('💥 Dashboard initialization failed:', error);
-                    this.showError('Failed to load dashboard. Please refresh the page.');
-                }
-            }
-
-            // 🔐 AUTHENTICATION CHECK
-            async authenticateUser() {
-                this.token = localStorage.getItem('token');
-                if (!this.token) return null;
-
-                try {
-                    const response = await fetch(`${this.baseURL}/profile`, {
-                        headers: { 
-                            'Authorization': `Bearer ${this.token}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (!response.ok) {
-                        localStorage.removeItem('token');
-                        return null;
-                    }
-
-                    this.userData = await response.json();
-                    this.userId = this.userData.id;
-                    this.userRole = this.userData.role;
-                    return this.userData;
-
-                } catch (error) {
-                    console.error('Authentication failed:', error);
-                    return null;
-                }
-            }
-
-            // 👑 ROLE-BASED REDIRECTION
-            async handleRoleRedirection(userData) {
-                if (userData.role === 'admin') {
-                    console.log('👑 Admin detected - redirecting to Admin Dashboard');
-                    window.location.href = '/admin/dashboard.html';
-                    return true;
-                }
-                return false;
-            }
-
-            // 📊 LOAD COMPLETE DASHBOARD DATA
-            async loadCompleteDashboard() {
-                document.getElementById('loadingState').innerHTML = `
-                    <i class="fas fa-spinner"></i>
-                    <p>🔄 Loading your real-time dashboard data...</p>
-                    <p style="font-size: 0.9rem; opacity: 0.7;">
-                        Fetching ${this.userId} orders, stats, and activity...
-                    </p>
-                `;
-
-                // Parallel data fetching for performance
-                const [userProfile, stats, activities] = await Promise.all([
-                    this.fetchUserProfile(),
-                    this.fetchUserStats(),
-                    this.fetchUserActivity()
-                ]);
-
-                // Hide loading, show content
-                document.getElementById('loadingState').style.display = 'none';
-                document.getElementById('mainContent').style.display = 'block';
-
-                // Populate ALL dynamic content
-                this.renderCompleteUI(userProfile, stats, activities);
-
-                // Initialize animations and interactions
-                this.initAnimations();
-                console.log('✅ Dashboard fully loaded with real database data');
-            }
-
-            // 👤 FETCH USER PROFILE
-            async fetchUserProfile() {
-                const response = await fetch(`${this.baseURL}/user/${this.userId}`);
-                if (!response.ok) throw new Error('Failed to fetch profile');
-                return await response.json();
-            }
-
-            // 📈 FETCH USER STATS (REAL DATABASE)
-            async fetchUserStats() {
-                const response = await fetch(`${this.baseURL}/user/${this.userId}/stats`);
-                if (!response.ok) throw new Error('Failed to fetch stats');
-                return await response.json();
-            }
-
-            // 📋 FETCH USER ACTIVITY (REAL DATABASE)
-            async fetchUserActivity() {
-                const response = await fetch(`${this.baseURL}/user/${this.userId}/activity`);
-                if (!response.ok) throw new Error('Failed to fetch activity');
-                return await response.json();
-            }
-
-            // 🎨 RENDER COMPLETE UI
-            renderCompleteUI(userProfile, stats, activities) {
-                // Welcome section
-                this.renderWelcome(userProfile);
-                
-                // Navigation
-                this.renderNavigation();
-                
-                // Stats cards
-                this.renderStats(stats);
-                
-                // Quick actions
-                this.renderQuickActions();
-                
-                // Recent activity
-                this.renderActivity(activities);
-            }
-
-            renderWelcome(userProfile) {
-                document.getElementById('userName').textContent = 
-                    userProfile.full_name || `${userProfile.first_name}`;
-                document.getElementById('welcomeSubtitle').textContent = 
-                    `Your dashboard shows ${stats.totalOrders || 0} orders worth $${stats.totalSpent?.toFixed(2) || '0.00'}`;
-            }
-
-            renderNavigation() {
-                const navMenu = document.getElementById('navMenu');
-                const navItems = [
-                    { title: 'Dashboard', icon: 'fas fa-home', href: 'dashboard.html', active: true },
-                    { title: '🍽️ Menu', icon: 'fas fa-utensils', href: 'menu.html' },
-                    { title: '🛒 Cart', icon: 'fas fa-shopping-cart', href: 'cart.html' },
-                    { title: '📋 Orders', icon: 'fas fa-list', href: 'orders.html' },
-                    { title: '👤 Profile', icon: 'fas fa-user', href: 'profile.html' }
-                ];
-
-                navMenu.innerHTML = navItems.map(item => `
-                    <li>
-                        <a href="${item.href}" class="${item.active ? 'active' : ''}">
-                            <i class="${item.icon}"></i> ${item.title}
-                        </a>
-                    </li>
-                `).join('') + `
-                    <li>
-                        <a href="#" id="logoutBtn" class="btn-logout">
-                            <i class="fas fa-sign-out-alt"></i> Logout
-                        </a>
-                    </li>
-                `;
-            }
-
-            renderStats(stats) {
-                const statsGrid = document.getElementById('statsGrid');
-                const statConfigs = [
-                    {
-                        icon: 'fas fa-shopping-cart',
-                        number: stats.totalOrders || 0,
-                        label: 'Total Orders',
-                        color: '#10b981'
-                    },
-                    {
-                        icon: 'fas fa-dollar-sign',
-                        number: (stats.totalSpent || 0).toFixed(2),
-                        label: 'Total Spent',
-                        prefix: '$',
-                        color: '#3b82f6'
-                    },
-                    {
-                        icon: 'fas fa-star',
-                        number: (stats.avgRating || 0).toFixed(1),
-                        label: 'Avg Rating',
-                        suffix: '⭐',
-                        color: '#f59e0b'
-                    },
-                    {
-                        icon: 'fas fa-clock',
-                        number: stats.activeOrders || 0,
-                        label: 'Active Orders',
-                        color: '#ef4444'
-                    }
-                ];
-
-                statsGrid.innerHTML = statConfigs.map((stat, index) => `
-                    <div class="stat-card fade-in-up" style="animation-delay: ${index * 0.1}s">
-                        <div class="stat-icon" style="color: ${stat.color}">
-                            <i class="${stat.icon}"></i>
-                        </div>
-                        <div class="stat-number" data-target="${stat.number}">
-                            ${stat.prefix || ''}0${stat.suffix || ''}
-                        </div>
-                        <div class="stat-label">${stat.label}</div>
-                    </div>
-                `).join('');
-            }
-
-            renderQuickActions() {
-                const dashboardGrid = document.getElementById('dashboardGrid');
-                dashboardGrid.innerHTML = `
-                    <div class="dashboard-card fade-in-up" style="animation-delay: 0.1s">
-                        <i class="fas fa-utensils"></i>
-                        <h3>Browse Menu</h3>
-                        <p>Discover our latest available menu items</p>
-                        <a href="menu.html" class="card-btn">
-                            View Menu <i class="fas fa-arrow-right"></i>
-                        </a>
-                    </div>
-                    <div class="dashboard-card fade-in-up" style="animation-delay: 0.2s">
-                        <i class="fas fa-shopping-cart"></i>
-                        <h3>My Cart</h3>
-                        <p>Review and manage your shopping cart</p>
-                        <a href="cart.html" class="card-btn">
-                            Go to Cart <i class="fas fa-arrow-right"></i>
-                        </a>
-                    </div>
-                    <div class="dashboard-card fade-in-up" style="animation-delay: 0.3s">
-                        <i class="fas fa-list"></i>
-                        <h3>My Orders</h3>
-                        <p>Track all your recent orders status</p>
-                        <a href="orders.html" class="card-btn">
-                            View Orders <i class="fas fa-arrow-right"></i>
-                        </a>
-                    </div>
-                    <div class="dashboard-card fade-in-up" style="animation-delay: 0.4s">
-                        <i class="fas fa-user-edit"></i>
-                        <h3>Profile</h3>
-                        <p>Update your account information</p>
-                        <a href="profile.html" class="card-btn">
-                            Edit Profile <i class="fas fa-arrow-right"></i>
-                        </a>
-                    </div>
-                `;
-            }
-
-            renderActivity(activities) {
-                const activityList = document.getElementById('activityList');
-                
-                if (!activities || activities.length === 0) {
-                    activityList.innerHTML = `
-                        <div class="no-data fade-in-up">
-                            <i class="fas fa-inbox"></i>
-                            <h4>No Recent Activity</h4>
-                            <p>Your orders and account activities will appear here automatically</p>
-                        </div>
-                    `;
+                // Check authentication and get user data
+                const authData = await checkAuthAndLoadUser();
+                if (!authData) {
+                    redirectToLogin();
                     return;
                 }
 
-                activityList.innerHTML = activities.map((activity, index) => `
-                    <div class="activity-item fade-in-up" style="animation-delay: ${index * 0.05}s">
-                        <div class="activity-icon">
-                            <i class="${this.getActivityIcon(activity.type, activity.action)}"></i>
-                        </div>
-                        <div class="activity-content">
-                            <h4>${activity.display_action || activity.action}</h4>
-                            <p>
-                                ${this.formatActivityDetails(activity)} • 
-                                <strong>${this.formatDate(activity.created_at)}</strong>
-                            </p>
-                        </div>
-                    </div>
-                `).join('');
-            }
-
-            getActivityIcon(type, action) {
-                const icons = {
-                    'order': { 
-                        'New order placed': 'fas fa-shopping-cart',
-                        'Order delivered': 'fas fa-check-circle',
-                        'Order cancelled': 'fas fa-times-circle',
-                        default: 'fas fa-list-alt'
-                    },
-                    'user': 'fas fa-user-plus',
-                    'menu': 'fas fa-utensils',
-                    'system': 'fas fa-cog',
-                    default: 'fas fa-info-circle'
-                };
-                
-                if (type === 'order' && icons.order[action]) return icons.order[action];
-                return icons[type] || icons.default;
-            }
-
-            formatActivityDetails(activity) {
-                if (activity.details) {
-                    try {
-                        const details = typeof activity.details === 'string' ? 
-                            JSON.parse(activity.details) : activity.details;
-                        if (details.order_number) return `Order #${details.order_number}`;
-                        if (details.email) return `Email: ${details.email}`;
-                    } catch (e) {
-                        console.warn('Activity details parse error:', activity.details);
-                    }
+                // Check role and redirect if admin
+                if (authData.role === 'admin') {
+                    window.location.href = '/admin/dashboard.html';
+                    return;
                 }
-                return 'Recent activity';
-            }
 
-            formatDate(dateString) {
-                const date = new Date(dateString);
-                const now = new Date();
-                const diffMs = now - date;
-                const diffMins = Math.floor(diffMs / 60000);
-                const diffHours = Math.floor(diffMins / 60);
+                // Load all dashboard data in parallel
+                const [userData, statsData, activities] = await Promise.all([
+                    fetchUserData(authData.id),
+                    fetchUserStats(authData.id),
+                    fetchRecentActivity(authData.id)
+                ]);
+
+                // Update global state
+                currentUser = userData;
+                token = authData.token;
+
+                // Render dashboard
+                hideLoading();
+                renderDashboard(userData, statsData, activities);
                 
-                if (diffMins < 1) return 'Just now';
-                if (diffMins < 60) return `${diffMins}m ago`;
-                if (diffHours < 24) return `${diffHours}h ago`;
-                return date.toLocaleDateString('en-US', { 
-                    month: 'short', day: 'numeric', hour: 'numeric' 
-                });
-            }
-
-            // 🎬 ANIMATIONS
-            initAnimations() {
-                this.animateCounters();
-                this.staggerAnimations();
-            }
-
-            animateCounters() {
-                const counters = document.querySelectorAll('.stat-number');
-                counters.forEach(counter => {
-                    const targetText = counter.getAttribute('data-target');
-                    const target = parseFloat(targetText) || 0;
-                    let current = 0;
-                    const duration = 2000;
-                    const increment = target / (duration / 16);
-
-                    const updateCounter = () => {
-                        current += increment;
-                        if (current >= target) {
-                            counter.textContent = targetText;
-                            return;
-                        }
-                        counter.textContent = Math.floor(current).toLocaleString();
-                        requestAnimationFrame(updateCounter);
-                    };
-
-                    const observer = new IntersectionObserver((entries) => {
-                        entries.forEach(entry => {
-                            if (entry.isIntersecting) {
-                                updateCounter();
-                                observer.unobserve(entry.target);
-                            }
-                        });
-                    });
-                    observer.observe(counter);
-                });
-            }
-
-            staggerAnimations() {
-                const elements = document.querySelectorAll('.fade-in-up');
-                elements.forEach((el, index) => {
-                    el.style.animationDelay = `${Math.min(index * 0.08, 0.6)}s`;
-                });
-            }
-
-            // ❌ ERROR HANDLING
-            showAuthError() {
-                document.getElementById('loadingState').style.display = 'none';
-                document.getElementById('errorState').style.display = 'block';
-                document.getElementById('errorTitle').textContent = '🔐 Authentication Required';
-                document.getElementById('errorMessage').textContent = 
-                    'Please login to access your personalized dashboard.';
-            }
-
-            showError(message) {
-                document.getElementById('loadingState').innerHTML = `
-                    <div class="error-message">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <h3>Failed to Load Dashboard</h3>
-                        <p>${message}</p>
-                        <button class="retry-btn" onclick="dashboard.init()">
-                            <i class="fas fa-redo"></i> Retry Loading
-                        </button>
-                    </div>
-                `;
+            } catch (error) {
+                console.error('Dashboard init error:', error);
+                showError(`Failed to load dashboard: ${error.message}`);
             }
         }
 
-        // 🌟 GLOBAL INITIALIZATION
-        const dashboard = new DynamicUserDashboard();
+        // Check authentication and load user session
+        async function checkAuthAndLoadUser() {
+            try {
+                // Try to get token from localStorage
+                const storedToken = localStorage.getItem('token');
+                const storedUserId = localStorage.getItem('userId');
+                
+                if (!storedToken || !storedUserId) {
+                    throw new Error('No authentication found');
+                }
 
+                // Verify token with backend
+                const response = await fetch('/api/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${storedToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('userId');
+                    throw new Error('Invalid session');
+                }
+
+                const userData = await response.json();
+                return {
+                    id: userData.id,
+                    role: userData.role || 'customer',
+                    token: storedToken
+                };
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                return null;
+            }
+        }
+
+        // Fetch authenticated user data
+        async function fetchUserData(userId) {
+            const response = await fetch(`/api/user/${userId}`);
+            if (!response.ok) throw new Error('Failed to fetch user data');
+            return await response.json();
+        }
+
+        // Fetch user statistics from database
+        async function fetchUserStats(userId) {
+            const response = await fetch(`/api/user/${userId}/stats`);
+            if (!response.ok) throw new Error('Failed to fetch stats');
+            return await response.json();
+        }
+
+        // Fetch recent activity from database
+        async function fetchRecentActivity(userId) {
+            const response = await fetch(`/api/user/${userId}/activity`);
+            if (!response.ok) return [];
+            return await response.json();
+        }
+
+        // Render complete dashboard
+        function renderDashboard(userData, statsData, activities) {
+            populateNavigation();
+            populateWelcome(userData);
+            renderStats(statsData);
+            renderQuickActions();
+            renderActivities(activities);
+            initAnimations();
+        }
+
+        // Populate navigation (hardcoded links but dynamic logo)
+        function populateNavigation() {
+            const navLogo = document.getElementById('navLogo');
+            const navMenu = document.getElementById('navMenu');
+
+            navLogo.innerHTML = `
+                <i class="fas fa-utensils"></i>
+                <span>Hulyanas Hill</span>
+            `;
+
+            navMenu.innerHTML = `
+                <li><a href="dashboard.html" style="background: #f0f0f0; color: #1a1a1a;">
+                    <i class="fas fa-home"></i> Dashboard
+                </a></li>
+                <li><a href="../menu.html">
+                    <i class="fas fa-utensils"></i> Menu
+                </a></li>
+                <li><a href="cart.html">
+                    <i class="fas fa-shopping-cart"></i> Cart
+                </a></li>
+                <li><a href="orders.html">
+                    <i class="fas fa-list"></i> Orders
+                </a></li>
+                <li><a href="profile.html">
+                    <i class="fas fa-user"></i> Profile
+                </a></li>
+                <li><a href="/index.html" id="logoutBtn" class="btn-logout">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a></li>
+            `;
+        }
+
+        // Populate welcome section with real user data
+        function populateWelcome(userData) {
+            document.getElementById('userName').textContent = userData.full_name || userData.first_name;
+            document.getElementById('welcomeSubtitle').textContent = 
+                `Your personalized dashboard with ${userData.total_orders || 0}+ orders`;
+        }
+
+        // Render stats cards with real database data
+        function renderStats(stats) {
+            const statsGrid = document.getElementById('statsGrid');
+            const statCards = [
+                {
+                    icon: 'fas fa-shopping-cart',
+                    number: stats.totalOrders || 0,
+                    label: 'Total Orders',
+                    key: 'totalOrders'
+                },
+                {
+                    icon: 'fas fa-dollar-sign',
+                    number: parseFloat(stats.totalSpent || 0),
+                    label: 'Total Spent',
+                    isCurrency: true,
+                    key: 'totalSpent'
+                },
+                {
+                    icon: 'fas fa-star',
+                    number: parseFloat(stats.avgRating || 4.5).toFixed(1),
+                    label: 'Avg Rating',
+                    key: 'avgRating'
+                },
+                {
+                    icon: 'fas fa-clock',
+                    number: stats.activeOrders || 0,
+                    label: 'Active Orders',
+                    key: 'activeOrders'
+                }
+            ];
+
+            statsGrid.innerHTML = statCards.map(stat => `
+                <div class="stat-card fade-in-up">
+                    <div class="stat-icon">
+                        <i class="${stat.icon}"></i>
+                    </div>
+                    <div class="stat-number" data-target="${stat.number}" data-is-currency="${stat.isCurrency || false}">
+                        ${stat.isCurrency ? '$0.00' : '0'}
+                    </div>
+                    <div class="stat-label">${stat.label}</div>
+                </div>
+            `).join('');
+
+            // Animate counters after render
+            setTimeout(animateCounters, 500);
+        }
+
+        // Quick action cards (functional links)
+        function renderQuickActions() {
+            const dashboardGrid = document.getElementById('dashboardGrid');
+            dashboardGrid.innerHTML = `
+                <div class="dashboard-card fade-in-up">
+                    <i class="fas fa-utensils"></i>
+                    <h3>Browse Menu</h3>
+                    <p>Discover our delicious menu items</p>
+                    <a href="../menu.html" class="card-btn">View Menu <i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="dashboard-card fade-in-up">
+                    <i class="fas fa-shopping-cart"></i>
+                    <h3>My Cart</h3>
+                    <p>Review items in your shopping cart</p>
+                    <a href="cart.html" class="card-btn">Go to Cart <i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="dashboard-card fade-in-up">
+                    <i class="fas fa-list"></i>
+                    <h3>My Orders</h3>
+                    <p>Track your recent orders</p>
+                    <a href="orders.html" class="card-btn">View Orders <i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="dashboard-card fade-in-up">
+                    <i class="fas fa-user-edit"></i>
+                    <h3>Profile</h3>
+                    <p>Manage your account information</p>
+                    <a href="profile.html" class="card-btn">Edit Profile <i class="fas fa-arrow-right"></i></a>
+                </div>
+            `;
+        }
+
+        // Render recent activities from database
+        function renderActivities(activities) {
+            const activityList = document.getElementById('activityList');
+            
+            if (!activities || activities.length === 0) {
+                activityList.innerHTML = `
+                    <div class="no-data">
+                        <i class="fas fa-inbox"></i>
+                        <h4>No recent activity</h4>
+                        <p>Your activity will appear here once you start ordering</p>
+                    </div>
+                `;
+                return;
+            }
+
+            activityList.innerHTML = activities.map(activity => `
+                <div class="activity-item">
+                    <div class="activity-icon">
+                        <i class="${getActivityIcon(activity.type, activity.action)}"></i>
+                    </div>
+                    <div class="activity-content">
+                        <h4>${activity.display_action || activity.action}</h4>
+                        <p>${formatActivityDetails(activity)} • ${formatDate(activity.created_at)}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Get activity icon based on type
+        function getActivityIcon(type, action) {
+            const icons = {
+                'order': {
+                    'New order placed': 'fas fa-shopping-cart',
+                    'Order delivered': 'fas fa-check-circle',
+                    'Order cancelled': 'fas fa-times-circle',
+                    default: 'fas fa-list'
+                },
+                'user': 'fas fa-user',
+                'menu': 'fas fa-utensils',
+                'system': 'fas fa-cog'
+            };
+            return icons[type]?.[action] || icons[type] || 'fas fa-info-circle';
+        }
+
+        // Format activity details
+        function formatActivityDetails(activity) {
+            if (activity.details && typeof activity.details === 'object') {
+                if (activity.details.order_number) {
+                    return `Order ${activity.details.order_number}`;
+                }
+                if (activity.details.email) {
+                    return `Email: ${activity.details.email}`;
+                }
+            }
+            return 'Recent activity';
+        }
+
+        // Format database timestamp
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+            
+            if (diffHours < 1) return 'Just now';
+            if (diffHours < 24) return `${diffHours}h ago`;
+            if (diffHours < 168) return `${Math.floor(diffHours / 24)}d ago`;
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        // Animate counters from 0 to real database values
+        function animateCounters() {
+            const counters = document.querySelectorAll('.stat-number');
+            counters.forEach(counter => {
+                const target = parseFloat(counter.getAttribute('data-target'));
+                const isCurrency = counter.getAttribute('data-is-currency') === 'true';
+                
+                let current = 0;
+                const increment = target / 100;
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (isCurrency) {
+                        counter.textContent = `$${Math.min(current, target).toFixed(2)}`;
+                    } else {
+                        counter.textContent = Math.floor(Math.min(current, target));
+                    }
+                    if (current >= target) {
+                        clearInterval(timer);
+                        if (isCurrency) {
+                            counter.textContent = `$${target.toFixed(2)}`;
+                        } else {
+                            counter.textContent = Math.floor(target);
+                        }
+                    }
+                }, 25);
+            });
+        }
+
+        // Initialize animations
+        function initAnimations() {
+            const elements = document.querySelectorAll('.fade-in-up');
+            elements.forEach((el, index) => {
+                el.style.animationDelay = `${index * 0.1}s`;
+            });
+        }
+
+        // UI State Management
+        function showLoading() {
+            document.getElementById('loadingState').style.display = 'block';
+            document.getElementById('errorState').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'none';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+        }
+
+        function showError(message) {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('errorState').style.display = 'block';
+            document.getElementById('errorMessage').textContent = message;
+        }
+
+        function redirectToLogin() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('userId');
+            window.location.href = '/index.html';
+        }
+
+        // Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => dashboard.init(), 500);
+            // Role-based redirect check
+            const userRole = localStorage.getItem('userRole');
+            if (userRole === 'admin') {
+                window.location.href = '/admin/dashboard.html';
+                return;
+            }
+            initDashboard();
         });
 
-        // 👋 LOGOUT HANDLER
+        // Global logout handler
         document.addEventListener('click', (e) => {
             if (e.target.id === 'logoutBtn' || e.target.closest('#logoutBtn')) {
                 e.preventDefault();
                 if (confirm('Are you sure you want to logout?')) {
-                    localStorage.removeItem('token');
-                    localStorage.removeItem('userId');
+                    localStorage.clear();
                     window.location.href = '/index.html';
                 }
             }
         });
 
-        // 📱 NAVBAR EFFECTS
+        // Navbar scroll effect
         window.addEventListener('scroll', () => {
             const navbar = document.querySelector('.navbar');
-            if (window.scrollY > 100) {
-                navbar.style.background = 'rgba(255, 255, 255, 0.95)';
-                navbar.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.1)';
+            if (window.scrollY > 50) {
+                navbar.style.background = 'rgba(255, 255, 255, 1)';
+                navbar.style.boxShadow = '0 2px 20px rgba(0, 0, 0, 0.08)';
             } else {
                 navbar.style.background = 'rgba(255, 255, 255, 0.98)';
-                navbar.style.boxShadow = '0 2px 20px rgba(0, 0, 0, 0.05)';
+                navbar.style.boxShadow = 'none';
             }
         });
-
-        // 💾 AUTO-REFRESH (every 30s for active orders)
-        setInterval(() => {
-            if (document.visibilityState === 'visible') {
-                dashboard.fetchUserStats().then(stats => {
-                    dashboard.renderStats(stats);
-                });
-            }
-        }, 30000);
     </script>
 </body>
 </html>

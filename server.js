@@ -100,7 +100,7 @@ app.get('/api/user/:id', async (req, res) => {
         const conn = await pool.getConnection();
         
         const [rows] = await conn.execute(
-            `SELECT id, first_name, last_name, username, email, phone, role, created_at
+            `SELECT id, first_name, last_name, username, email, role
              FROM users WHERE id = ? AND is_active = 1 AND role = 'customer'`,
             [parseInt(id)]
         );
@@ -111,16 +111,21 @@ app.get('/api/user/:id', async (req, res) => {
         }
         
         const user = rows[0];
+        // Calculate total orders for welcome message
+        const [orderCount] = await conn.execute(
+            `SELECT COUNT(*) as total_orders FROM orders WHERE user_id = ?`,
+            [user.id]
+        );
+        
         res.json({
             id: user.id,
             first_name: user.first_name,
             last_name: user.last_name,
             username: user.username,
             email: user.email,
-            phone: user.phone,
-            role: user.role,
             full_name: `${user.first_name} ${user.last_name}`.trim(),
-            joined: new Date(user.created_at).toLocaleDateString()
+            role: user.role,
+            total_orders: parseInt(orderCount[0].total_orders)
         });
     } catch (error) {
         console.error('🚨 User fetch error:', error);
@@ -136,13 +141,11 @@ app.get('/api/user/:id/stats', async (req, res) => {
         
         const [stats] = await conn.execute(`
             SELECT 
-                COUNT(DISTINCT o.id) as totalOrders,
+                COUNT(o.id) as totalOrders,
                 COALESCE(SUM(o.total_amount), 0) as totalSpent,
                 COUNT(CASE WHEN o.status IN ('pending', 'preparing', 'out_for_delivery') THEN 1 END) as activeOrders,
-                COALESCE(AVG(4.8), 4.5) as avgRating,
-                COUNT(DISTINCT oi.id) as totalItems
+                COALESCE(AVG(4.8), 4.5) as avgRating
             FROM orders o 
-            LEFT JOIN order_items oi ON o.id = oi.order_id
             WHERE o.user_id = ?
         `, [parseInt(id)]);
         
@@ -151,10 +154,9 @@ app.get('/api/user/:id/stats', async (req, res) => {
         const userStats = stats[0] || {};
         res.json({
             totalOrders: parseInt(userStats.totalOrders || 0),
-            totalSpent: parseFloat(userStats.totalSpent || 0),
+            totalSpent: parseFloat(userStats.totalSpent || 0).toFixed(2),
             activeOrders: parseInt(userStats.activeOrders || 0),
-            avgRating: parseFloat(userStats.avgRating || 0),
-            totalItems: parseInt(userStats.totalItems || 0)
+            avgRating: parseFloat(userStats.avgRating || 4.5)
         });
         
     } catch (error) {
@@ -163,6 +165,7 @@ app.get('/api/user/:id/stats', async (req, res) => {
     }
 });
 
+
 /// 📋 Get user recent activity (REAL DATABASE)
 app.get('/api/user/:id/activity', async (req, res) => {
     try {
@@ -170,18 +173,16 @@ app.get('/api/user/:id/activity', async (req, res) => {
         const conn = await pool.getConnection();
         
         const [rows] = await conn.execute(`
-            SELECT 
-                al.id, al.type, al.action, al.details, al.created_at,
-                CASE 
-                    WHEN al.type = 'order' AND JSON_EXTRACT(al.details, '$.order_number') IS NOT NULL 
-                    THEN CONCAT('Order ', JSON_UNQUOTE(JSON_EXTRACT(al.details, '$.order_number')))
-                    WHEN al.action LIKE '%order%' THEN al.action
-                    ELSE al.action 
-                END as display_action
+            SELECT al.id, al.type, al.action, al.details, al.created_at,
+                   CASE 
+                       WHEN al.type = 'order' AND JSON_EXTRACT(al.details, '$.order_number') IS NOT NULL 
+                       THEN CONCAT('Order ', JSON_UNQUOTE(JSON_EXTRACT(al.details, '$.order_number')))
+                       ELSE al.action 
+                   END as display_action
             FROM activity_log al
             WHERE al.user_id = ?
             ORDER BY al.created_at DESC 
-            LIMIT 10
+            LIMIT 5
         `, [parseInt(id)]);
         
         conn.release();
@@ -277,30 +278,22 @@ app.post('/api/login', async (req, res) => {
         }
         
         const token = jwt.sign(
-            { 
-                id: user.id, 
-                username: user.username, 
-                role: user.role,
-                email: user.email 
-            }, 
+            { id: user.id, username: user.username, role: user.role }, 
             JWT_SECRET, 
             { expiresIn: '24h' }
         );
         
-        const redirectUrl = user.role === 'admin' ? 
-            '/admin/dashboard.html' : '/user/dashboard.html';
-        
+        // Store in localStorage for frontend
         res.json({
-            success: true,
             token,
             user: {
                 id: user.id,
                 username: user.username,
                 email: user.email,
                 role: user.role,
-                full_name: `${user.first_name} ${user.last_name}`.trim(),
-                redirect: redirectUrl
-            }
+                full_name: `${user.first_name} ${user.last_name}`.trim()
+            },
+            redirect: user.role === 'admin' ? '/admin/dashboard.html' : '/user/dashboard.html'
         });
     } catch (error) {
         console.error('🚨 Login error:', error);
