@@ -600,7 +600,7 @@ app.get('/api/admin/orders/:id', authenticateToken, isAdmin, async (req, res) =>
 app.put('/api/admin/orders/:id/status', authenticateToken, isAdmin, async (req, res) => {
     try {
         const { status } = req.body;
-        const validStatuses = ['pending', 'preparing', 'out for delivery', 'delivered', 'cancelled'];
+        const validStatuses = ['pending', 'preparing', 'out_for_delivery', 'delivered', 'cancelled'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({ error: 'Invalid status' });
         }
@@ -688,7 +688,7 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
             SELECT COALESCE(SUM(o.total_amount), 0) AS total_revenue
             FROM orders o
             ${whereClause}
-            AND LOWER(o.status) = 'delivered' OR LOWER(o.status) = 'preparing' OR LOWER(o.status) = 'out for delivery'
+            AND LOWER(o.status) = 'delivered' OR LOWER(o.status) = 'preparing' OR LOWER(o.status) = 'out_for_delivery'
         `, params);
 
         // =========================
@@ -707,7 +707,7 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
             SELECT COALESCE(AVG(o.total_amount), 0) AS avg_order_value
             FROM orders o
             ${whereClause}
-            AND LOWER(o.status) = 'delivered' OR LOWER(o.status) = 'preparing' OR LOWER(o.status) = 'out for delivery'`, params);
+            AND LOWER(o.status) = 'delivered' OR LOWER(o.status) = 'preparing' OR LOWER(o.status) = 'out_for_delivery'`, params);
 
         // =========================
         // ORDER TRENDS
