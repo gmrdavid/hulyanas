@@ -659,6 +659,17 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
         // =========================
         // FILTERS
         // =========================
+        app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
+    let conn;
+
+    try {
+        const { days = 'all', status = 'all' } = req.query;
+
+        conn = await pool.getConnection();
+
+        // =========================
+        // FILTERS
+        // =========================
         let whereClause = `WHERE LOWER(o.status) != 'cancelled'`;
         const params = [];
 
