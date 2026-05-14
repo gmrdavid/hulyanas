@@ -8,7 +8,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* All existing styles remain the same */
+        /* All existing styles remain EXACTLY the same - no design changes */
         * {
             margin: 0;
             padding: 0;
@@ -438,11 +438,11 @@
         <div id="mainContent" style="display: none;">
             <div class="welcome-section">
                 <h1>Welcome back, <span id="userName">User</span>!</h1>
-                <p>Here's your dashboard overview</p>
+                <p id="welcomeSubtitle">Here's your dashboard overview</p>
             </div>
 
             <div class="stats-grid" id="statsGrid">
-                <!-- Stats will be populated by JavaScript -->
+                <!-- Stats populated from REAL DATABASE -->
             </div>
 
             <div class="dashboard-grid">
@@ -478,45 +478,53 @@
                     <a href="orders.html">View All →</a>
                 </div>
                 <div id="activityList">
-                    <!-- Activities will be populated by JavaScript -->
+                    <!-- Activities populated from REAL DATABASE -->
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Database configuration
-        const DB_CONFIG = {
-            host: 'hulyanas-gliamaeriodavid9-fb68.a.aivencloud.com',
-            database: 'hulyanas',
-            username: 'your_username', // Replace with your Aiven username
-            password: 'your_password'  // Replace with your Aiven password
-        };
+        // ✅ NO HARDCODED VALUES - Uses JWT token from login
+        let currentUser = null;
+        let token = null;
 
-        // Get current user ID from localStorage or session
-        const currentUserId = parseInt(localStorage.getItem('userId')) || 2; // Default to user 2 (John Doe)
-
-        // Initialize dashboard
+        // Initialize dashboard - checks login status first
         async function initDashboard() {
             try {
+                // Check if user is logged in
+                const userData = await checkAuthAndGetUser();
+                if (!userData) {
+                    window.location.href = '/index.html';
+                    return;
+                }
+
                 // Hide loading, show main content
                 document.getElementById('loadingState').style.display = 'none';
                 document.getElementById('mainContent').style.display = 'block';
 
-                // Fetch user data
-                const userData = await fetchUserData(currentUserId);
-                document.getElementById('userName').textContent = `${userData.first_name} ${userData.last_name}`;
+                // Update welcome message with REAL user data
+                document.getElementById('userName').textContent = userData.full_name || 'Customer';
+                
+                const totalOrders = userData.total_orders || 0;
+                const subtitle = totalOrders === 0 
+                    ? "Welcome! Start your first order today"
+                    : totalOrders === 1 
+                        ? `You've placed ${totalOrders} order with us`
+                        : `You've placed ${totalOrders} orders with us`;
+                document.getElementById('welcomeSubtitle').textContent = subtitle;
 
-                // Fetch and display stats
-                const stats = await fetchUserStats(currentUserId);
+                // Fetch and display stats from REAL DATABASE
+                const stats = await fetchUserStats(userData.id);
                 displayStats(stats);
 
-                // Fetch and display recent activity
-                const activities = await fetchRecentActivity(currentUserId);
+                // Fetch and display recent activity from REAL DATABASE
+                const activities = await fetchRecentActivity(userData.id);
                 displayRecentActivity(activities);
 
                 // Initialize animations
                 staggerAnimations();
+                animateCounters();
                 
             } catch (error) {
                 console.error('Error loading dashboard:', error);
@@ -524,28 +532,65 @@
             }
         }
 
-        // Fetch user data
-        async function fetchUserData(userId) {
-            const response = await fetch(`/api/user/${userId}`);
-            if (!response.ok) throw new Error('Failed to fetch user data');
-            return await response.json();
+        // ✅ Check authentication and get current user
+        async function checkAuthAndGetUser() {
+            try {
+                token = localStorage.getItem('token');
+                if (!token) {
+                    console.log('No token found, redirecting to login');
+                    return null;
+                }
+
+                // Get user data using the existing API endpoint
+                const response = await fetch(`/api/user/${localStorage.getItem('userId')}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Authentication failed');
+                }
+
+                currentUser = await response.json();
+                return currentUser;
+                
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                localStorage.removeItem('token');
+                localStorage.removeItem('userId');
+                return null;
+            }
         }
 
-        // Fetch user statistics
+        // ✅ Fetch user statistics from your REAL DATABASE
         async function fetchUserStats(userId) {
-            const response = await fetch(`/api/user/${userId}/stats`);
+            const response = await fetch(`/api/user/${userId}/stats`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
             if (!response.ok) throw new Error('Failed to fetch stats');
             return await response.json();
         }
 
-        // Fetch recent activity
+        // ✅ Fetch recent activity from your REAL DATABASE
         async function fetchRecentActivity(userId) {
-            const response = await fetch(`/api/user/${userId}/activity`);
+            const response = await fetch(`/api/user/${userId}/activity`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
             if (!response.ok) throw new Error('Failed to fetch activity');
             return await response.json();
         }
 
-        // Display stats cards
+        // Display stats cards - uses REAL database values
         function displayStats(stats) {
             const statsGrid = document.getElementById('statsGrid');
             statsGrid.innerHTML = `
@@ -553,21 +598,21 @@
                     <div class="stat-icon">
                         <i class="fas fa-shopping-cart"></i>
                     </div>
-                    <div class="stat-number" data-target="${stats.totalOrders}">${stats.totalOrders}</div>
+                    <div class="stat-number" data-target="${stats.totalOrders}">0</div>
                     <div class="stat-label">Total Orders</div>
                 </div>
                 <div class="stat-card fade-in-up">
                     <div class="stat-icon">
                         <i class="fas fa-dollar-sign"></i>
                     </div>
-                    <div class="stat-number" data-target="${stats.totalSpent}">$0.00</div>
+                    <div class="stat-number" data-target="${stats.totalSpent}">0.00</div>
                     <div class="stat-label">Total Spent</div>
                 </div>
                 <div class="stat-card fade-in-up">
                     <div class="stat-icon">
                         <i class="fas fa-star"></i>
                     </div>
-                    <div class="stat-number" data-target="${stats.avgRating || 0}">0</div>
+                    <div class="stat-number" data-target="${stats.avgRating}">0</div>
                     <div class="stat-label">Avg Rating</div>
                 </div>
                 <div class="stat-card fade-in-up">
@@ -580,7 +625,7 @@
             `;
         }
 
-        // Display recent activity
+        // Display recent activity - uses REAL database activities
         function displayRecentActivity(activities) {
             const activityList = document.getElementById('activityList');
             
@@ -589,7 +634,7 @@
                     <div class="no-data">
                         <i class="fas fa-inbox"></i>
                         <h4>No recent activity</h4>
-                        <p>Your activity will appear here</p>
+                        <p>Your activity will appear here once you place orders</p>
                     </div>
                 `;
                 return;
@@ -601,14 +646,14 @@
                         ${getActivityIcon(activity.type, activity.action)}
                     </div>
                     <div class="activity-content">
-                        <h4>${activity.action}</h4>
+                        <h4>${activity.display_action || activity.action}</h4>
                         <p>${formatActivityDetails(activity)} - ${formatDate(activity.created_at)}</p>
                     </div>
                 </div>
             `).join('');
         }
 
-        // Get activity icon
+        // Get activity icon based on type
         function getActivityIcon(type, action) {
             const icons = {
                 'order': {
@@ -621,27 +666,22 @@
             };
 
             if (type === 'order') {
-                return icons[type][action] || icons[type].default;
+                return icons[type][action] || icons[type].default || 'fas fa-list';
             }
             return icons[type] || icons.default;
         }
 
-        // Format activity details
+        // Format activity details from database
         function formatActivityDetails(activity) {
-            if (activity.details) {
-                try {
-                    const details = JSON.parse(activity.details);
-                    if (details.order_number) {
-                        return `Order ${details.order_number}`;
-                    }
-                } catch (e) {
-                    // Fallback
+            if (activity.details && typeof activity.details === 'object') {
+                if (activity.details.order_number) {
+                    return `Order ${activity.details.order_number}`;
                 }
             }
             return activity.action;
         }
 
-        // Format date
+        // Format date from database timestamp
         function formatDate(dateString) {
             const date = new Date(dateString);
             const now = new Date();
@@ -652,12 +692,12 @@
             return date.toLocaleDateString();
         }
 
-        // Animate stats counters
+        // Animate stats counters from database values
         function animateCounters() {
             const counters = document.querySelectorAll('.stat-number');
             counters.forEach(counter => {
                 const target = parseFloat(counter.getAttribute('data-target'));
-                const isCurrency = counter.textContent.includes('$');
+                const isCurrency = counter.textContent.includes('$') || counter.getAttribute('data-target').includes('.');
                 const updateCounter = () => {
                     const start = 0;
                     const increment = target / 100;
@@ -667,12 +707,12 @@
                         if (isCurrency) {
                             counter.textContent = `$${current.toFixed(2)}`;
                         } else {
-                            counter.textContent = Math.ceil(current);
+                            counter.textContent = Math.floor(current);
                         }
                         if (current >= target) {
                             clearInterval(timer);
                             if (isCurrency) {
-                                counter.textContent = `$${target.toFixed(2)}`;
+                                counter.textContent = `$${parseFloat(target).toFixed(2)}`;
                             } else {
                                 counter.textContent = Math.floor(target);
                             }
@@ -724,6 +764,7 @@
         document.getElementById('logoutBtn').addEventListener('click', (e) => {
             e.preventDefault();
             if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('token');
                 localStorage.removeItem('userId');
                 localStorage.removeItem('userName');
                 window.location.href = '/index.html';
@@ -745,8 +786,8 @@
 
         // Initialize when DOM is loaded
         document.addEventListener('DOMContentLoaded', () => {
-            // Set a timeout to simulate loading
-            setTimeout(initDashboard, 1000);
+            // Check auth first, then load dashboard
+            initDashboard();
         });
     </script>
 </body>
