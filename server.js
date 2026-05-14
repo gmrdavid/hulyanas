@@ -25,10 +25,10 @@ app.options('*', (req, res) => {
 });
 
 app.use(express.json({ limit: '10mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static('public'));
 app.use('/user', express.static('user'));
 app.use('/admin', express.static('admin'));
-app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
+app.use('/images', express.static(path.join(__dirname, 'public/images')));
 
 // MySQL Connection Pool
 const pool = mysql.createPool({
@@ -49,33 +49,27 @@ const pool = mysql.createPool({
 const JWT_SECRET = process.env.JWT_SECRET || 'hulyanas_secret_key_2024_secure_change_this';
 
 // Multer setup
-    const storage = multer.diskStorage({
-        destination: async (req, file, cb) => {
-            const uploadDir = path.join(__dirname, 'public', 'images');
-            try {
-                await fs.mkdir(uploadDir, { recursive: true });
-                console.log(`📁 Saving to: ${uploadDir}`); // Debug
-                cb(null, uploadDir);
-            } catch (err) {
-                console.error('❌ Directory creation failed:', err);
-                cb(err, '');
-            }
-        },
-        filename: (req, file, cb) => {
-            const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
-            console.log(`🖼️  Saving file: ${uniqueName}`); // Debug
-            cb(null, uniqueName);
+const storage = multer.diskStorage({
+    destination: async (req, file, cb) => {
+        try {
+            await fs.mkdir('public/images', { recursive: true });
+            cb(null, 'public/images/');
+        } catch (err) {
+            cb(err, '');
         }
-    });
-
-    const upload = multer({ 
-        storage,
-        limits: { fileSize: 5 * 1024 * 1024 },
-        fileFilter: (req, file, cb) => {
-            if (file.mimetype.startsWith('image/')) cb(null, true);
-            else cb(new Error('Only image files'), false);
-        }
-    });
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname));
+    }
+});
+const upload = multer({ 
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) cb(null, true);
+        else cb(new Error('Only image files'), false);
+    }
+});
 
 // Auth middleware
 const authenticateToken = async (req, res, next) => {
@@ -484,8 +478,8 @@ app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
 app.post('/api/menu', authenticateToken, isAdmin, upload.single('image'), async (req, res) => {
     try {
         const { name, description, price, category, is_available } = req.body;
-        const image_url = req.file ? `/uploads/${req.file.filename}` : null;  // Fixed path!
-        
+        const image_url = req.file ? `/images/${req.file.filename}` : null;
+
         const conn = await pool.getConnection();
         const [result] = await conn.execute(
             `INSERT INTO menu_items (name, description, price, category, image_url, is_available)

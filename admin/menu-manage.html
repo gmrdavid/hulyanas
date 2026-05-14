@@ -538,28 +538,18 @@
         let currentEditId = null;
         let menuItems = [];
 
-        // ✅ FIXED: Load ALL menu items for admin (including unavailable)
+        // Load menu items from database - UPDATED
         async function loadMenuItems() {
             try {
                 // Use admin endpoint to show ALL items (including unavailable)
-                const token = localStorage.getItem('token');
-                const response = await fetch('/api/admin/menu', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
+                const response = await fetch('/api/menu');
+                if (!response.ok) throw new Error('Failed to fetch menu items');
                 menuItems = await response.json();
-                console.log(`📋 Admin loaded ${menuItems.length} menu items`); 
+                console.log(`📋 Loaded ${menuItems.length} menu items`); // Debug
                 renderMenuTable(menuItems);
             } catch (error) {
-                console.error('Error loading admin menu items:', error);
-                document.getElementById('menuItems').innerHTML = 
-                    '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#666;">Failed to load menu items. Please refresh the page.</td></tr>';
+                console.error('Error loading menu items:', error);
+                document.getElementById('menuItems').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#666;">Failed to load menu items. Please refresh the page.</td></tr>';
             }
         }
 
@@ -567,27 +557,24 @@
         function renderMenuTable(items) {
             const tbody = document.getElementById('menuItems');
             if (!items || items.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#666;">No menu items found. <button class="btn btn-primary" onclick="showAddModal()" style="margin-top:1rem;">Add First Item</button></td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#666;">No menu items found.</td></tr>';
                 return;
             }
             
             tbody.innerHTML = items.map(item => {
-                // ✅ Fixed image path handling
-                let imageSrc = '/images/default-menu.jpg'; // Default fallback
-                if (item.image_url && item.image_url.trim() !== '') {
-                    imageSrc = item.image_url.startsWith('http') ? item.image_url : `/images${item.image_url.replace(/^\/images/, '')}`;
-                }
+                const imageSrc = item.image_url || '/images/default-menu.jpg';
+                const cacheBustSrc = imageSrc + '?v=' + Date.now();
                 
                 return `
                     <tr data-id="${item.id}">
                         <td>
                             <img 
-                                src="${imageSrc}" 
+                                src="${cacheBustSrc}" 
                                 alt="${escapeHtml(item.name)}" 
                                 class="item-image"
                                 loading="lazy"
                                 data-original-src="${imageSrc}"
-                                onerror="handleImageError(this, '${imageSrc}')"
+                                onerror="handleImageError(this)"
                             >
                         </td>
                         <td>
@@ -622,12 +609,10 @@
             }).join('');
         }
 
-        // ✅ Enhanced image error handler
-        function handleImageError(img, originalSrc) {
-            console.warn(`❌ Image failed to load: ${originalSrc}`);
-            img.src = '/images/default-menu.jpg';
-            img.onerror = null;
-            img.alt = 'Image not available';
+        function handleImageError(img) {
+            const defaultImg = '/images/default-menu.jpg?v=' + Date.now();
+            img.src = defaultImg;
+            img.onerror = null; // Prevent infinite loop
         }
 
         // Event delegation for table actions (CRITICAL FIX)
