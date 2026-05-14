@@ -398,105 +398,183 @@
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.getElementById('registerForm');
-            const btn = form.querySelector('.btn');
-            const messageEl = document.getElementById('message');
+ <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('registerForm');
+    const btn = form.querySelector('.btn');
+    const messageEl = document.getElementById('message');
+    const API_BASE = 'http://localhost:3000/api'; // Change if deploying
 
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
+    // Real-time validation
+    const usernameInput = document.getElementById('username');
+    const emailInput = document.getElementById('email');
+    
+    usernameInput.addEventListener('blur', debounce(checkUsername, 500));
+    emailInput.addEventListener('blur', debounce(checkEmail, 500));
 
-                // Get form values
-                const fullName = document.getElementById('fullName').value.trim();
-                const phone = document.getElementById('phone').value.trim();
-                const username = document.getElementById('username').value.trim();
-                const email = document.getElementById('email').value.trim();
-                const password = document.getElementById('password').value;
-                const confirmPassword = document.getElementById('confirmPassword').value;
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
 
-                // Validation
-                if (!fullName || !username || !email || !password) {
-                    showMessage('Please fill in all required fields', 'error');
-                    return;
-                }
+        const fullName = document.getElementById('fullName').value.trim();
+        const phone = document.getElementById('phone').value.trim();
+        const username = document.getElementById('username').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
 
-                if (password.length < 6) {
-                    showMessage('Password must be at least 6 characters', 'error');
-                    return;
-                }
-
-                if (password !== confirmPassword) {
-                    showMessage('Passwords do not match', 'error');
-                    return;
-                }
-
-                // Email validation
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(email)) {
-                    showMessage('Please enter a valid email address', 'error');
-                    return;
-                }
-
-                // Simulate API call
-                const originalText = btn.innerHTML;
-                btn.classList.add('loading');
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
-
-                setTimeout(() => {
-                    btn.classList.remove('loading');
-                    btn.innerHTML = originalText;
-
-                    // Save to localStorage (demo)
-                    const user = {
-                        id: Date.now(),
-                        fullName,
-                        phone: phone || 'Not provided',
-                        username,
-                        email,
-                        role: 'customer',
-                        joined: new Date().toISOString()
-                    };
-
-                    localStorage.setItem('tempUser', JSON.stringify(user));
-                    showMessage('Account created successfully! Redirecting to login...', 'success');
-
-                    setTimeout(() => {
-                        window.location.href = 'login.html';
-                    }, 1500);
-                }, 2000);
-            });
-
-            // Real-time password match check
-            document.getElementById('confirmPassword').addEventListener('input', function() {
-                const password = document.getElementById('password').value;
-                const confirmPassword = this.value;
-                
-                if (confirmPassword && password !== confirmPassword) {
-                    this.style.borderColor = '#ef4444';
-                } else {
-                    this.style.borderColor = '#e0e0e0';
-                }
-            });
-        });
-
-        function showMessage(text, type) {
-            const msg = document.getElementById('message');
-            msg.textContent = text;
-            msg.className = `message ${type}`;
-            msg.style.display = 'block';
-            
-            setTimeout(() => {
-                msg.style.display = 'none';
-            }, 5000);
+        // Client-side validation
+        if (!fullName || !username || !email || !password) {
+            showMessage('Please fill in all required fields', 'error');
+            return;
         }
 
-        // Enter key support
-        document.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                document.getElementById('registerForm').dispatchEvent(new Event('submit'));
+        if (password.length < 6) {
+            showMessage('Password must be at least 6 characters', 'error');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            showMessage('Passwords do not match', 'error');
+            return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            showMessage('Please enter a valid email address', 'error');
+            return;
+        }
+
+        // Show loading
+        const originalText = btn.innerHTML;
+        btn.classList.add('loading');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
+
+        try {
+            const response = await fetch(`${API_BASE}/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    fullName,
+                    phone: phone || null,
+                    username,
+                    email,
+                    password
+                })
+            });
+
+            const data = await response.json();
+
+            btn.classList.remove('loading');
+            btn.innerHTML = originalText;
+
+            if (response.ok && data.success) {
+                showMessage('Account created successfully! Redirecting...', 'success');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 1500);
+            } else {
+                showMessage(data.error || 'Registration failed', 'error');
             }
+        } catch (error) {
+            btn.classList.remove('loading');
+            btn.innerHTML = originalText;
+            showMessage('Network error. Please check if server is running.', 'error');
+            console.error('Registration error:', error);
+        }
+    });
+
+    // Real-time password match check
+    document.getElementById('confirmPassword').addEventListener('input', function() {
+        const password = document.getElementById('password').value;
+        const confirmPassword = this.value;
+        
+        if (confirmPassword && password !== confirmPassword) {
+            this.style.borderColor = '#ef4444';
+        } else {
+            this.style.borderColor = '#e0e0e0';
+        }
+    });
+});
+
+async function checkUsername() {
+    const username = document.getElementById('username').value.trim();
+    if (username.length < 3) return;
+
+    try {
+        const response = await fetch('http://localhost:3000/api/check-username', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username })
         });
-    </script>
+        const data = await response.json();
+        
+        const input = document.getElementById('username');
+        if (data.exists) {
+            input.style.borderColor = '#ef4444';
+            showMessage('Username already exists', 'error');
+        } else {
+            input.style.borderColor = '#22c55e';
+        }
+    } catch (error) {
+        console.error('Username check failed:', error);
+    }
+}
+
+async function checkEmail() {
+    const email = document.getElementById('email').value.trim();
+    if (!email) return;
+
+    try {
+        const response = await fetch('http://localhost:3000/api/check-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const data = await response.json();
+        
+        const input = document.getElementById('email');
+        if (data.exists) {
+            input.style.borderColor = '#ef4444';
+            showMessage('Email already registered', 'error');
+        } else {
+            input.style.borderColor = '#22c55e';
+        }
+    } catch (error) {
+        console.error('Email check failed:', error);
+    }
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+function showMessage(text, type) {
+    const msg = document.getElementById('message');
+    msg.textContent = text;
+    msg.className = `message ${type}`;
+    msg.style.display = 'block';
+    
+    setTimeout(() => {
+        msg.style.display = 'none';
+    }, 5000);
+}
+
+// Enter key support
+document.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        document.getElementById('registerForm').dispatchEvent(new Event('submit'));
+    }
+});
+</script>
 </body>
 </html>
