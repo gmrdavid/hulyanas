@@ -649,226 +649,53 @@ app.delete('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res) 
 });
 
 // Analytics
-// 🚀 FIXED Analytics endpoint - COMPLETE REWRITE
 app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
     try {
-        console.log('📊 Analytics request:', req.query);
         const { days = 'all', status = 'all' } = req.query;
-        
-        let whereClause = 'WHERE 1=1';
-        let filteredWhereClause = 'WHERE o.status IN ("preparing", "out_for_delivery", "delivered")';
+        let filteredWhereClause = "WHERE o.status NOT IN ('cancelled', 'pending')";
+        let normalWhereClause = 'WHERE 1=1';
         const params = [];
-        const filteredParams = [];
 
-        // ✅ DYNAMIC DATE FILTERING
         if (days !== 'all') {
-            const dateFilter = 'o.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)';
-            whereClause += ` AND ${dateFilter}`;
-            filteredWhereClause += ` AND ${dateFilter}`;
-            params.push(parseInt(days));
-            filteredParams.push(parseInt(days));
+            filteredWhereClause += ' AND o.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)';
+            normalWhereClause += ' AND o.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)';
+            params.push(days);
         }
 
-        // ✅ DYNAMIC STATUS FILTERING
         if (status !== 'all') {
-            whereClause += ` AND o.status = ?`;
-            filteredWhereClause += ` AND o.status = ?`;
+            filteredWhereClause += ' AND o.status = ?';
+            normalWhereClause += ' AND o.status = ?';
             params.push(status);
-            filteredParams.push(status);
         }
 
         const conn = await pool.getConnection();
-
-        // 🚀 COMPREHENSIVE ANALYTICS QUERIES
-        const analyticsQueries = [
-            // 1. Total Orders (completed orders)
+        const queries = [
             `SELECT COUNT(*) as total_orders FROM orders o ${filteredWhereClause}`,
-            
-            // 2. Total Revenue (completed orders only)
             `SELECT COALESCE(SUM(total_amount), 0) as total_revenue FROM orders o ${filteredWhereClause}`,
-            
-            // 3. Active Customers (unique customers with orders)
-            `SELECT COUNT(DISTINCT o.user_id) as active_customers FROM orders o ${filteredWhereClause}`,
-            
-            // 4. Average Order Value
+            `SELECT COUNT(DISTINCT user_id) as active_customers FROM orders o ${filteredWhereClause}`,
             `SELECT COALESCE(AVG(total_amount), 0) as avg_order_value FROM orders o ${filteredWhereClause}`,
-            
-            // 5. Order Trends by Day of Week (ALL orders in period)
-            `SELECT 
-                DAYNAME(o.created_at) as day_name, 
-                COUNT(*) as order_count,
-                MAX(o.created_at) as last_order_date
-             FROM orders o ${whereClause} 
-             GROUP BY DAYNAME(o.created_at) 
-             ORDER BY FIELD(day_name, 'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')`,
-            
-            // 6. Revenue by Status
-            `SELECT 
-                o.status, 
-                COALESCE(SUM(o.total_amount), 0) as total_amount,
-                COUNT(*) as order_count
-             FROM orders o ${whereClause} 
-             GROUP BY o.status 
-             ORDER BY total_amount DESC`,
-            
-            // 7. Top Products (with proper JOINs)
-            `SELECT 
-                mi.name, 
-                mi.price,
-                COALESCE(SUM(oi.quantity), 0) as quantity,
-                COALESCE(SUM(oi.quantity * oi.unit_price), 0) as total_sales
-             FROM order_items oi 
-             JOIN menu_items mi ON oi.menu_item_id = mi.id 
-             JOIN orders o ON oi.order_id = o.id ${whereClause}
-             GROUP BY oi.menu_item_id, mi.name, mi.price
-             ORDER BY quantity DESC 
-             LIMIT 5`,
-            
-            // 8. Customer Orders
-            `SELECT 
-                CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as customer_name,
-                u.username,
-                COUNT(o.id) as order_count,
-                COALESCE(SUM(o.total_amount), 0) as total_spent
-             FROM orders o 
-             LEFT JOIN users u ON o.user_id = u.id ${whereClause}
-             GROUP BY o.user_id, u.username, u.first_name, u.last_name
-             ORDER BY order_count DESC 
-             LIMIT 5`
+            `SELECT DAYNAME(o.created_at) as day_name, COUNT(*) as order_count FROM orders o ${normalWhereClause} GROUP BY day_name ORDER BY FIELD(day_name, 'Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday')`,
+            `SELECT o.status, COALESCE(SUM(o.total_amount), 0) as total_amount FROM orders o ${normalWhereClause} GROUP BY o.status ORDER BY total_amount DESC`,
+            `SELECT mi.name, SUM(oi.quantity) as quantity FROM order_items oi JOIN menu_items mi ON oi.menu_item_id = mi.id JOIN orders o ON oi.order_id = o.id ${normalWhereClause} GROUP BY oi.menu_item_id, mi.name ORDER BY quantity DESC LIMIT 5`,
+            `SELECT u.username, COUNT(o.id) as order_count FROM orders o JOIN users u ON o.user_id = u.id ${normalWhereClause} GROUP BY o.user_id, u.username ORDER BY order_count DESC LIMIT 5`
         ];
 
-        console.log('🔍 Executing analytics queries...');
-        const results = await Promise.all(
-            analyticsQueries.map((query, index) => {
-                console.log(`Query ${index + 1}:`, query.replace(/[\n\s]+/g, ' ').substring(0, 100) + '...');
-                return conn.execute(query, index < 4 ? filteredParams : params);
-            })
-        );
-
+        const results = await Promise.all(queries.map(q => conn.execute(q, params)));
         conn.release();
 
-        // 🚀 CALCULATE DERIVED METRICS
-        const peakDayResult = results[4][0][0]; // Order trends result
-        const revenueStatusResult = results[5][0][0]; // Revenue by status
-        const topProductResult = results[6][0][0]; // Top products
-        const topCustomerResult = results[7][0][0]; // Top customer
-
-        // ✅ EXTRACT PEAK DAY (day with highest orders)
-        const orderTrends = results[4][0];
-        const peakDay = orderTrends.length > 0 
-            ? `${orderTrends[0].day_name} (${orderTrends[0].order_count} orders)`
-            : 'No data';
-
-        // ✅ TOP STATUS (highest revenue)
-        const topStatus = revenueStatusResult.length > 0 
-            ? `${revenueStatusResult[0].status} (₱${parseFloat(revenueStatusResult[0].total_amount).toLocaleString('en-PH', {minimumFractionDigits: 2})})`
-            : 'No data';
-
-        // ✅ DELIVERED REVENUE specifically
-        const deliveredRevenueResult = results[5][0].find(row => row.status === 'delivered');
-        const deliveredRevenue = deliveredRevenueResult 
-            ? parseFloat(deliveredRevenueResult.total_amount) 
-            : 0;
-
-        // ✅ BEST SELLER PRODUCT
-        const bestSeller = topProductResult 
-            ? `${topProductResult.name} (${topProductResult.quantity} sold)`
-            : 'No data';
-
-        // ✅ TOP CUSTOMER
-        const topCustomer = topCustomerResult 
-            ? `${topCustomerResult.customer_name || topCustomerResult.username} (${topCustomerResult.order_count} orders)`
-            : 'No data';
-
-        // ✅ REPEAT CUSTOMERS (customers with 2+ orders)
-        const repeatCustomersQuery = `
-            SELECT COUNT(DISTINCT o.user_id) as repeat_count 
-            FROM orders o ${whereClause} 
-            GROUP BY o.user_id 
-            HAVING COUNT(o.id) >= 2
-        `;
-        const [repeatResult] = await conn.execute(repeatCustomersQuery, params);
-        const repeatCustomers = parseInt(repeatResult[0]?.repeat_count || 0);
-
-        // ✅ GROWTH PERCENTAGES (compare to previous period)
-        let growthData = { order_growth: 0, revenue_growth: 0, customer_growth: 0 };
-        try {
-            const prevDays = days === 'all' ? 30 : parseInt(days); // Default to 30 days for all-time
-            const prevFilteredWhere = `WHERE o.status IN ("preparing", "out_for_delivery", "delivered") 
-                                       AND o.created_at < DATE_SUB(NOW(), INTERVAL ? DAY)`;
-            const prevNormalWhere = `WHERE o.created_at < DATE_SUB(NOW(), INTERVAL ? DAY)`;
-
-            const prevQueries = [
-                `SELECT COUNT(*) as prev_orders FROM orders o ${prevFilteredWhere}`,
-                `SELECT COALESCE(SUM(total_amount), 0) as prev_revenue FROM orders o ${prevFilteredWhere}`,
-                `SELECT COUNT(DISTINCT user_id) as prev_customers FROM orders o ${prevFilteredWhere}`
-            ];
-
-            const prevResults = await Promise.all(prevQueries.map(q => conn.execute(q, [prevDays])));
-            
-            const currentOrders = parseInt(results[0][0][0].total_orders);
-            const currentRevenue = parseFloat(results[1][0][0].total_revenue);
-            const currentCustomers = parseInt(results[2][0][0].active_customers);
-
-            const prevOrders = parseInt(prevResults[0][0][0].prev_orders);
-            const prevRevenue = parseFloat(prevResults[1][0][0].prev_revenue);
-            const prevCustomers = parseInt(prevResults[2][0][0].prev_customers);
-
-            growthData = {
-                order_growth: prevOrders > 0 ? Math.round(((currentOrders - prevOrders) / prevOrders) * 100) : 100,
-                revenue_growth: prevRevenue > 0 ? Math.round(((currentRevenue - prevRevenue) / prevRevenue) * 100) : 100,
-                customer_growth: prevCustomers > 0 ? Math.round(((currentCustomers - prevCustomers) / prevCustomers) * 100) : 100
-            };
-        } catch (growthError) {
-            console.warn('⚠️ Growth calculation failed:', growthError.message);
-        }
-
-        // ✅ FINAL COMPREHENSIVE RESPONSE
-        const analyticsData = {
-            // Core metrics
-            total_orders: parseInt(results[0][0][0].total_orders || 0),
-            total_revenue: parseFloat(results[1][0][0].total_revenue || 0),
-            active_customers: parseInt(results[2][0][0].active_customers || 0),
-            avg_order_value: parseFloat(results[3][0][0].avg_order_value || 0),
-            
-            // Derived metrics (FIXED!)
-            peak_day: peakDay,
-            top_status: topStatus,
-            delivered_revenue: deliveredRevenue,
-            top_product_name: bestSeller,
-            total_items_sold: parseInt(topProductResult?.quantity || 0),
-            top_customer: topCustomer,
-            repeat_customers: repeatCustomers,
-            
-            // Growth percentages (FIXED!)
-            order_growth: growthData.order_growth,
-            revenue_growth: growthData.revenue_growth,
-            customer_growth: growthData.customer_growth,
-            
-            // Chart data
+        res.json({
+            total_orders: parseInt(results[0][0][0].total_orders),
+            total_revenue: parseFloat(results[1][0][0].total_revenue),
+            active_customers: parseInt(results[2][0][0].active_customers),
+            avg_order_value: parseFloat(results[3][0][0].avg_order_value),
             order_trends: results[4][0],
             revenue_by_status: results[5][0],
             top_products: results[6][0],
             customer_orders: results[7][0]
-        };
-
-        console.log('✅ Analytics SUCCESS:', {
-            orders: analyticsData.total_orders,
-            revenue: analyticsData.total_revenue,
-            peakDay: analyticsData.peak_day,
-            topStatus: analyticsData.top_status
         });
-
-        res.json(analyticsData);
-
     } catch (error) {
-        console.error('🚨 ANALYTICS ERROR:', error);
-        console.error('Query params:', req.query);
-        res.status(500).json({ 
-            error: 'Analytics failed', 
-            details: error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-        });
+        console.error('🚨 Analytics error:', error);
+        res.status(500).json({ error: 'Analytics failed' });
     }
 });
 
