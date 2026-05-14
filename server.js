@@ -707,7 +707,7 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
             SELECT COALESCE(AVG(o.total_amount), 0) AS avg_order_value
             FROM orders o
             ${whereClause}
-            AND LOWER(o.status) = 'delivered'
+            AND LOWER(o.status) = 'delivered' OR LOWER(o.status) = 'preparing'
         `, params);
 
         // =========================
