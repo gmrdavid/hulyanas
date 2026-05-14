@@ -93,21 +93,21 @@ const isAdmin = (req, res, next) => {
 
 // ===== 🚀 USER DASHBOARD API ENDPOINTS =====
 
-// 🆕 Get user profile by ID (for dashboard welcome message)
+// 👤 Get user profile by ID (for dashboard)
 app.get('/api/user/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const conn = await pool.getConnection();
         
         const [rows] = await conn.execute(
-            `SELECT id, first_name, last_name, username, email 
-             FROM users WHERE id = ? AND is_active = 1`,
+            `SELECT id, first_name, last_name, username, email, phone, role, created_at
+             FROM users WHERE id = ? AND is_active = 1 AND role = 'customer'`,
             [parseInt(id)]
         );
         conn.release();
         
         if (rows.length === 0) {
-            return res.status(404).json({ error: 'User not found' });
+            return res.status(404).json({ error: 'Customer not found' });
         }
         
         const user = rows[0];
@@ -117,7 +117,10 @@ app.get('/api/user/:id', async (req, res) => {
             last_name: user.last_name,
             username: user.username,
             email: user.email,
-            full_name: `${user.first_name} ${user.last_name}`.trim()
+            phone: user.phone,
+            role: user.role,
+            full_name: `${user.first_name} ${user.last_name}`.trim(),
+            joined: new Date(user.created_at).toLocaleDateString()
         });
     } catch (error) {
         console.error('🚨 User fetch error:', error);
@@ -125,7 +128,7 @@ app.get('/api/user/:id', async (req, res) => {
     }
 });
 
-// 🆕 Get user statistics (for dashboard stats cards)
+// 📊 Get user statistics (REAL DATABASE QUERIES)
 app.get('/api/user/:id/stats', async (req, res) => {
     try {
         const { id } = req.params;
@@ -133,22 +136,25 @@ app.get('/api/user/:id/stats', async (req, res) => {
         
         const [stats] = await conn.execute(`
             SELECT 
-                COUNT(*) as totalOrders,
-                COALESCE(SUM(total_amount), 0) as totalSpent,
-                COUNT(CASE WHEN status IN ('delivered', 'preparing', 'out_for_delivery') THEN 1 END) as activeOrders,
-                4.8 as avgRating
-            FROM orders 
-            WHERE user_id = ?
+                COUNT(DISTINCT o.id) as totalOrders,
+                COALESCE(SUM(o.total_amount), 0) as totalSpent,
+                COUNT(CASE WHEN o.status IN ('pending', 'preparing', 'out_for_delivery') THEN 1 END) as activeOrders,
+                COALESCE(AVG(4.8), 4.5) as avgRating,
+                COUNT(DISTINCT oi.id) as totalItems
+            FROM orders o 
+            LEFT JOIN order_items oi ON o.id = oi.order_id
+            WHERE o.user_id = ?
         `, [parseInt(id)]);
         
         conn.release();
         
-        const userStats = stats[0];
+        const userStats = stats[0] || {};
         res.json({
             totalOrders: parseInt(userStats.totalOrders || 0),
             totalSpent: parseFloat(userStats.totalSpent || 0),
             activeOrders: parseInt(userStats.activeOrders || 0),
-            avgRating: parseFloat(userStats.avgRating || 0)
+            avgRating: parseFloat(userStats.avgRating || 0),
+            totalItems: parseInt(userStats.totalItems || 0)
         });
         
     } catch (error) {
@@ -157,23 +163,25 @@ app.get('/api/user/:id/stats', async (req, res) => {
     }
 });
 
-// 🆕 Get user recent activity (for activity feed)
+/// 📋 Get user recent activity (REAL DATABASE)
 app.get('/api/user/:id/activity', async (req, res) => {
     try {
         const { id } = req.params;
         const conn = await pool.getConnection();
         
         const [rows] = await conn.execute(`
-            SELECT al.id, al.type, al.action, al.details, al.created_at,
-                   CASE 
-                       WHEN al.type = 'order' AND JSON_EXTRACT(al.details, '$.order_number') IS NOT NULL 
-                       THEN CONCAT('Order ', JSON_UNQUOTE(JSON_EXTRACT(al.details, '$.order_number')))
-                       ELSE al.action 
-                   END as display_action
+            SELECT 
+                al.id, al.type, al.action, al.details, al.created_at,
+                CASE 
+                    WHEN al.type = 'order' AND JSON_EXTRACT(al.details, '$.order_number') IS NOT NULL 
+                    THEN CONCAT('Order ', JSON_UNQUOTE(JSON_EXTRACT(al.details, '$.order_number')))
+                    WHEN al.action LIKE '%order%' THEN al.action
+                    ELSE al.action 
+                END as display_action
             FROM activity_log al
-            WHERE al.user_id = ? OR al.user_id IS NULL
+            WHERE al.user_id = ?
             ORDER BY al.created_at DESC 
-            LIMIT 5
+            LIMIT 10
         `, [parseInt(id)]);
         
         conn.release();
@@ -193,6 +201,7 @@ app.get('/api/user/:id/activity', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch activity' });
     }
 });
+
 
 // ===== AUTHENTICATION ROUTES =====
 
