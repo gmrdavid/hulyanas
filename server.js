@@ -648,7 +648,6 @@ app.delete('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res) 
     }
 });
 
-// Analytics
 app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
     let conn;
 
@@ -678,7 +677,8 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
         // =========================
         const [totalOrdersResult] = await conn.execute(`
             SELECT COUNT(*) AS total_orders
-            FROM orders o ${whereClause}
+            FROM orders o
+            ${whereClause}
         `, params);
 
         // =========================
@@ -688,7 +688,7 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
             SELECT COALESCE(SUM(o.total_amount), 0) AS total_revenue
             FROM orders o
             ${whereClause}
-            AND LOWER(o.status) = 'delivered' 
+            AND LOWER(o.status) = 'delivered'
         `, params);
 
         // =========================
@@ -707,7 +707,7 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
             SELECT COALESCE(AVG(o.total_amount), 0) AS avg_order_value
             FROM orders o
             ${whereClause}
-            AND LOWER(o.status) = 'delivered' 
+            AND LOWER(o.status) = 'delivered'
         `, params);
 
         // =========================
@@ -899,74 +899,6 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
             details: error.message
         });
 
-    } finally {
-        if (conn) conn.release();
-    }
-});
-
-// Export routes
-app.post('/api/export/:type', authenticateToken, isAdmin, async (req, res) => {
-    let conn;
-    try {
-        const { type } = req.params;
-        conn = await pool.getConnection();
-
-        if (type === 'orders') {
-            const [rows] = await conn.execute(`
-                SELECT o.id, o.order_number, o.status, o.payment_method,
-                       CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as customer,
-                       u.phone, o.total_amount, DATE_FORMAT(o.created_at, '%Y-%m-%d %H:%i') as order_date
-                FROM orders o LEFT JOIN users u ON o.user_id = u.id ORDER BY o.created_at DESC`);
-
-            const csvHeader = ['ID', 'Order #', 'Customer', 'Phone', 'Status', 'Payment', 'Total', 'Date'];
-            const csvRows = rows.map(row => [
-                row.id || '',
-                row.order_number || '',
-                `"${(row.customer || 'Walk-in').trim().replace(/"/g, '""')}"`,
-                row.phone || '',
-                row.status || '',
-                row.payment_method || '',
-                parseFloat(row.total_amount || 0).toFixed(2),
-                row.order_date || ''
-            ]);
-
-            const csvContent = [csvHeader, ...csvRows].map(row => row.join(',')).join('\r\n');
-            
-            res.set({
-                'Content-Type': 'text/csv; charset=utf-8',
-                'Content-Disposition': `attachment; filename="Hulyanas-Orders-${new Date().toISOString().split('T')[0]}.csv"`
-            });
-            return res.status(200).send(csvContent);
-
-        } else if (type === 'sales') {
-            const [rows] = await conn.execute(`
-                SELECT DATE_FORMAT(o.created_at, '%Y-%m-%d') as sale_date,
-                       o.order_number, o.status, ROUND(o.total_amount, 2) as order_total
-                FROM orders o WHERE o.status IN ('delivered', 'preparing') ORDER BY o.created_at DESC`);
-
-            const csvHeader = ['Date', 'Order #', 'Status', 'Total'];
-            const csvRows = rows.map(row => [
-                row.sale_date || '',
-                row.order_number || '',
-                row.status || '',
-                parseFloat(row.order_total || 0).toFixed(2)
-            ]);
-
-            const csvContent = [csvHeader, ...csvRows].map(row => row.join(',')).join('\r\n');
-            
-            res.set({
-                'Content-Type': 'text/csv; charset=utf-8',
-                'Content-Disposition': `attachment; filename="Hulyanas-Sales-${new Date().toISOString().split('T')[0]}.csv"`
-            });
-            return res.status(200).send(csvContent);
-
-        } else {
-            return res.status(400).json({ error: 'Invalid type. Use: orders, sales' });
-        }
-
-    } catch (error) {
-        console.error('🚨 Export error:', error);
-        res.status(500).json({ error: 'Export failed' });
     } finally {
         if (conn) conn.release();
     }
