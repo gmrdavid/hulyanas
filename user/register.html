@@ -404,214 +404,124 @@ document.addEventListener('DOMContentLoaded', function() {
     const btn = form.querySelector('.btn');
     const messageEl = document.getElementById('message');
     
-    // Your existing backend API base URL (adjust if needed)
-    const API_BASE = 'http://localhost:3000/api';
+    // Relative API path (works from /user/register.html)
+    const API_BASE = '/api';
 
-    // Real-time validation with your backend
-    const usernameInput = document.getElementById('username');
-    const emailInput = document.getElementById('email');
-    
-    usernameInput.addEventListener('blur', debounce(checkUsernameAvailability, 500));
-    emailInput.addEventListener('blur', debounce(checkEmailAvailability, 500));
+    form.addEventListener('submit', handleRegister);
 
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-
-        // Get form values
-        const fullName = document.getElementById('fullName').value.trim();
-        const phone = document.getElementById('phone').value.trim();
-        const username = document.getElementById('username').value.trim();
-        const email = document.getElementById('email').value.trim();
-        const password = document.getElementById('password').value;
-        const confirmPassword = document.getElementById('confirmPassword').value;
-
-        // Client-side validation
-        if (!fullName || !username || !email || !password) {
-            showMessage('Please fill in all required fields', 'error');
-            return;
-        }
-
-        if (password.length < 6) {
-            showMessage('Password must be at least 6 characters', 'error');
-            return;
-        }
-
-        if (password !== confirmPassword) {
-            showMessage('Passwords do not match', 'error');
-            return;
-        }
-
-        // Email validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            showMessage('Please enter a valid email address', 'error');
-            return;
-        }
-
-        // Show loading state
-        const originalText = btn.innerHTML;
-        btn.classList.add('loading');
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
-        btn.disabled = true;
-
-        try {
-            // Split full name for your backend
-            const nameParts = fullName.split(' ');
-            const firstName = nameParts[0] || '';
-            const lastName = nameParts.slice(1).join(' ') || '';
-
-            const response = await fetch(`${API_BASE}/register`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    username,
-                    email,
-                    password,
-                    first_name: firstName,
-                    last_name: lastName,
-                    phone: phone || null
-                })
-            });
-
-            const data = await response.json();
-
-            // Reset button
-            btn.classList.remove('loading');
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-
-            if (response.ok) {
-                showMessage('Account created successfully! Redirecting to login...', 'success');
-                
-                // Store temp user info for login redirect (optional)
-                sessionStorage.setItem('justRegistered', 'true');
-                
-                setTimeout(() => {
-                    window.location.href = 'login.html';
-                }, 1500);
-            } else {
-                showMessage(data.error || 'Registration failed. Please try again.', 'error');
-            }
-        } catch (error) {
-            console.error('Registration error:', error);
-            
-            // Reset button
-            btn.classList.remove('loading');
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-            
-            showMessage('Network error. Please check if server is running.', 'error');
-        }
-    });
-
-    // Real-time password match check
+    // Real-time password confirmation
     document.getElementById('confirmPassword').addEventListener('input', function() {
         const password = document.getElementById('password').value;
-        const confirmPassword = this.value;
+        const confirm = this.value;
         
-        if (confirmPassword && password !== confirmPassword) {
+        if (confirm && password !== confirm) {
             this.style.borderColor = '#ef4444';
-            this.style.boxShadow = '0 0 0 2px rgba(239, 68, 68, 0.2)';
+            this.style.boxShadow = '0 0 0 2px rgba(239,68,68,0.2)';
         } else {
             this.style.borderColor = '#e0e0e0';
             this.style.boxShadow = 'none';
         }
     });
 
-    // Focus styles
-    const inputs = form.querySelectorAll('input');
-    inputs.forEach(input => {
-        input.addEventListener('focus', function() {
-            this.parentNode.querySelector('label').style.color = '#1a1a1a';
-        });
+    // Enter key support
+    document.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !btn.classList.contains('loading')) {
+            form.dispatchEvent(new Event('submit'));
+        }
     });
 });
 
-// Check username availability (real-time)
-async function checkUsernameAvailability() {
-    const username = document.getElementById('username').value.trim();
-    const input = document.getElementById('username');
+async function handleRegister(e) {
+    e.preventDefault();
     
-    if (username.length < 3) {
-        input.style.borderColor = '#e0e0e0';
+    const form = e.target;
+    const btn = form.querySelector('.btn');
+    const originalText = btn.innerHTML;
+    
+    // Get clean form data
+    const formData = {
+        fullName: document.getElementById('fullName').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        username: document.getElementById('username').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value,
+        confirmPassword: document.getElementById('confirmPassword').value
+    };
+
+    // Client-side validation
+    const errors = validateForm(formData);
+    if (errors.length > 0) {
+        showMessage(errors[0], 'error');
         return;
     }
 
-    try {
-        const response = await fetch(`${API_BASE}/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                username,
-                email: '',
-                password: 'temp',
-                first_name: 'temp',
-                last_name: 'temp'
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (response.status === 400 && data.error?.includes('exists')) {
-            input.style.borderColor = '#ef4444';
-            input.style.boxShadow = '0 0 0 2px rgba(239, 68, 68, 0.2)';
-            showMessage('Username already taken', 'error');
-        } else {
-            input.style.borderColor = '#22c55e';
-            input.style.boxShadow = '0 0 0 2px rgba(34, 197, 94, 0.2)';
-        }
-    } catch (error) {
-        console.error('Username check failed:', error);
-    }
-}
-
-// Check email availability (real-time)
-async function checkEmailAvailability() {
-    const email = document.getElementById('email').value.trim();
-    const input = document.getElementById('email');
-    
-    if (!email) return;
+    // Show loading
+    btn.classList.add('loading');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
+    btn.disabled = true;
 
     try {
-        const response = await fetch(`${API_BASE}/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                username: 'temp',
-                email,
-                password: 'temp',
-                first_name: 'temp',
-                last_name: 'temp'
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (response.status === 400 && data.error?.includes('exists')) {
-            input.style.borderColor = '#ef4444';
-            input.style.boxShadow = '0 0 0 2px rgba(239, 68, 68, 0.2)';
-            showMessage('Email already registered', 'error');
-        } else {
-            input.style.borderColor = '#22c55e';
-            input.style.boxShadow = '0 0 0 2px rgba(34, 197, 94, 0.2)';
-        }
-    } catch (error) {
-        console.error('Email check failed:', error);
-    }
-}
-
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
+        // Transform data for your backend
+        const nameParts = formData.fullName.split(' ').filter(Boolean);
+        const payload = {
+            username: formData.username,
+            email: formData.email,
+            password: formData.password,
+            first_name: nameParts[0] || '',
+            last_name: nameParts.slice(1).join(' ') || '',
+            phone: formData.phone || null
         };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
+
+        const response = await fetch('/api/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        // Reset button
+        btn.classList.remove('loading');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+
+        if (response.ok) {
+            showMessage('✅ Account created successfully! Redirecting...', 'success');
+            sessionStorage.setItem('justRegistered', formData.username);
+            setTimeout(() => window.location.href = 'login.html', 1500);
+        } else {
+            showMessage(data.error || 'Registration failed', 'error');
+        }
+    } catch (error) {
+        console.error('Registration error:', error);
+        btn.classList.remove('loading');
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        showMessage('Network error. Please try again.', 'error');
+    }
+}
+
+function validateForm(data) {
+    const errors = [];
+    
+    if (!data.fullName) errors.push('Full name is required');
+    if (!data.username) errors.push('Username is required');
+    if (!data.email) errors.push('Email is required');
+    if (!data.password) errors.push('Password is required');
+    
+    if (data.password && data.password.length < 6) {
+        errors.push('Password must be at least 6 characters');
+    }
+    
+    if (data.password && data.confirmPassword && data.password !== data.confirmPassword) {
+        errors.push('Passwords do not match');
+    }
+    
+    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+        errors.push('Please enter a valid email');
+    }
+    
+    return errors;
 }
 
 function showMessage(text, type) {
@@ -620,18 +530,10 @@ function showMessage(text, type) {
     msg.className = `message ${type}`;
     msg.style.display = 'block';
     
-    // Auto-hide after 5 seconds
     setTimeout(() => {
         msg.style.display = 'none';
     }, 5000);
 }
-
-// Enter key support
-document.addEventListener('keypress', function(e) {
-    if (e.key === 'Enter' && !btn.classList.contains('loading')) {
-        document.getElementById('registerForm').dispatchEvent(new Event('submit'));
-    }
-});
 </script>
 </body>
 </html>
