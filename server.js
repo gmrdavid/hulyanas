@@ -688,7 +688,7 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
             SELECT COALESCE(SUM(o.total_amount), 0) AS total_revenue
             FROM orders o
             ${whereClause}
-            AND LOWER(o.status) = 'delivered'
+            AND LOWER(o.status) = 'delivered' OR LOWER(o.status) = 'preparing'
         `, params);
 
         // =========================
