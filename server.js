@@ -8,7 +8,11 @@ const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
 const fs = require('fs').promises;
+
 const { Pool } = require('pg');
+const pool = new Pool({connectionString: process.env.DB_NAME,
+    ssl: { rejectUnauthorized: false }
+});
 
 const app = express();
 const PORT = process.env.PORT;
