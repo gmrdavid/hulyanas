@@ -211,7 +211,7 @@ app.post('/api/register', async (req, res) => {
         const { username, email, password, first_name, last_name, phone } = req.body;
         
         if (!username || !email || !password) {
-            return res.status(400).json({ error: 'Username, email, and password required' });
+            return res.status(400).json({ error: 'All fields required' });
         }
         
         const hashedPassword = await bcrypt.hash(password, 12);
@@ -227,8 +227,10 @@ app.post('/api/register', async (req, res) => {
             await conn.commit();
             
             res.status(201).json({ 
+                success: true,
                 message: 'Registered successfully',
-                userId: result.insertId 
+                userId: result.insertId,
+                redirect: '/user/dashboard.html'
             });
         } catch (err) {
             await conn.rollback();
@@ -246,8 +248,8 @@ app.post('/api/register', async (req, res) => {
 });
 
 
-
 // Login
+// Login with ROLE REDIRECTION
 app.post('/api/login', async (req, res) => {
     try {
         const { username, password } = req.body;
@@ -275,19 +277,29 @@ app.post('/api/login', async (req, res) => {
         }
         
         const token = jwt.sign(
-            { id: user.id, username: user.username, role: user.role }, 
+            { 
+                id: user.id, 
+                username: user.username, 
+                role: user.role,
+                email: user.email 
+            }, 
             JWT_SECRET, 
             { expiresIn: '24h' }
         );
         
+        const redirectUrl = user.role === 'admin' ? 
+            '/admin/dashboard.html' : '/user/dashboard.html';
+        
         res.json({
+            success: true,
             token,
             user: {
                 id: user.id,
                 username: user.username,
                 email: user.email,
                 role: user.role,
-                full_name: `${user.first_name} ${user.last_name}`.trim()
+                full_name: `${user.first_name} ${user.last_name}`.trim(),
+                redirect: redirectUrl
             }
         });
     } catch (error) {
@@ -297,11 +309,12 @@ app.post('/api/login', async (req, res) => {
 });
 
 // Profile
+// Profile (authenticated)
 app.get('/api/profile', authenticateToken, async (req, res) => {
     try {
         const conn = await pool.getConnection();
         const [rows] = await conn.execute(
-            `SELECT id, username, email, first_name, last_name, phone, created_at, is_active
+            `SELECT id, username, email, first_name, last_name, phone, role, created_at, is_active
              FROM users WHERE id = ?`,
             [req.user.id]
         );
@@ -319,6 +332,7 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
             first_name: user.first_name,
             last_name: user.last_name,
             phone: user.phone,
+            role: user.role,
             full_name: `${user.first_name} ${user.last_name}`.trim(),
             created_at: user.created_at
         });
@@ -344,7 +358,11 @@ app.put('/api/profile', authenticateToken, async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
         
-        res.json({ message: 'Profile updated successfully' });
+        res.json({ 
+            success: true, 
+            message: 'Profile updated successfully',
+            redirect: '/user/dashboard.html'
+        });
     } catch (error) {
         console.error('🚨 Profile update error:', error);
         res.status(500).json({ error: error.message });
@@ -357,7 +375,14 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
         const conn = await pool.getConnection();
         const [rows] = await conn.execute(
             `SELECT o.*, 
-                    TIME_FORMAT(TIMEDIFF(NOW(), o.created_at), '%i min ago') as time_ago
+                    TIME_FORMAT(TIMEDIFF(NOW(), o.created_at), '%i min ago') as time_ago,
+                    CASE o.status
+                        WHEN 'pending' THEN '🕐 Pending'
+                        WHEN 'preparing' THEN '🔥 Preparing'
+                        WHEN 'out_for_delivery' THEN '🚚 Out for Delivery'
+                        WHEN 'delivered' THEN '✅ Delivered'
+                        WHEN 'cancelled' THEN '❌ Cancelled'
+                    END as status_display
              FROM orders o 
              WHERE o.user_id = ? 
              ORDER BY o.created_at DESC`,
