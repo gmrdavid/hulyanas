@@ -742,10 +742,15 @@
             // ✅ FIX: use POST for both, with method override
             formData.append('_method', currentEditId ? 'PUT' : 'POST');
 
+            const token = localStorage.getItem('token');
+
             const url = currentEditId ? `/api/menu/${currentEditId}` : '/api/menu';
 
             const response = await fetch(url, {
-                method: 'POST',
+                method: currentEditId ? 'PUT' : 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
                 body: formData
             });
 
