@@ -741,19 +741,36 @@ app.get('/api/menu', async (req, res) => {
         conn = await pool.getConnection();
 
         const [rows] = await conn.execute(`
-            SELECT *
+            SELECT 
+                id,
+                name,
+                description,
+                price,
+                category,
+                image_url,
+                is_available,
+                created_at
             FROM menu_items
             WHERE is_available = 1
             ORDER BY created_at DESC
         `);
 
-        res.json(rows);
+        // Optional: normalize image URLs (safety check)
+        const formatted = rows.map(item => ({
+            ...item,
+            image_url: item.image_url || null
+        }));
+
+        res.json(formatted);
 
     } catch (error) {
-        console.error('🚨 Menu fetch error:', error);
+        console.error('🚨 Menu fetch error:', {
+            message: error.message,
+            stack: error.stack
+        });
 
         res.status(500).json({
-            error: error.message
+            error: 'Failed to fetch menu items'
         });
 
     } finally {
