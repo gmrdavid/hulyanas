@@ -566,7 +566,8 @@
                                     Total: $${parseFloat(order.total_amount).toFixed(2)}
                                 </div>
                                 <div class="order-actions">
-                                    <button class="btn btn-secondary">
+                                    <button class="btn btn-secondary" 
+                                        onclick="showInvoice(${order.id}, '${order.order_number}', ${order.total_amount})">
                                         <i class="fas fa-receipt"></i>
                                         Invoice
                                     </button>
@@ -634,6 +635,40 @@
                 
             } catch (error) {
                 console.error('Failed to load order items:', error);
+            }
+        }
+
+        async function showInvoice(orderId, orderNumber, totalAmount) {
+            try {
+                const items = await apiRequest(`/api/orders/${orderId}/items`);
+
+                let html = `
+                    <div style="padding:20px;font-family:Arial">
+                        <h2>Invoice - ${orderNumber}</h2>
+                        <hr/>
+                `;
+
+                items.forEach(i => {
+                    html += `
+                        <p>
+                            ${i.name} - ${i.quantity} x $${i.price_at_order}
+                            = $${(i.quantity * i.price_at_order).toFixed(2)}
+                        </p>
+                    `;
+                });
+
+                html += `
+                    <hr/>
+                    <h3>Total: $${parseFloat(totalAmount).toFixed(2)}</h3>
+                    </div>
+                `;
+
+                const w = window.open('', '_blank');
+                w.document.write(html);
+                w.document.close();
+
+            } catch (err) {
+                alert('Failed to load invoice');
             }
         }
 
