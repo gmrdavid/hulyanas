@@ -46,7 +46,9 @@ const pool = mysql.createPool({
 });
 
 // JWT Secret
-const JWT_SECRET = process.env.JWT_SECRET || 'hulyanas_secret_key_2024_secure_change_this';
+if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET is missing in .env');}
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Multer setup
 const storage = multer.diskStorage({
@@ -93,7 +95,7 @@ const isAdmin = (req, res, next) => {
 
 // ===== 🚀 USER DASHBOARD API ENDPOINTS =====
 // 👤 Get user profile by ID (for dashboard)
-app.get('/api/user/:id', async (req, res) => {
+app.get('/api/user/:id', authenticateToken, async (req, res) => {
     let conn;
 
     try {
@@ -570,7 +572,7 @@ app.get('/api/admin/recent-orders', authenticateToken, isAdmin, async (req, res)
                    o.status, o.total_amount,
                    CASE WHEN TIMESTAMPDIFF(MINUTE, o.created_at, NOW()) < 60 
                         THEN CONCAT(TIMESTAMPDIFF(MINUTE, o.created_at, NOW()), ' min ago')
-                        ELSE CONCAT(FLOOR(TIMESTAMPDIFF(HOUR, o.created_at, NOW()) / 60), ' hr ago')
+                        ELSE CONCAT(TIMESTAMPDIFF(HOUR, o.created_at, NOW()), ' hr ago')
                    END as time_ago
             FROM orders o JOIN users u ON o.user_id = u.id 
             ORDER BY o.created_at DESC LIMIT 10`);
