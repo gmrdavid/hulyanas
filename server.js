@@ -649,29 +649,34 @@ app.post('/menu', upload.single('image'), async (req, res) => {
     }
 });
 
-app.put('/api/menu/:id', authenticateToken, isAdmin, upload.single('image'), async (req, res) => {
+app.put('/menu/:id', upload.single('image'), async (req, res) => {
     try {
-        const { id } = req.params;
-        const { name, description, price, category, is_available } = req.body;
+        const { name, price } = req.body;
+        const id = req.params.id;
 
-        const conn = await pool.getConnection();
-        const [oldItem] = await conn.execute(`SELECT image_url FROM menu_items WHERE id=?`, [id]);
-        let image_url = oldItem[0]?.image_url || '';
+        // get existing image first
+        const [rows] = await db.execute(
+            "SELECT image FROM menu WHERE id = ?",
+            [id]
+        );
 
+        let image = rows[0].image;
+
+        // if new image uploaded → replace
         if (req.file) {
-            image_url = `/images/${req.file.filename}`;
+            image = req.file.filename;
         }
 
-        await conn.execute(
-            `UPDATE menu_items SET name=?, description=?, price=?, category=?, image_url=?, is_available=?, updated_at=NOW() WHERE id=?`,
-            [name, description, parseFloat(price), category, image_url, parseInt(is_available), id]
+        await db.execute(
+            "UPDATE menu SET name = ?, price = ?, image = ? WHERE id = ?",
+            [name, price, image, id]
         );
-        conn.release();
 
-        res.json({ message: 'Menu item updated successfully' });
-    } catch (error) {
-        console.error('🚨 Update menu error:', error);
-        res.status(500).json({ error: error.message });
+        res.json({ message: "Menu updated successfully" });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
     }
 });
 
