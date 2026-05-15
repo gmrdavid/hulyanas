@@ -525,11 +525,9 @@
     // Initialize
     document.addEventListener('DOMContentLoaded', async function () {
         await loadMenuFromDatabase();
-
         updateCartDisplay();
         renderCategories();
         renderMenuItems(menuData);
-
         staggerAnimations();
         setupEventListeners();
     });
@@ -543,19 +541,25 @@
                 throw new Error('Failed to fetch menu');
             }
 
-            const data = await response.json();
-
-            // only active items
-            menuData = data.filter(item => item.is_available == 1);
+            const apiResponse = await response.json();
+            
+            // ✅ Fix: Handle both flat array and {data: []} response
+            const rawData = apiResponse.data || apiResponse;
+            
+            // ✅ Only available items
+            menuData = Array.isArray(rawData) 
+                ? rawData.filter(item => item.is_available == 1)
+                : [];
+                
+            console.log('✅ Loaded menu items:', menuData.length);
 
         } catch (error) {
             console.error('🚨 Error loading menu:', error);
-
             document.getElementById('menuItems').innerHTML = `
                 <div class="empty-state fade-in-up">
                     <i class="fas fa-exclamation-circle"></i>
                     <h3>Failed to load menu</h3>
-                    <p>Please try again later</p>
+                    <p>Please refresh the page</p>
                 </div>
             `;
         }
