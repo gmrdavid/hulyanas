@@ -568,7 +568,7 @@ app.post('/api/menu', authenticateToken, isAdmin, upload.single('image'), async 
         const [result] = await conn.execute(
             `INSERT INTO menu_items (name, description, price, category, image_url, is_available)
              VALUES (?, ?, ?, ?, ?, ?)`,
-            [name, description, parseFloat(price), category || 'main', image_url, is_available === 'true']
+            [name, description, parseFloat(price), category || 'main', image_url, parseInt(is_available)]
         );
         conn.release();
 
@@ -597,7 +597,7 @@ app.put('/api/menu/:id', authenticateToken, isAdmin, upload.single('image'), asy
 
         await conn.execute(
             `UPDATE menu_items SET name=?, description=?, price=?, category=?, image_url=?, is_available=?, updated_at=NOW() WHERE id=?`,
-            [name, description, parseFloat(price), category, image_url, is_available === 'true', id]
+            [name, description, parseFloat(price), category, image_url, parseInt(is_available), id]
         );
         conn.release();
 
