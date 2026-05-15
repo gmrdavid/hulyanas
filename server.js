@@ -762,6 +762,45 @@ app.delete('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res) 
     }
 });
 
+// Edit User Role (Admin only)
+app.put('/api/admin/users/:id/role', authenticateToken, isAdmin, async (req, res) => {
+    let conn;
+
+    try {
+        const { id } = req.params;
+        const { role } = req.body;
+
+        console.log('Update request:', { id, role });
+
+        if (!role) {
+            return res.status(400).json({ error: 'Role required' });
+        }
+
+        conn = await pool.getConnection();
+
+        const [result] = await conn.execute(
+            'UPDATE users SET role = ? WHERE id = ?',
+            [role, id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        res.json({ success: true, message: 'Role updated successfully' });
+
+    } catch (error) {
+        console.error('DATABASE ERROR:', error);
+        res.status(500).json({
+            error: error.message
+        });
+
+    } finally {
+        if (conn) conn.release();
+    }
+});
+
+
 app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
     let conn;
 
