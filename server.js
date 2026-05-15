@@ -1373,6 +1373,20 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
     }
 });
 
+// ===============================
+// CONFIG / HELPERS
+// ===============================
+
+const normalizeImageUrl = (url) => {
+    if (!url) return null;
+
+    // already full Cloudinary URL
+    if (url.startsWith('http')) return url;
+
+    // fallback (old uploads or broken data)
+    return `https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/${url}`;
+};
+
 // Helper function
 function formatTimeAgo(date) {
     const now = new Date();
