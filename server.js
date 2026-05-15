@@ -515,6 +515,60 @@ app.get('/api/orders/:id/items', authenticateToken, async (req, res) => {
     }
 });
 
+// ADD THIS after your existing orders routes
+app.post('/api/orders', authenticateToken, async (req, res) => {
+    let conn;
+    try {
+        const { items, total, delivery_address, phone, payment_method } = req.body;
+        
+        if (!items || !items.length || !total || !delivery_address || !phone) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        conn = await pool.getConnection();
+        await conn.beginTransaction();
+
+        // Generate unique order number
+        const [result] = await conn.execute(
+            `INSERT INTO orders (order_number, user_id, total_amount, delivery_address, phone, payment_method, status) 
+             VALUES (CONCAT('#ORD-', YEAR(NOW()), '-', LPAD((SELECT COALESCE(MAX(CAST(SUBSTRING(order_number, 10) AS UNSIGNED)), 0) + 1 FROM orders), 3, '0')), ?, ?, ?, ?, ?, 'pending')`,
+            [req.user.id, total, delivery_address, phone, payment_method]
+        );
+
+        const orderId = result.insertId;
+
+        // Add order items
+        for (const item of items) {
+            await conn.execute(
+                `INSERT INTO order_items (order_id, menu_item_id, quantity, price_at_order) 
+                 VALUES (?, ?, ?, ?)`,
+                [orderId, item.id || item.menu_item_id, item.quantity, item.price]
+            );
+        }
+
+        await conn.commit();
+
+        // Log activity
+        await conn.execute(
+            `INSERT INTO activity_log (user_id, type, action, details) VALUES (?, 'order', 'New order placed', ?)`,
+            [req.user.id, JSON.stringify({ order_number: `#ORD-${new Date().getFullYear()}-${String(orderId).padStart(3, '0')}` })]
+        );
+
+        res.json({ 
+            success: true, 
+            order_number: `#ORD-${new Date().getFullYear()}-${String(orderId).padStart(3, '0')}`,
+            order_id: orderId 
+        });
+
+    } catch (error) {
+        console.error('🚨 Order creation error:', error);
+        if (conn) await conn.rollback();
+        res.status(500).json({ error: 'Failed to place order' });
+    } finally {
+        if (conn) conn.release();
+    }
+});
+
 // ===== MENU ROUTES =====
 app.get('/api/menu', async (req, res) => {
     let conn;
