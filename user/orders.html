@@ -601,52 +601,39 @@
         }
 
         // Load order items for specific order
+        // Replace the existing loadOrderItems function with this:
         async function loadOrderItems(orderId) {
             try {
                 const orderItemsContainer = document.querySelector(`[data-order-id="${orderId}"]`);
-                const token = getToken();
+                const items = await apiRequest(`/api/orders/${orderId}/items`);
                 
-                const response = await fetch(`${API_BASE}/api/admin/orders/${orderId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    }
-                });
-
-                if (!response.ok) throw new Error('Failed to fetch order items');
-
-                const order = await response.json();
+                if (items.length === 0) {
+                    orderItemsContainer.innerHTML = `
+                        <div style="padding: 2rem; text-align: center; color: #666;">
+                            <i class="fas fa-info-circle"></i>
+                            <p>No items in this order</p>
+                        </div>
+                    `;
+                    return;
+                }
                 
-                // Fetch order items and menu items
-                const connResponse = await fetch(`${API_BASE}/api/admin/orders/${orderId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                    }
-                });
-                
-                // For now, show placeholder items since we need order_items table data
-                // This will be enhanced when you add the order items endpoint
-                orderItemsContainer.innerHTML = `
+                orderItemsContainer.innerHTML = items.map(item => `
                     <div class="order-item">
                         <div class="item-info">
-                            <div class="item-icon">🍽️</div>
+                            <div class="item-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                                ${item.image_url ? '' : '🍽️'}
+                            </div>
                             <div class="item-details">
-                                <h4>Main Course Items</h4>
-                                <p>Loading details...</p>
+                                <h4>${item.name}</h4>
+                                <p>${item.quantity}x $${parseFloat(item.price_at_order).toFixed(2)}</p>
                             </div>
                         </div>
-                        <div class="item-price">$${order.total_amount}</div>
+                        <div class="item-price">$${(item.quantity * item.price_at_order).toFixed(2)}</div>
                     </div>
-                `;
+                `).join('');
                 
             } catch (error) {
                 console.error('Failed to load order items:', error);
-                document.querySelector(`[data-order-id="${orderId}"]`).innerHTML = `
-                    <div style="padding: 2rem; text-align: center; color: #666;">
-                        <i class="fas fa-info-circle"></i>
-                        <p>Items loading...</p>
-                    </div>
-                `;
             }
         }
 
