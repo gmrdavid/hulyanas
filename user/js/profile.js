@@ -85,12 +85,15 @@ async function updatePassword(e) {
     
     try {
         const response = await fetch('/api/change-password', {
-            method: 'PUT',
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ currentPassword, newPassword })
+            body: JSON.stringify({
+                current_password: currentPassword,
+                new_password: newPassword
+            })
         });
 
         if (response.ok) {
