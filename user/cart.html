@@ -7,7 +7,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Your existing CSS stays exactly the same */
+        /* Your existing CSS stays EXACTLY the same - no changes */
         * {
             margin: 0;
             padding: 0;
@@ -495,8 +495,8 @@
                         <span>Total:</span>
                         <span id="total">$0.00</span>
                     </div>
-                    <button class="btn btn-primary full-width" id="checkoutBtn" style="display: none;">
-                        Proceed to Checkout
+                    <button class="btn btn-primary" id="checkoutBtn" style="display: none;">
+                        <i class="fas fa-credit-card"></i>Proceed to Checkout
                     </button>
                 </div>
             </div>
@@ -527,133 +527,232 @@
                         </select>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary full-width">Place Order</button>
+                <button type="submit" class="btn btn-primary">Place Order</button>
             </form>
         </div>
     </div>
 
     <script>
-    // API Configuration
-    const API_BASE = 'https://hulyanas.onrender.com'; // ✅ Production
+        // ✅ FIXED: Fully database-connected cart (no localStorage)
+        const API_BASE = 'https://hulyanas.onrender.com';
 
-    function getToken() { return localStorage.getItem('token'); }
+        function getToken() { 
+            return localStorage.getItem('token'); 
+        }
 
-    async function apiRequest(endpoint, options = {}) {
-        const token = getToken();
-        if (!token) { window.location.href = 'login.html'; return; }
-        
-        try {
-            const response = await fetch(`${API_BASE}${endpoint}`, {
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                ...options
-            });
-            if (!response.ok) {
-                if (response.status === 401) { localStorage.removeItem('token'); window.location.href = 'login.html'; return; }
-                throw new Error(await response.text());
+        async function apiRequest(endpoint, options = {}) {
+            const token = getToken();
+            if (!token) { 
+                window.location.href = 'login.html'; 
+                return; 
             }
-            return await response.json();
-        } catch (error) {
-            console.error('API Error:', error);
-            throw error;
-        }
-    }
-
-    let cart = [];
-
-    async function loadCart() {
-        try {
-            const data = await apiRequest('/api/cart');
-            cart = data.items || [];
-        } catch (error) {
-            console.error('Load cart failed:', error);
-            cart = [];
-        }
-    }
-
-    function renderCart() {
-        const cartItemsEl = document.getElementById('cartItems');
-        const cartTotalEl = document.getElementById('cartTotal');
-        const subtotalEl = document.getElementById('subtotal');
-        const totalEl = document.getElementById('total');
-        const checkoutBtn = document.getElementById('checkoutBtn');
-
-        if (cart.length === 0) {
-            cartItemsEl.innerHTML = `<div class="cart-empty fade-in-up">
-                <i class="fas fa-shopping-cart"></i>
-                <h3>Your cart is empty</h3>
-                <p>Add some delicious items from the menu to get started</p>
-                <a href="menu.html" class="btn btn-primary" style="margin-top: 1.5rem;">Browse Menu</a>
-            </div>`;
-            cartTotalEl.textContent = '$0.00';
-            subtotalEl.textContent = '$0.00';
-            totalEl.textContent = '$0.00';
-            checkoutBtn.style.display = 'none';
-            return;
+            
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    headers: { 
+                        'Authorization': `Bearer ${token}`, 
+                        'Content-Type': 'application/json' 
+                    },
+                    ...options
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 401) { 
+                        localStorage.removeItem('token'); 
+                        window.location.href = 'login.html'; 
+                        return; 
+                    }
+                    throw new Error(await response.text());
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
         }
 
-        let total = 0;
-        cartItemsEl.innerHTML = cart.map(item => {
-            const itemTotal = item.price * item.quantity;
-            total += itemTotal;
-            return `
-                <div class="cart-item fade-in-up" data-menu-id="${item.menu_item_id}">
-                    <img src="${item.image_url || 'https://via.placeholder.com/80x80/1a1a1a/ffffff?text=🍽️'}" alt="${item.name}" class="item-image">
-                    <div class="item-details">
-                        <div class="item-name">${item.name}</div>
-                        <div class="item-price">$${item.price.toFixed(2)}</div>
-                        <div class="quantity-controls">
-                            <button class="quantity-btn" onclick="updateQuantity(${item.menu_item_id}, -1)">−</button>
-                            <span class="quantity">${item.quantity}</span>
-                            <button class="quantity-btn" onclick="updateQuantity(${item.menu_item_id}, 1)">+</button>
-                        </div>
-                    </div>
-                    <a href="#" class="remove-item" onclick="removeItem(${item.menu_item_id}); return false;" title="Remove">
-                        <i class="fas fa-times"></i>
-                    </a>
+        let cart = [];
+
+        // ✅ FIXED: Load cart from your existing server /api/cart endpoint
+        async function loadCart() {
+            try {
+                const data = await apiRequest('/api/cart');
+                cart = data.items || data || []; // Handle both response formats
+                console.log('✅ Cart loaded:', cart);
+            } catch (error) {
+                console.error('Load cart failed:', error);
+                cart = [];
+            }
+        }
+
+        function renderCart() {
+            const cartItemsEl = document.getElementById('cartItems');
+            const cartTotalEl = document.getElementById('cartTotal');
+            const subtotalEl = document.getElementById('subtotal');
+            const totalEl = document.getElementById('total');
+            const checkoutBtn = document.getElementById('checkoutBtn');
+
+            if (cart.length === 0) {
+                cartItemsEl.innerHTML = `<div class="cart-empty fade-in-up">
+                    <i class="fas fa-shopping-cart"></i>
+                    <h3>Your cart is empty</h3>
+                    <p>Add some delicious items from the menu to get started</p>
+                    <a href="menu.html" class="btn btn-primary" style="margin-top: 1.5rem;">Browse Menu</a>
                 </div>`;
-        }).join('');
-
-        const formattedTotal = total.toFixed(2);
-        cartTotalEl.textContent = `$${formattedTotal}`;
-        subtotalEl.textContent = `$${formattedTotal}`;
-        totalEl.textContent = `$${formattedTotal}`;
-        checkoutBtn.style.display = 'block';
-    }
-
-    window.updateQuantity = async (menuItemId, change) => {
-        const item = cart.find(i => i.menu_item_id == menuItemId);
-        if (item) {
-            item.quantity += change;
-            if (item.quantity <= 0) {
-                await fetch(`${API_BASE}/api/cart/${menuItemId}`, {
-                    method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` }
-                });
-            } else {
-                await fetch(`${API_BASE}/api/cart/${menuItemId}`, {
-                    method: 'PUT',
-                    headers: { 'Authorization': `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ quantity: item.quantity })
-                });
+                cartTotalEl.textContent = '$0.00';
+                subtotalEl.textContent = '$0.00';
+                totalEl.textContent = '$0.00';
+                checkoutBtn.style.display = 'none';
+                return;
             }
+
+            let total = 0;
+            cartItemsEl.innerHTML = cart.map(item => {
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
+                return `
+                    <div class="cart-item fade-in-up" data-menu-id="${item.menu_item_id || item.id}">
+                        <img src="${item.image_url ? `https://hulyanas.onrender.com${item.image_url}` : 'https://via.placeholder.com/80x80/1a1a1a/ffffff?text=🍽️'}" alt="${item.name}" class="item-image">
+                        <div class="item-details">
+                            <div class="item-name">${item.name}</div>
+                            <div class="item-price">$${item.price.toFixed(2)}</div>
+                            <div class="quantity-controls">
+                                <button class="quantity-btn" onclick="updateQuantity(${item.menu_item_id || item.id}, -1)">−</button>
+                                <span class="quantity">${item.quantity}</span>
+                                <button class="quantity-btn" onclick="updateQuantity(${item.menu_item_id || item.id}, 1)">+</button>
+                            </div>
+                        </div>
+                        <a href="#" class="remove-item" onclick="removeItem(${item.menu_item_id || item.id}); return false;" title="Remove">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    </div>`;
+            }).join('');
+
+            const formattedTotal = total.toFixed(2);
+            cartTotalEl.textContent = `$${formattedTotal}`;
+            subtotalEl.textContent = `$${formattedTotal}`;
+            totalEl.textContent = `$${formattedTotal}`;
+            checkoutBtn.style.display = 'block';
+        }
+
+        // ✅ FIXED: Global functions for onclick handlers
+        window.updateQuantity = async (menuItemId, change) => {
+            try {
+                const item = cart.find(i => (i.menu_item_id || i.id) == menuItemId);
+                if (item) {
+                    const newQuantity = item.quantity + change;
+                    if (newQuantity <= 0) {
+                        await apiRequest(`/api/cart/${menuItemId}`, { method: 'DELETE' });
+                    } else {
+                        await apiRequest(`/api/cart/${menuItemId}`, {
+                            method: 'PUT',
+                            body: JSON.stringify({ quantity: newQuantity })
+                        });
+                    }
+                    await loadCart();
+                    renderCart();
+                }
+            } catch (error) {
+                console.error('Update quantity failed:', error);
+            }
+        };
+
+        window.removeItem = async (menuItemId) => {
+            try {
+                await apiRequest(`/api/cart/${menuItemId}`, { method: 'DELETE' });
+                await loadCart();
+                renderCart();
+            } catch (error) {
+                console.error('Remove item failed:', error);
+            }
+        };
+
+        // ✅ Checkout functionality (creates order from cart)
+        async function handleCheckout() {
+            try {
+                const deliveryAddress = document.getElementById('deliveryAddress').value;
+                const phone = document.getElementById('deliveryPhone').value;
+                const paymentMethod = document.getElementById('paymentMethod').value;
+
+                if (!deliveryAddress || !phone) {
+                    alert('Please fill in all required fields');
+                    return;
+                }
+
+                const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+                const response = await apiRequest('/api/orders', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        items: cart.map(item => ({
+                            id: item.menu_item_id || item.id,
+                            quantity: item.quantity,
+                            price: item.price
+                        })),
+                        total: total.toFixed(2),
+                        delivery_address: deliveryAddress,
+                        phone: phone,
+                        payment_method: paymentMethod
+                    })
+                });
+
+                if (response.success) {
+                    // Clear cart after successful order
+                    await apiRequest('/api/cart', { method: 'DELETE' });
+                    alert(`Order placed successfully! Order #${response.order_number}`);
+                    window.location.href = 'orders.html';
+                }
+            } catch (error) {
+                console.error('Checkout failed:', error);
+                alert('Checkout failed. Please try again.');
+            }
+        }
+
+        // Modal handling
+        function initModal() {
+            const modal = document.getElementById('checkoutModal');
+            const checkoutBtn = document.getElementById('checkoutBtn');
+            const closeBtn = document.querySelector('.close');
+            const form = document.getElementById('checkoutForm');
+
+            checkoutBtn.addEventListener('click', () => {
+                modal.style.display = 'block';
+            });
+
+            closeBtn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+
+            window.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                handleCheckout();
+            });
+        }
+
+        // Logout
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!getToken()) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
             await loadCart();
             renderCart();
-        }
-    };
-
-    window.removeItem = async (menuItemId) => {
-        await fetch(`${API_BASE}/api/cart/${menuItemId}`, {
-            method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` }
+            initModal();
         });
-        await loadCart();
-        renderCart();
-    };
-
-    // Modal + Checkout (keep your existing code here...)
-    document.addEventListener('DOMContentLoaded', async () => {
-        if (!getToken()) window.location.href = 'login.html';
-        await loadCart();
-        renderCart();
-    });
     </script>
 </body>
 </html>
