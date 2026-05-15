@@ -630,7 +630,7 @@ app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Menu management (Admin only)
-app.post('/menu', upload.single('image_url'), async (req, res) => {
+app.post('/menu', upload.single('image'), async (req, res) => {
     try {
         const { name, price } = req.body;
 
@@ -649,12 +649,11 @@ app.post('/menu', upload.single('image_url'), async (req, res) => {
     }
 });
 
-app.put('/menu/:id', upload.single('image_url'), async (req, res) => {
+app.put('/menu/:id', upload.single('image'), async (req, res) => {
     try {
         const { name, price } = req.body;
         const id = req.params.id;
 
-        // get existing image first
         const [rows] = await db.execute(
             "SELECT image_url FROM menu WHERE id = ?",
             [id]
@@ -662,9 +661,9 @@ app.put('/menu/:id', upload.single('image_url'), async (req, res) => {
 
         let image_url = rows[0].image_url;
 
-        // if new image uploaded → replace
+        // if admin uploads new image
         if (req.file) {
-            image = req.file.filename;
+            image_url = req.file.filename;
         }
 
         await db.execute(
