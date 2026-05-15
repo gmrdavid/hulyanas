@@ -1,61 +1,203 @@
-document.addEventListener('DOMContentLoaded', async function() {
-    await checkAdminAuth();
-    await loadDashboardStats();
-});
+        // Animate counters
+        function animateCounters(data) {
+            const menuEl = document.getElementById('menuCount');
+            const orderEl = document.getElementById('orderCount');
+            const revenueEl = document.getElementById('revenueCount');
+            const userEl = document.getElementById('userCount');
 
-async function checkAdminAuth() {
-    const token = localStorage.getItem('token');
-    const user = JSON.parse(localStorage.getItem('user'));
-    
-    if (!token || !user || user.role !== 'admin') {
-        window.location.href = 'login.html';
-    }
+            [menuEl, orderEl, userEl].forEach((el, i) => {
+                const targets = [data.menuItems, data.totalOrders, data.totalUsers];
+                let current = 0;
+                const target = targets[i];
+                const increment = target / 50;
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= target) {
+                        el.textContent = Math.floor(target).toLocaleString();
+                        clearInterval(timer);
+                        return;
+                    }
+                    el.textContent = Math.floor(current).toLocaleString();
+                }, 20);
+            });
 
-    document.getElementById('adminLogout').addEventListener('click', () => {
-        localStorage.clear();
-        window.location.href = '../index.html';
-    });
-}
+            // Revenue animation
+            let currentRev = 0;
+                const targetRev = data.revenue;
+                const revIncrement = targetRev / 50;
 
-async function loadDashboardStats() {
-    const token = localStorage.getItem('token');
-    
-    // Menu items
-    const menuResponse = await fetch('/api/admin/menu', {
-        headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const menuItems = await menuResponse.json();
-    document.getElementById('totalMenuItems').textContent = menuItems.length;
+                const revTimer = setInterval(() => {
+                    currentRev += revIncrement;
 
-    // Orders
-    const ordersResponse = await fetch('/api/admin/orders', {
-        headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const orders = await ordersResponse.json();
-    document.getElementById('totalOrders').textContent = orders.length;
+                    if (currentRev >= targetRev) {
+                        revenueEl.textContent = `₱${targetRev.toLocaleString(undefined, {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0
+                        })}`;
+                        
+                        clearInterval(revTimer);
+                        return;
+                    }
 
-    // Revenue
-    const totalRevenue = orders.reduce((sum, order) => sum + parseFloat(order.total_amount), 0);
-    document.getElementById('totalRevenue').textContent = `$${totalRevenue.toFixed(2)}`;
+                    revenueEl.textContent = `₱${Math.floor(currentRev).toLocaleString()}`;
+                }, 20);
+        }
 
-    // Users
-    const usersResponse = await fetch('/api/admin/users', {
-        headers: { 'Authorization': `Bearer ${token}` }
-    });
-    const users = await usersResponse.json();
-    document.getElementById('totalUsers').textContent = users.length;
+        // Load admin stats
+        async function loadAdminStats() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/admin/stats', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const data = await response.json();
+                
+                document.getElementById('menuCount').setAttribute('data-target', data.menuItems);
+                document.getElementById('orderCount').setAttribute('data-target', data.totalOrders);
+                document.getElementById('revenueCount').setAttribute('data-target', data.revenue);
+                document.getElementById('userCount').setAttribute('data-target', data.totalUsers);
+                
+                animateCounters(data);
+                console.log('✅ Stats loaded:', data);
+            } catch (error) {
+                console.error('Stats error:', error);
+            }
+        }
 
-    // Recent orders
-    const recentOrdersContainer = document.getElementById('recentOrders');
-    const recentOrders = orders.slice(0, 5).map(order => `
-        <div class="order-item">
-            <div class="order-info">
-                <strong>#${order.id}</strong>
-                <span>${order.full_name || order.username}</span>
-            </div>
-            <div class="order-status ${order.status}">${order.status}</div>
-            <div>$${order.total_amount}</div>
-        </div>
-    `).join('');
-    recentOrdersContainer.innerHTML = recentOrders;
-}
+        async function loadRecentOrders() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/admin/recent-orders', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const orders = await response.json();
+                
+                const tbody = document.getElementById('recentOrders');
+                if (orders.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:3rem;color:#999;">No recent orders found</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = orders.map(order => `
+                    <tr data-order-id="${order.id}">
+                        <td><strong>#${order.order_number || 'N/A'}</strong></td>
+                        <td>${order.customer || 'Unknown'}</td>
+
+                        <td>
+                            <span class="order-status status-${order.status}">
+                                ${(order.status || 'unknown').replace(/_/g, ' ')}
+                            </span>
+                        </td>
+
+                        <td>
+                            <strong>₱${Number(order.total_amount || 0).toFixed(2)}</strong>
+                        </td>
+
+                        <td>${order.time_ago || 'N/A'}</td>
+                    </tr>
+                `).join('');
+                
+                console.log('✅ Orders loaded:', orders.length);
+                
+            } catch (error) {
+                console.error('Orders error:', error);
+                document.getElementById('recentOrders').innerHTML = 
+                    '<tr><td colspan="5" style="text-align:center;padding:3rem;color:#666;">Failed to load orders. Please refresh.</td></tr>';
+            }
+        }
+
+        // Activity feed
+        async function loadActivityFeed() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/admin/activity', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const activities = await response.json();
+                
+                const feed = document.getElementById('activityFeed');
+                if (activities.length === 0) {
+                    feed.innerHTML = '<div style="text-align:center;padding:2rem;color:#999;">No recent activity</div>';
+                    return;
+                }
+                
+                feed.innerHTML = activities.map(activity => `
+                    <div class="activity-item">
+                        <div class="activity-icon ${activity.type}">
+                            <i class="fas fa-${activity.type === 'order' ? 'shopping-cart' : 
+                                activity.type === 'user' ? 'user-plus' : activity.type}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <h4>${activity.message}</h4>
+                            <p>${activity.time}</p>
+                        </div>
+                    </div>
+                `).join('');
+                console.log('✅ Activity loaded:', activities.length);
+            } catch (error) {
+                console.error('Activity error:', error);
+                document.getElementById('activityFeed').innerHTML = 
+                    '<div style="text-align:center;padding:2rem;color:#666;">Failed to load activity feed</div>';
+            }
+        }
+
+        // Toast notification
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position:fixed;top:20px;right:20px;background:#d4edda;color:#155724;
+                padding:1rem 2rem;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.1);
+                z-index:3000;transform:translateX(400px);transition:all 0.3s ease;font-weight:500;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.style.transform = 'translateX(0)', 100);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.querySelector('.navbar');
+            navbar.style.background = window.scrollY > 50 ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.98)';
+        });
+
+        // Logout handler
+        document.getElementById('logoutBtn').addEventListener('click', (e) => {
+            e.preventDefault();
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('token');
+                window.location.href = '/index.html';
+            }
+        });
+
+        // 🚀 MAIN INITIALIZATION
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🔥 Loading Hulyanas Admin Dashboard...');
+            
+            // Auto-login if no token
+            if (!localStorage.getItem('token')) {
+                try {
+                    console.log('🔑 Attempting auto-login...');
+                    const loginRes = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: 'admin', password: 'password' })
+                    }); 
+                    const loginData = await loginRes.json();
+                    localStorage.setItem('token', loginData.token);
+                    console.log('✅ Auto-login successful');
+                } catch (e) {
+                    console.log('ℹ️ No auto-login available');
+                }
+            }
+            // Load all dashboard data in parallel
+            document.body.classList.add('loading');
+            await Promise.all([
+                loadAdminStats(),
+                loadRecentOrders(),
+                loadActivityFeed()
+            ]);
+            document.body.classList.remove('loading');
+            
+            console.log('✅ Dashboard fully loaded! ✨');
+        });
