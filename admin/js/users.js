@@ -165,6 +165,11 @@ function renderUsersTable(filteredUsers = users) {
                         <button class="action-btn action-view" onclick="viewUser(${user.id})" title="View">
                             <i class="fas fa-eye"></i>
                         </button>
+
+                        <button class="action-btn action-edit" onclick="editUser(${user.id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+
                         <button class="action-btn action-delete" onclick="deleteUser(${user.id})" title="Delete">
                             <i class="fas fa-trash"></i>
                         </button>
@@ -203,6 +208,20 @@ function viewUser(id) {
         }) : 'Unknown';
 
     openModal('viewModal');
+}
+
+// Edit User (placeholder)
+function editUser(id) {
+    const user = users.find(u => u.id === id);
+
+    if (!user) {
+        alert('User not found');
+        return;
+    }
+
+    console.log('Editing user:', user);
+
+    // You can open your edit modal here
 }
 
 // Delete User
