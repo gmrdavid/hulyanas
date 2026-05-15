@@ -175,7 +175,8 @@ async function deleteItem(id) {
     try {
         const response = await fetch(`/api/menu/${id}`, {
             method: 'DELETE',
-            headers: {Authorization: `Bearer ${localStorage.getItem('token')}`}
+            headers: {Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
         });
 
         if (!response.ok) {
@@ -209,12 +210,11 @@ async function handleMenuFormSubmit(e) {
         const url = currentEditId ? `/api/menu/${currentEditId}` : '/api/menu';
 
         const token = localStorage.getItem('token');
-        console.log('🔑 Token found:', token ? 'YES' : 'NO');
 
         const response = await fetch(url, {
             method: currentEditId ? 'PUT' : 'POST',
             headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`
+                Authorization: `Bearer ${token}`
             },
             body: formData
         });
