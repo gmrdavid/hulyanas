@@ -29,7 +29,7 @@ function renderMenuTable(items) {
     }
     
     tbody.innerHTML = items.map(item => {
-        const imageSrc = item.image_url || '/images/default-menu.jpg';
+        const imageSrc = item.image_url && item.image_url.startsWith('http')? item.image_url: '/images/default-menu.jpg';
         const cacheBustSrc = imageSrc;
         
         return `
