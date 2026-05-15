@@ -445,42 +445,32 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
 });
 
 //Edit User Role (Admin only)
-
 app.put('/api/admin/users/:id/role', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
         const { role } = req.body;
 
-        console.log('Updating user role:', { id, role });
+        console.log('Update request:', { id, role });
 
-        if (!role) {
-            return res.status(400).json({ error: 'Role is required' });
-        }
-
-        const allowedRoles = ['customer', 'staff', 'admin'];
-        if (!allowedRoles.includes(role)) {
-            return res.status(400).json({ error: 'Invalid role' });
-        }
+        if (!role) return res.status(400).json({ error: 'Role required' });
 
         const [result] = await db.query(
             'UPDATE users SET role = ? WHERE id = ?',
             [role, id]
         );
 
+        console.log('DB result:', result);
+
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        res.json({
-            success: true,
-            message: 'User role updated successfully'
-        });
+        res.json({ success: true, message: 'Role updated' });
 
     } catch (error) {
-        console.error('Role update error:', error);
-
+        console.error('DATABASE ERROR:', error); // 👈 IMPORTANT
         res.status(500).json({
-            error: 'Database error while updating role'
+            error: error.message
         });
     }
 });
