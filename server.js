@@ -459,28 +459,60 @@ app.put('/api/profile', authenticateToken, async (req, res) => {
 
 // ===== ORDERS ROUTES =====
 app.get('/api/orders', authenticateToken, async (req, res) => {
+    let conn;
+
     try {
-        const conn = await pool.getConnection();
+        conn = await pool.getConnection();
+
         const [rows] = await conn.execute(
-            `SELECT o.*, 
-                    TIME_FORMAT(TIMEDIFF(NOW(), o.created_at), '%i min ago') as time_ago,
-                    CASE o.status
-                        WHEN 'pending' THEN '🕐 Pending'
-                        WHEN 'preparing' THEN '🔥 Preparing'
-                        WHEN 'out_for_delivery' THEN '🚚 Out for Delivery'
-                        WHEN 'delivered' THEN '✅ Delivered'
-                        WHEN 'cancelled' THEN '❌ Cancelled'
-                    END as status_display
-             FROM orders o 
-             WHERE o.user_id = ? 
-             ORDER BY o.created_at DESC`,
+            `
+            SELECT 
+                o.*,
+
+                -- customer info (IMPORTANT for invoice)
+                CONCAT(u.first_name, ' ', u.last_name) AS customer_name,
+                u.email AS customer_email,
+                u.phone AS customer_phone,
+
+                -- formatted address (clean fallback)
+                COALESCE(o.delivery_address, 'No address provided') AS delivery_address,
+
+                -- time helper
+                TIMESTAMPDIFF(MINUTE, o.created_at, NOW()) AS minutes_ago,
+
+                CASE o.status
+                    WHEN 'pending' THEN '🕐 Pending'
+                    WHEN 'preparing' THEN '🔥 Preparing'
+                    WHEN 'out_for_delivery' THEN '🚚 Out for Delivery'
+                    WHEN 'delivered' THEN '✅ Delivered'
+                    WHEN 'cancelled' THEN '❌ Cancelled'
+                END AS status_display
+
+            FROM orders o
+            JOIN users u ON o.user_id = u.id
+            WHERE o.user_id = ?
+            ORDER BY o.created_at DESC
+            `,
             [req.user.id]
         );
-        conn.release();
-        res.json(rows);
+
+        // Add helper formatted time
+        const formatted = rows.map(order => ({
+            ...order,
+            time_ago:
+                order.minutes_ago < 60
+                    ? `${order.minutes_ago} min ago`
+                    : `${Math.floor(order.minutes_ago / 60)} hr ago`
+        }));
+
+        res.json(formatted);
+
     } catch (error) {
         console.error('🚨 Orders error:', error);
         res.status(500).json({ error: error.message });
+
+    } finally {
+        if (conn) conn.release();
     }
 });
 
