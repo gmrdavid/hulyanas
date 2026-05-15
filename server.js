@@ -493,14 +493,18 @@ app.get('/api/menu', async (req, res) => {
                 image_url,
                 is_available
             FROM menu_items
-            WHERE is_available = 1
             ORDER BY id DESC
         `);
 
-        res.json(rows);
+        console.log("TOTAL MENU ITEMS:", rows.length);
+        console.log("SAMPLE DATA:", rows);
+
+        res.json({
+            count: rows.length,
+            data: rows
+        });
 
     } catch (error) {
-
         console.error('🚨 Menu fetch error:', error);
 
         res.status(500).json({
@@ -508,7 +512,6 @@ app.get('/api/menu', async (req, res) => {
         });
 
     } finally {
-
         if (conn) conn.release();
     }
 });
