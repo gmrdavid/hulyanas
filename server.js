@@ -92,31 +92,46 @@ const isAdmin = (req, res, next) => {
 };
 
 // ===== 🚀 USER DASHBOARD API ENDPOINTS =====
-
 // 👤 Get user profile by ID (for dashboard)
 app.get('/api/user/:id', async (req, res) => {
+    let conn;
+
     try {
         const { id } = req.params;
-        const conn = await pool.getConnection();
-        
+
+        conn = await pool.getConnection();
+
         const [rows] = await conn.execute(
-            `SELECT id, first_name, last_name, username, email, role
-             FROM users WHERE id = ? AND is_active = 1 AND role = 'customer'`,
+            `SELECT 
+                id,
+                first_name,
+                last_name,
+                username,
+                email,
+                role
+             FROM users
+             WHERE id = ?
+             AND is_active = 1
+             AND role = 'customer'`,
             [parseInt(id)]
         );
-        conn.release();
-        
+
         if (rows.length === 0) {
-            return res.status(404).json({ error: 'Customer not found' });
+            return res.status(404).json({
+                error: 'Customer not found'
+            });
         }
-        
+
         const user = rows[0];
-        // Calculate total orders for welcome message
+
+        // Total orders
         const [orderCount] = await conn.execute(
-            `SELECT COUNT(*) as total_orders FROM orders WHERE user_id = ?`,
+            `SELECT COUNT(*) AS total_orders
+             FROM orders
+             WHERE user_id = ?`,
             [user.id]
         );
-        
+
         res.json({
             id: user.id,
             first_name: user.first_name,
@@ -125,11 +140,20 @@ app.get('/api/user/:id', async (req, res) => {
             email: user.email,
             full_name: `${user.first_name} ${user.last_name}`.trim(),
             role: user.role,
-            total_orders: parseInt(orderCount[0].total_orders)
+            total_orders: parseInt(
+                orderCount[0].total_orders || 0
+            )
         });
+
     } catch (error) {
         console.error('🚨 User fetch error:', error);
-        res.status(500).json({ error: 'Failed to fetch user data' });
+
+        res.status(500).json({
+            error: 'Failed to fetch user data'
+        });
+
+    } finally {
+        if (conn) conn.release();
     }
 });
 
@@ -858,12 +882,10 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
         // =========================
         // TOTAL REVENUE
         // =========================
-        const [revenueResult] = await conn.execute(`
-            SELECT COALESCE(SUM(o.total_amount), 0) AS total_revenue
-            FROM orders o
-            ${whereClause}
-            AND LOWER(o.status) = 'delivered' OR LOWER(o.status) = 'preparing' OR LOWER(o.status) = 'out_for_delivery'
-        `, params);
+        const [revenueResult] = await conn.execute(`SELECT COALESCE(SUM(o.total_amount), 0) AS total_revenue FROM orders o ${whereClause}AND LOWER(o.status) IN (
+        'delivered',
+        'preparing',
+        'out_for_delivery')`, params);
 
         // =========================
         // ACTIVE CUSTOMERS
