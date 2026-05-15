@@ -630,26 +630,22 @@ app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Menu management (Admin only)
-app.post('/api/menu', authenticateToken, isAdmin, upload.single('image'), async (req, res) => {
+app.post('/menu', upload.single('image'), async (req, res) => {
     try {
-        const { name, description, price, category, is_available } = req.body;
-        const image_url = req.file ? `/images/${req.file.filename}` : null;
+        const { name, price } = req.body;
 
-        const conn = await pool.getConnection();
-        const [result] = await conn.execute(
-            `INSERT INTO menu_items (name, description, price, category, image_url, is_available)
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [name, description, parseFloat(price), category || 'main', image_url, parseInt(is_available)]
+        const image = req.file ? req.file.filename : null;
+
+        await db.execute(
+            "INSERT INTO menu (name, price, image) VALUES (?, ?, ?)",
+            [name, price, image]
         );
-        conn.release();
 
-        res.status(201).json({ 
-            message: 'Menu item added successfully',
-            id: result.insertId 
-        });
-    } catch (error) {
-        console.error('🚨 Add menu error:', error);
-        res.status(500).json({ error: error.message });
+        res.json({ message: "Menu added successfully" });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
     }
 });
 
