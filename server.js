@@ -638,7 +638,7 @@ app.post('/api/menu', authenticateToken, upload.single('image'), async (req, res
 
         const [result] = await pool.execute(
             `INSERT INTO menu_items 
-            (name, description, price, category, image_url, is_available)
+            (name, description, price, category, image_url, parseInt(is_available))
             VALUES (?, ?, ?, ?, ?, ?)`,
             [
                 name,
