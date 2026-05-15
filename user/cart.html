@@ -7,6 +7,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* Your existing CSS stays exactly the same */
         * {
             margin: 0;
             padding: 0;
@@ -522,6 +523,7 @@
                         <select id="paymentMethod">
                             <option value="cash">Cash on Delivery</option>
                             <option value="card">Credit/Debit Card</option>
+                            <option value="gcash">Gcash</option>
                         </select>
                     </div>
                 </div>
@@ -533,8 +535,8 @@
     <script>
     // API Configuration
     const API_BASE = window.location.hostname === 'localhost' 
-    ? `http://localhost:${window.location.port}`
-    : 'https://hulyanas.onrender.com';
+        ? `http://localhost:${window.location.port}`
+        : 'https://hulyanas.onrender.com';
 
     // Get token from localStorage
     function getToken() {
@@ -574,8 +576,61 @@
         }
     }
 
-    // Cart stays in localStorage (fast + session-based)
-    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+    // 🆕 DATABASE CART FUNCTIONS
+    let cart = [];
+
+    async function loadCart() {
+        try {
+            const data = await apiRequest('/api/cart');
+            cart = data.items || [];
+        } catch (error) {
+            console.error('Failed to load cart:', error);
+            cart = [];
+        }
+    }
+
+    async function saveCartItem(menuItemId, quantity) {
+        try {
+            await apiRequest('/api/cart', {
+                method: 'POST',
+                body: JSON.stringify({ menu_item_id: menuItemId, quantity })
+            });
+        } catch (error) {
+            console.error('Failed to save cart item:', error);
+        }
+    }
+
+    async function updateCartItem(menuItemId, quantity) {
+        try {
+            await apiRequest(`/api/cart/${menuItemId}`, {
+                method: 'PUT',
+                body: JSON.stringify({ quantity })
+            });
+        } catch (error) {
+            console.error('Failed to update cart item:', error);
+        }
+    }
+
+    async function removeCartItem(menuItemId) {
+        try {
+            await apiRequest(`/api/cart/${menuItemId}`, {
+                method: 'DELETE'
+            });
+        } catch (error) {
+            console.error('Failed to remove cart item:', error);
+        }
+    }
+
+    async function clearCart() {
+        try {
+            await apiRequest('/api/cart', {
+                method: 'DELETE'
+            });
+            cart = [];
+        } catch (error) {
+            console.error('Failed to clear cart:', error);
+        }
+    }
 
     function renderCart() {
         const cartItemsEl = document.getElementById('cartItems');
@@ -605,19 +660,19 @@
             const itemTotal = item.price * item.quantity;
             total += itemTotal;
             return `
-                <div class="cart-item fade-in-up" data-index="${index}">
-                    <img src="${item.image || 'https://via.placeholder.com/80x80/1a1a1a/ffffff?text=🍽️'}" 
+                <div class="cart-item fade-in-up" data-index="${index}" data-menu-id="${item.menu_item_id}">
+                    <img src="${item.image_url || 'https://via.placeholder.com/80x80/1a1a1a/ffffff?text=🍽️'}" 
                          alt="${item.name}" class="item-image">
                     <div class="item-details">
                         <div class="item-name">${item.name}</div>
                         <div class="item-price">$${item.price.toFixed(2)}</div>
                         <div class="quantity-controls">
-                            <button class="quantity-btn" onclick="updateQuantity(${index}, -1)">−</button>
+                            <button class="quantity-btn" onclick="updateQuantity(${item.menu_item_id}, -1)">−</button>
                             <span class="quantity">${item.quantity}</span>
-                            <button class="quantity-btn" onclick="updateQuantity(${index}, 1)">+</button>
+                            <button class="quantity-btn" onclick="updateQuantity(${item.menu_item_id}, 1)">+</button>
                         </div>
                     </div>
-                    <a href="#" class="remove-item" onclick="removeItem(${index}); return false;" title="Remove item">
+                    <a href="#" class="remove-item" onclick="removeItem(${item.menu_item_id}); return false;" title="Remove item">
                         <i class="fas fa-times"></i>
                     </a>
                 </div>
@@ -631,24 +686,27 @@
         checkoutBtn.style.display = 'block';
     }
 
-    function updateQuantity(index, change) {
-        if (cart[index]) {
-            cart[index].quantity += change;
-            if (cart[index].quantity <= 0) {
-                cart.splice(index, 1);
+    // Cart operations using menu_item_id instead of array index
+    window.updateQuantity = async function(menuItemId, change) {
+        const item = cart.find(cartItem => cartItem.menu_item_id === menuItemId);
+        if (item) {
+            item.quantity += change;
+            if (item.quantity <= 0) {
+                await removeCartItem(menuItemId);
+            } else {
+                await updateCartItem(menuItemId, item.quantity);
+                item.quantity = parseInt(item.quantity); // Ensure integer
             }
-            localStorage.setItem('cart', JSON.stringify(cart));
+            await loadCart(); // Reload to sync
             renderCart();
         }
-    }
+    };
 
-    function removeItem(index) {
-        if (cart[index]) {
-            cart.splice(index, 1);
-            localStorage.setItem('cart', JSON.stringify(cart));
-            renderCart();
-        }
-    }
+    window.removeItem = async function(menuItemId) {
+        await removeCartItem(menuItemId);
+        await loadCart();
+        renderCart();
+    };
 
     // Modal functionality
     const modal = document.getElementById('checkoutModal');
@@ -672,41 +730,37 @@
         }
     });
 
-    // **NEW: Database Checkout**
+    // Database Checkout (already works with your server)
     checkoutForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
         try {
+            const total = parseFloat(document.getElementById('total').textContent.replace('$', ''));
             const formData = {
-                items: cart,
-                total: parseFloat(document.getElementById('total').textContent.replace('$', '')),
+                items: cart.map(item => ({
+                    id: item.menu_item_id,
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.quantity
+                })),
+                total,
                 delivery_address: document.getElementById('deliveryAddress').value,
                 phone: document.getElementById('deliveryPhone').value,
                 payment_method: document.getElementById('paymentMethod').value
             };
 
-            // Send to your existing orders endpoint
-            const response = await fetch(`${API_BASE}/api/orders`, {
+            const response = await apiRequest('/api/orders', {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${getToken()}`,
-                    'Content-Type': 'application/json',
-                },
                 body: JSON.stringify(formData)
             });
 
-            if (!response.ok) throw new Error('Order failed');
-
-            const order = await response.json();
-            
-            // Clear cart
-            cart = [];
-            localStorage.setItem('cart', JSON.stringify(cart));
+            // Clear cart after successful order
+            await clearCart();
             
             modal.style.display = 'none';
             renderCart();
             
-            alert(`Order ${order.order_number} placed successfully!`);
+            alert(`Order ${response.order_number} placed successfully!`);
             window.location.href = 'orders.html';
             
         } catch (error) {
@@ -715,24 +769,25 @@
     });
 
     // Logout
-    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+    document.getElementById('logoutBtn').addEventListener('click', async (e) => {
         e.preventDefault();
         if (confirm('Are you sure you want to logout?')) {
             localStorage.removeItem('token');
             localStorage.removeItem('userName');
-            localStorage.removeItem('cart'); // Clear cart on logout
+            await clearCart(); // Clear database cart on logout
             window.location.href = 'login.html';
         }
     });
 
     // Initialize
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
         if (!getToken()) {
             window.location.href = 'login.html';
             return;
         }
+        await loadCart();
         renderCart();
     });
-</script>
+    </script>
 </body>
 </html>
