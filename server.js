@@ -1384,7 +1384,7 @@ const normalizeImageUrl = (url) => {
     if (url.startsWith('http')) return url;
 
     // fallback (old uploads or broken data)
-    return `https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/${url}`;
+    return `https://res.cloudinary.com/dta4irg3w/image/upload/${url}`;
 };
 
 // Helper function
