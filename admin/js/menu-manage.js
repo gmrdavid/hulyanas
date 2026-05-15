@@ -209,11 +209,12 @@ async function handleMenuFormSubmit(e) {
         const url = currentEditId ? `/api/menu/${currentEditId}` : '/api/menu';
 
         const token = localStorage.getItem('token');
+        console.log('🔑 Token found:', token ? 'YES' : 'NO');
 
         const response = await fetch(url, {
             method: currentEditId ? 'PUT' : 'POST',
             headers: {
-                Authorization: `Bearer ${token}`
+                Authorization: `Bearer ${localStorage.getItem('token')}`
             },
             body: formData
         });
