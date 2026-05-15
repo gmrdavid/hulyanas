@@ -444,14 +444,16 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
     }
 });
 
-// ===== MENU ROUTES =====
-app.get('/api/menu', async (req, res) => {
+// ===== FIXED MENU ROUTES FOR ADMIN (ALL ITEMS) =====
+
+// ✅ ADMIN: Get ALL menu items (including unavailable)
+app.get('/api/menu', authenticateToken, isAdmin, async (req, res) => {
     try {
         const conn = await pool.getConnection();
         const [rows] = await conn.execute(
             `SELECT id, name, description, price, category, image_url, is_available 
-             FROM menu_items WHERE is_available = TRUE ORDER BY category, name`
-        );
+             FROM menu_items ORDER BY category, name`
+        );  // ✅ Removed WHERE is_available = TRUE
         conn.release();
         res.json(rows);
     } catch (error) {
@@ -459,6 +461,7 @@ app.get('/api/menu', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
 
 // ===== ADMIN ROUTES =====
 
