@@ -478,41 +478,21 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
 
 // ===== MENU ROUTES =====
 app.get('/api/menu', async (req, res) => {
-    let conn;
-
     try {
-        conn = await pool.getConnection();
-
-        const [rows] = await conn.execute(`
-            SELECT 
-                id,
-                name,
-                description,
-                price,
-                category,
-                image_url,
-                is_available
+        const [rows] = await pool.execute(`
+            SELECT id, name, description, price, category, image_url
             FROM menu_items
+            WHERE is_available = 1
             ORDER BY id DESC
         `);
 
-        console.log("TOTAL MENU ITEMS:", rows.length);
-        console.log("SAMPLE DATA:", rows);
+        console.log("AVAILABLE ITEMS:", rows.length);
 
-        res.json({
-            count: rows.length,
-            data: rows
-        });
+        res.json(rows);
 
     } catch (error) {
-        console.error('🚨 Menu fetch error:', error);
-
-        res.status(500).json({
-            error: error.message
-        });
-
-    } finally {
-        if (conn) conn.release();
+        console.error('Menu error:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
