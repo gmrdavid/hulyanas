@@ -4,7 +4,11 @@ let menuItems = [];
 // Load menu items from database
 async function loadMenuItems() {
     try {
-        const response = await fetch('/api/menu');
+        const response = await fetch('/api/admin/menu', {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+        });
         if (!response.ok) throw new Error('Failed to fetch menu items');
         menuItems = await response.json();
         console.log(`📋 Loaded ${menuItems.length} menu items`);
@@ -171,7 +175,7 @@ async function deleteItem(id) {
     try {
         const response = await fetch(`/api/menu/${id}`, {
             method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' }
+            headers: {Authorization: `Bearer ${localStorage.getItem('token')}`}
         });
 
         if (!response.ok) {
@@ -209,9 +213,9 @@ async function handleMenuFormSubmit(e) {
 
         const response = await fetch(url, {
             method: currentEditId ? 'PUT' : 'POST',
-            headers: token ? { 
-                'Authorization': `Bearer ${token}` 
-            } : {},
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`
+            },
             body: formData
         });
 

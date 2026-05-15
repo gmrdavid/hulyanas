@@ -460,6 +460,36 @@ app.get('/api/menu', async (req, res) => {
     }
 });
 
+app.get('/api/admin/menu', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const conn = await pool.getConnection();
+
+        const [rows] = await conn.execute(`
+            SELECT 
+                id,
+                name,
+                description,
+                price,
+                category,
+                image_url,
+                is_available
+            FROM menu_items
+            ORDER BY created_at DESC
+        `);
+
+        conn.release();
+
+        res.json(rows);
+
+    } catch (error) {
+        console.error('🚨 Admin menu error:', error);
+
+        res.status(500).json({
+            error: error.message
+        });
+    }
+});
+
 // ===== ADMIN ROUTES =====
 
 // Admin stats
