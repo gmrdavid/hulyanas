@@ -203,14 +203,21 @@ async function handleMenuFormSubmit(e) {
         if (imageFile) formData.append('image', imageFile);
 
         const url = currentEditId ? `/api/menu/${currentEditId}` : '/api/menu';
+
+        const token = localStorage.getItem('token');
+        console.log('🔑 Token found:', token ? 'YES' : 'NO');
+
         const response = await fetch(url, {
             method: currentEditId ? 'PUT' : 'POST',
+            headers: token ? { 
+                'Authorization': `Bearer ${token}` 
+            } : {},
             body: formData
         });
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.message || 'Failed to save item');
+            throw new Error(errorData.error || errorData.message || 'Failed to save item');
         }
 
         const result = await response.json();
