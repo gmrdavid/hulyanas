@@ -280,17 +280,21 @@ async function deleteUser(id) {
 document.getElementById('saveRoleBtn').addEventListener('click', async () => {
     try {
         const token = localStorage.getItem('token');
-
         const role = document.getElementById('editRole').value;
 
-        const response = await fetch(`https://hulyanas.onrender.com/api/admin/users/${currentEditUserId}/role`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ role })
-        });
+        const response = await fetch(
+            `https://hulyanas.onrender.com/api/admin/users/${currentEditUserId}/role`,
+            {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+
+                // 👇 PUT IT HERE
+                body: JSON.stringify({ role: role })
+            }
+        );
 
         const data = await response.json();
 
@@ -298,10 +302,8 @@ document.getElementById('saveRoleBtn').addEventListener('click', async () => {
             throw new Error(data.error || 'Failed to update role');
         }
 
-        alert('✅ User role updated successfully');
-
+        alert('✅ Role updated successfully');
         closeModal('editModal');
-
         fetchUsers();
 
     } catch (error) {
