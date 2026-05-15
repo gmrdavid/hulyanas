@@ -741,25 +741,29 @@
             });
     }
 
-    function addToCart(itemId) {
-
+    async function addToCart(itemId) {
         const item = menuData.find(i => i.id === itemId);
-
         if (!item) return;
 
-        const existingItem = cart.find(c => c.id === itemId);
-
-        if (existingItem) {
-            existingItem.quantity += 1;
-        } else {
-            cart.push({
-                id: item.id,
-                name: item.name,
-                price: item.price,
-                image_url: item.image_url,
-                quantity: 1
+        try {
+            const response = await fetch(`${API_URL}/cart`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ menu_item_id: itemId })
             });
+
+            if (response.ok) {
+                showToast('Item added to cart!');
+                updateCartDisplay(); // You'll need to fetch cart count from API
+                rerenderCurrentCategory();
+            }
+        } catch (error) {
+            console.error('Add to cart failed:', error);
         }
+    }
 
         localStorage.setItem('cart', JSON.stringify(cart));
 
