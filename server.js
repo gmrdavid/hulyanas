@@ -444,6 +444,30 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
     }
 });
 
+app.put('/api/admin/users/:id/role', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { role } = req.body;
+
+        await db.query(
+            'UPDATE users SET role = ? WHERE id = ?',
+            [role, id]
+        );
+
+        res.json({
+            success: true,
+            message: 'User role updated'
+        });
+
+    } catch (error) {
+        console.error(error);
+
+        res.status(500).json({
+            error: 'Failed to update role'
+        });
+    }
+});
+
 // ===== MENU ROUTES =====
 app.get('/api/menu', async (req, res) => {
     try {
