@@ -1,4 +1,5 @@
 let users = [];
+let currentEditUserId = null;
 
 // Modal functions
 function openModal(modalId) {
@@ -36,6 +37,9 @@ function safeParseJson(responseText, context = 'API') {
 document.addEventListener('DOMContentLoaded', () => {
     // Modal close handlers
     document.getElementById('viewModalClose').addEventListener('click', () => closeModal('viewModal'));
+
+    // Edit modal close handler (if you implement edit modal)
+    document.getElementById('editModalClose').addEventListener('click', () => closeModal('editModal'));
 
     // Overlay click to close
     document.getElementById('viewModal').addEventListener('click', (e) => {
@@ -219,9 +223,12 @@ function editUser(id) {
         return;
     }
 
-    console.log('Editing user:', user);
+    currentEditUserId = id;
 
-    // You can open your edit modal here
+    document.getElementById('editUsername').value = user.username || '';
+    document.getElementById('editRole').value = user.role || 'customer';
+
+    openModal('editModal');
 }
 
 // Delete User
@@ -268,3 +275,37 @@ async function deleteUser(id) {
         }
     }
 }
+
+// Save Role (placeholder)
+document.getElementById('saveRoleBtn').addEventListener('click', async () => {
+    try {
+        const token = localStorage.getItem('token');
+
+        const role = document.getElementById('editRole').value;
+
+        const response = await fetch(`https://hulyanas.onrender.com/api/admin/users/${currentEditUserId}/role`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ role })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to update role');
+        }
+
+        alert('✅ User role updated successfully');
+
+        closeModal('editModal');
+
+        fetchUsers();
+
+    } catch (error) {
+        console.error(error);
+        alert(error.message);
+    }
+});

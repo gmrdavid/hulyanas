@@ -138,6 +138,46 @@
         </div>
     </div>
 
-    <script src="js/users.js"></script>
+    <!-- Edit Role Modal -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Edit User Role</h2>
+
+                <button class="modal-close" id="editModalClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" class="form-input" id="editUsername" disabled>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Role</label>
+
+                    <select class="form-select" id="editRole">
+                        <option value="customer">Customer</option>
+                        <option value="staff">Staff</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" onclick="closeModal('editModal')">
+                        Cancel
+                    </button>
+
+                    <button class="btn btn-primary" id="saveRoleBtn">
+                        <i class="fas fa-save"></i>
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+<script src="js/users.js"></script>
 </body>
 </html>
