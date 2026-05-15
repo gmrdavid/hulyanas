@@ -50,18 +50,26 @@ const JWT_SECRET = process.env.JWT_SECRET || 'hulyanas_secret_key_2024_secure_ch
 
 // Multer setup
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, path.join(__dirname, 'public/images'));
+    destination: async (req, file, cb) => {
+        try {
+            await fs.mkdir('public/images', { recursive: true });
+            cb(null, 'public/images/');
+        } catch (err) {
+            cb(err, '');
+        }
     },
-
     filename: (req, file, cb) => {
-        const uniqueName = Date.now() + '-' + Math.round(Math.random() * 1E9);
-
-        cb(null, uniqueName + path.extname(file.originalname));
+        cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname));
     }
 });
-
-const upload = multer({ storage });
+const upload = multer({ 
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) cb(null, true);
+        else cb(new Error('Only image files'), false);
+    }
+});
 
 // Auth middleware
 const authenticateToken = async (req, res, next) => {
@@ -436,50 +444,12 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
     }
 });
 
-// Edit User Role (Admin only)
-app.put('/api/admin/users/:id/role', authenticateToken, isAdmin, async (req, res) => {
-    let conn;
-
-    try {
-        const { id } = req.params;
-        const { role } = req.body;
-
-        console.log('Update request:', { id, role });
-
-        if (!role) {
-            return res.status(400).json({ error: 'Role required' });
-        }
-
-        conn = await pool.getConnection();
-
-        const [result] = await conn.execute(
-            'UPDATE users SET role = ? WHERE id = ?',
-            [role, id]
-        );
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-
-        res.json({ success: true, message: 'Role updated successfully' });
-
-    } catch (error) {
-        console.error('DATABASE ERROR:', error);
-        res.status(500).json({
-            error: error.message
-        });
-
-    } finally {
-        if (conn) conn.release();
-    }
-});
-
 // ===== MENU ROUTES =====
 app.get('/api/menu', async (req, res) => {
     try {
         const conn = await pool.getConnection();
         const [rows] = await conn.execute(
-            `SELECT id, name, description, price, category, image_url, is_available
+            `SELECT id, name, description, price, category, image_url, is_available 
              FROM menu_items WHERE is_available = TRUE ORDER BY category, name`
         );
         conn.release();
@@ -491,10 +461,8 @@ app.get('/api/menu', async (req, res) => {
 });
 
 app.get('/api/admin/menu', authenticateToken, isAdmin, async (req, res) => {
-    let conn;
-
     try {
-        conn = await pool.getConnection();
+        const conn = await pool.getConnection();
 
         const [rows] = await conn.execute(`
             SELECT 
@@ -509,6 +477,8 @@ app.get('/api/admin/menu', authenticateToken, isAdmin, async (req, res) => {
             ORDER BY created_at DESC
         `);
 
+        conn.release();
+
         res.json(rows);
 
     } catch (error) {
@@ -517,9 +487,6 @@ app.get('/api/admin/menu', authenticateToken, isAdmin, async (req, res) => {
         res.status(500).json({
             error: error.message
         });
-
-    } finally {
-        if (conn) conn.release();
     }
 });
 
@@ -530,7 +497,7 @@ app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
     try {
         const conn = await pool.getConnection();
         const [[menuItems], [totalOrders], [revenue], [totalUsers]] = await Promise.all([
-            conn.execute(`SELECT COUNT(*) as count FROM menu_items WHERE is_available) = TRUE`),
+            conn.execute(`SELECT COUNT(*) as count FROM menu_items WHERE is_available = TRUE`),
             conn.execute(`SELECT COUNT(*) as count FROM orders WHERE status IN ('preparing', 'out_for_delivery', 'delivered')`),
             conn.execute(`SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders WHERE status NOT IN ('cancelled', 'pending')`),
             conn.execute(`SELECT COUNT(*) as count FROM users WHERE role = 'customer'`)
@@ -622,166 +589,107 @@ app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Menu management (Admin only)
-app.post('/api/menu', authenticateToken, upload.single('image'), async (req, res) => {
+app.post('/api/menu', authenticateToken, isAdmin, upload.single('image'), async (req, res) => {
     try {
         const { name, description, price, category, is_available } = req.body;
+        const image_url = req.file ? `/images/${req.file.filename}` : null;
 
-        if (!name || !price) {
-            return res.status(400).json({
-                message: 'Name and price are required'
-            });
-        }
-
-        let imageUrl = null;
-
-        if (req.file) {
-            imageUrl = `/images/${req.file.filename}`;
-        }
-
-        const [result] = await pool.execute(
-            `INSERT INTO menu_items 
-            (name, description, price, category, image_url, is_available)
-            VALUES (?, ?, ?, ?, ?, ?)`,
-            [
-                name,
-                description,
-                price,
-                category || 'main',
-                image_url,
-                parseInt(is_available)
-            ]
+        const conn = await pool.getConnection();
+        const [result] = await conn.execute(
+            `INSERT INTO menu_items (name, description, price, category, image_url, is_available)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [name, description, parseFloat(price), category || 'main', image_url, parseInt(is_available)]
         );
+        conn.release();
 
-        res.status(201).json({
+        res.status(201).json({ 
             message: 'Menu item added successfully',
-            id: result.insertId
+            id: result.insertId 
         });
-
     } catch (error) {
-        console.error('Add menu error:', error);
-        res.status(500).json({
-            message: 'Server error'
-        });
+        console.error('🚨 Add menu error:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
-app.put('/api/menu/:id', authenticateToken, upload.single('image'), async (req, res) => {
+app.put('/api/menu/:id', authenticateToken, isAdmin, upload.single('image'), async (req, res) => {
     try {
         const { id } = req.params;
         const { name, description, price, category, is_available } = req.body;
 
-        const [existing] = await pool.execute(
-            'SELECT * FROM menu_items WHERE id = ?',
-            [id]
-        );
-
-        if (existing.length === 0) {
-            return res.status(404).json({ message: 'Menu item not found' });
-        }
-
-        let imageUrl = existing[0].image_url;
+        const conn = await pool.getConnection();
+        const [oldItem] = await conn.execute(`SELECT image_url FROM menu_items WHERE id=?`, [id]);
+        let image_url = oldItem[0]?.image_url || '';
 
         if (req.file) {
-            imageUrl = `/images/${req.file.filename}`;
+            image_url = `/images/${req.file.filename}`;
         }
 
-        await pool.execute(
-            `UPDATE menu_items 
-             SET name = ?,
-                 description = ?,
-                 price = ?,
-                 category = ?,
-                 image_url = ?,
-                 is_available = ?
-             WHERE id = ?`,
-            [
-                name,
-                description,
-                price,
-                category,
-                imageUrl,
-                parseInt(is_available),
-                id
-            ]
+        await conn.execute(
+            `UPDATE menu_items SET name=?, description=?, price=?, category=?, image_url=?, is_available=?, updated_at=NOW() WHERE id=?`,
+            [name, description, parseFloat(price), category, image_url, parseInt(is_available), id]
         );
+        conn.release();
 
         res.json({ message: 'Menu item updated successfully' });
-
     } catch (error) {
-        console.error('Update menu error:', error);
-        res.status(500).json({ message: 'Server error' });
-    }
-});app.put('/api/menu/:id', authenticateToken, upload.single('image'), async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { name, description, price, category, is_available } = req.body;
-
-        const [existing] = await pool.execute(
-            'SELECT * FROM menu_items WHERE id = ?',
-            [id]
-        );
-
-        if (existing.length === 0) {
-            return res.status(404).json({ message: 'Menu item not found' });
-        }
-
-        let imageUrl = existing[0].image_url;
-
-        if (req.file) {
-            imageUrl = `/images/${req.file.filename}`;
-        }
-
-        await pool.execute(
-            `UPDATE menu_items 
-             SET name = ?,
-                 description = ?,
-                 price = ?,
-                 category = ?,
-                 image_url = ?,
-                 is_available = ?
-             WHERE id = ?`,
-            [
-                name,
-                description,
-                price,
-                category,
-                imageUrl,
-                parseInt(is_available),
-                id
-            ]
-        );
-
-        res.json({ message: 'Menu item updated successfully' });
-
-    } catch (error) {
-        console.error('Update menu error:', error);
-        res.status(500).json({ message: 'Server error' });
+        console.error('🚨 Update menu error:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
-app.delete('/api/menu/:id', authenticateToken, async (req, res) => {
+app.delete('/api/menu/:id', authenticateToken, isAdmin, async (req, res) => {
+    let conn;
     try {
         const { id } = req.params;
-
-        const [item] = await pool.execute(
-            'SELECT image_url FROM menu_items WHERE id = ?',
-            [id]
-        );
-
-        if (item.length === 0) {
-            return res.status(404).json({ message: 'Menu item not found' });
+        
+        console.log(`🗑️ DELETE REQUEST: menu item ID ${id}`);
+        
+        conn = await pool.getConnection();
+        
+        await conn.beginTransaction();
+        
+        const [menuItem] = await conn.execute(`SELECT id, image_url FROM menu_items WHERE id = ?`, [id]);
+        
+        if (menuItem.length === 0) {
+            await conn.rollback();
+            conn.release();
+            return res.status(404).json({ error: 'Menu item not found' });
         }
-
-        await pool.execute(
-            'DELETE FROM menu_items WHERE id = ?',
-            [id]
-        );
-
-        res.json({ message: 'Menu item deleted successfully' });
-
+        
+        const [orderItemsDeleted] = await conn.execute(`DELETE oi FROM order_items oi JOIN orders o ON oi.order_id = o.id WHERE oi.menu_item_id = ?`,[id]);
+        
+        const [result] = await conn.execute(`DELETE FROM menu_items WHERE id = ?`, [id]);
+        
+        const imagePath = menuItem[0].image_url ? `public${menuItem[0].image_url}` : null;
+        if (imagePath && imagePath.startsWith('/images/')) {
+            try {
+                await fs.unlink(imagePath);
+            } catch (fileErr) {
+                console.log(`⚠️ Could not delete image ${imagePath}`);
+            }
+        }
+        
+        await conn.commit();
+        conn.release();
+        
+        res.json({ 
+            message: 'Menu item permanently deleted!',
+            deletedId: id,
+            affectedRows: result.affectedRows
+        });
+        
     } catch (error) {
-        console.error('Delete menu error:', error);
-        res.status(500).json({ message: 'Server error' });
+        console.error('🚨 Delete menu error:', error);
+        if (conn) {
+            try {
+                await conn.rollback();
+            } catch (rollbackErr) {
+                console.error('Rollback failed:', rollbackErr);
+            }
+            conn.release();
+        }
+        res.status(500).json({ error: error.message });
     }
 });
 
