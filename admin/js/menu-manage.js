@@ -214,7 +214,7 @@ async function handleMenuFormSubmit(e) {
         const response = await fetch(url, {
             method: currentEditId ? 'PUT' : 'POST',
             headers: {
-                Authorization: `Bearer ${token}`
+                Authorization: `Bearer ${localStorage.getItem('token')}`
             },
             body: formData
         });
