@@ -741,18 +741,18 @@ app.get('/api/menu', async (req, res) => {
         conn = await pool.getConnection();
 
         const [rows] = await conn.execute(`
-            SELECT id, name, description, price, category, image_url, is_available
+            SELECT *
             FROM menu_items
             WHERE is_available = 1
             ORDER BY created_at DESC
         `);
 
-        const cleaned = rows.map(item => ({
+        const data = rows.map(item => ({
             ...item,
-            image_url: item.image_url || '/images/default-menu.jpg'
+            image_url: normalizeImageUrl(item.image_url)
         }));
 
-        res.json(cleaned);
+        res.json(data);
 
     } catch (error) {
         console.error(error);
