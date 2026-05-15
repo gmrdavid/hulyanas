@@ -642,7 +642,7 @@ app.post('/api/menu', authenticateToken, upload.single('image'), async (req, res
             [
                 name,
                 description,
-                parseFloat(price),
+                price,
                 category || 'main',
                 image_url,
                 parseInt(is_available)
@@ -698,7 +698,7 @@ app.put('/api/menu/:id', authenticateToken, upload.single('image'), async (req, 
             [
                 name,
                 description,
-                parseFloat(price),
+                price,
                 category,
                 image_url,
                 parseInt(is_available),
