@@ -630,15 +630,15 @@ app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Menu management (Admin only)
-app.post('/menu', upload.single('image'), async (req, res) => {
+app.post('/menu', upload.single('image_url'), async (req, res) => {
     try {
         const { name, price } = req.body;
 
-        const image = req.file ? req.file.filename : null;
+        const image_url = req.file ? req.file.filename : null;
 
         await db.execute(
-            "INSERT INTO menu (name, price, image) VALUES (?, ?, ?)",
-            [name, price, image]
+            "INSERT INTO menu (name, price, image_url) VALUES (?, ?, ?)",
+            [name, price, image_url]
         );
 
         res.json({ message: "Menu added successfully" });
@@ -649,18 +649,18 @@ app.post('/menu', upload.single('image'), async (req, res) => {
     }
 });
 
-app.put('/menu/:id', upload.single('image'), async (req, res) => {
+app.put('/menu/:id', upload.single('image_url'), async (req, res) => {
     try {
         const { name, price } = req.body;
         const id = req.params.id;
 
         // get existing image first
         const [rows] = await db.execute(
-            "SELECT image FROM menu WHERE id = ?",
+            "SELECT image_url FROM menu WHERE id = ?",
             [id]
         );
 
-        let image = rows[0].image;
+        let image_url = rows[0].image_url;
 
         // if new image uploaded → replace
         if (req.file) {
@@ -668,8 +668,8 @@ app.put('/menu/:id', upload.single('image'), async (req, res) => {
         }
 
         await db.execute(
-            "UPDATE menu SET name = ?, price = ?, image = ? WHERE id = ?",
-            [name, price, image, id]
+            "UPDATE menu SET name = ?, price = ?, image_url = ? WHERE id = ?",
+            [name, price, image_url, id]
         );
 
         res.json({ message: "Menu updated successfully" });
