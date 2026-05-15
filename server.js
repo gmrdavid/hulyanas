@@ -479,21 +479,30 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
 // ===== MENU ROUTES =====
 app.get('/api/menu', async (req, res) => {
     try {
-        const [rows] = await pool.execute(`
-            SELECT id, name, description, price, category, image_url
+        const conn = await pool.getConnection();
+
+        const [rows] = await conn.execute(`
+             SELECT 
+                id,
+                name,
+                description,
+                price,
+                category,
+                image_url,
+                is_available
             FROM menu_items
-            WHERE is_available = 1
-            ORDER BY id DESC
+            ORDER BY created_at DESC
         `);
 
-        console.log("AVAILABLE ITEMS:", rows.length);
+        conn.release();
 
         res.json(rows);
+
 
     } catch (error) {
         console.error('Menu error:', error);
         res.status(500).json({ error: error.message });
-    }
+    } 
 });
 
 app.get('/api/admin/menu', authenticateToken, isAdmin, async (req, res) => {
