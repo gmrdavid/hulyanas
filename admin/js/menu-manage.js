@@ -30,7 +30,7 @@ function renderMenuTable(items) {
     
     tbody.innerHTML = items.map(item => {
         const imageSrc = item.image_url || '/images/default-menu.jpg';
-        const cacheBustSrc = imageSrc + '?v=' + Date.now();
+        const cacheBustSrc = imageSrc;
         
         return `
             <tr data-id="${item.id}">

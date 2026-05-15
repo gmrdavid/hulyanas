@@ -7,6 +7,9 @@ const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
+
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const fs = require('fs').promises;
 
 const app = express();
@@ -28,7 +31,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
 app.use('/user', express.static('user'));
 app.use('/admin', express.static('admin'));
-app.use('/images', express.static(path.join(__dirname, 'images')));
+
 
 // MySQL Connection Pool
 const pool = mysql.createPool({
@@ -48,26 +51,31 @@ const pool = mysql.createPool({
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'hulyanas_secret_key_2024_secure_change_this';
 
-// Multer setup
-const storage = multer.diskStorage({
-    destination: async (req, file, cb) => {
-        try {
-            await fs.mkdir('public/images', { recursive: true });
-            cb(null, 'public/images/');
-        } catch (err) {
-            cb(err, '');
-        }
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname));
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: {
+        folder: 'hulyanas-menu',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'webp']
     }
 });
-const upload = multer({ 
-    storage,
-    limits: { fileSize: 5 * 1024 * 1024 },
+
+const upload = multer({
+    storage: storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024
+    },
     fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) cb(null, true);
-        else cb(new Error('Only image files'), false);
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files allowed'), false);
+        }
     }
 });
 
@@ -885,7 +893,7 @@ app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
 app.post('/api/menu', authenticateToken, isAdmin, upload.single('image'), async (req, res) => {
     try {
         const { name, description, price, category, is_available } = req.body;
-        const image_url = req.file ? `/images/${req.file.filename}` : null;
+        const image_url = req.file ? req.file.path : null;
 
         const conn = await pool.getConnection();
         const [result] = await conn.execute(
@@ -953,15 +961,6 @@ app.delete('/api/menu/:id', authenticateToken, isAdmin, async (req, res) => {
         const [orderItemsDeleted] = await conn.execute(`DELETE oi FROM order_items oi JOIN orders o ON oi.order_id = o.id WHERE oi.menu_item_id = ?`,[id]);
         
         const [result] = await conn.execute(`DELETE FROM menu_items WHERE id = ?`, [id]);
-        
-        const imagePath = menuItem[0].image_url ? `public${menuItem[0].image_url}` : null;
-        if (imagePath && imagePath.startsWith('/images/')) {
-            try {
-                await fs.unlink(imagePath);
-            } catch (fileErr) {
-                console.log(`⚠️ Could not delete image ${imagePath}`);
-            }
-        }
         
         await conn.commit();
         conn.release();
