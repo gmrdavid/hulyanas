@@ -344,6 +344,21 @@
             border-color: #1a1a1a;
         }
 
+        .loading {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #666;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            border-left: 4px solid #c33;
+            margin-bottom: 2rem;
+        }
+
         @media (max-width: 768px) {
             .orders-container {
                 padding: 120px 1rem 2rem;
@@ -432,117 +447,222 @@
         </div>
 
         <div class="orders-list" id="ordersList">
-            <div class="orders-empty fade-in-up">
-                <i class="fas fa-list"></i>
-                <h3>No orders yet</h3>
-                <p>Your order history will appear here once you place your first order</p>
-                <a href="menu.html" class="btn btn-primary" style="margin-top: 2rem;">Order Now</a>
+            <div class="loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading your orders...</p>
             </div>
         </div>
     </div>
 
     <script>
-        function renderOrders() {
-            const ordersList = document.getElementById('ordersList');
-            const totalOrdersEl = document.getElementById('totalOrders');
-            const deliveredOrdersEl = document.getElementById('deliveredOrders');
-            
-            let orders = JSON.parse(localStorage.getItem('orders')) || [];
-            let deliveredCount = 0;
+        // API Configuration
+        const API_BASE = window.location.hostname === 'localhost' 
+            ? `http://localhost:${window.location.port}`
+            : window.location.origin;
 
-            if (orders.length === 0) {
-                ordersList.innerHTML = `
-                    <div class="orders-empty fade-in-up">
-                        <i class="fas fa-list"></i>
-                        <h3>No orders yet</h3>
-                        <p>Your order history will appear here once you place your first order</p>
-                        <a href="menu.html" class="btn btn-primary" style="margin-top: 2rem;">Order Now</a>
-                    </div>
-                `;
-                totalOrdersEl.textContent = '0';
-                deliveredOrdersEl.textContent = '0';
+        // Get token from localStorage
+        function getToken() {
+            return localStorage.getItem('token');
+        }
+
+        // API Helper
+        async function apiRequest(endpoint, options = {}) {
+            const token = getToken();
+            if (!token) {
+                window.location.href = 'login.html';
                 return;
             }
 
-            deliveredCount = orders.filter(order => order.status === 'delivered').length;
+            const config = {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                ...options
+            };
 
-            ordersList.innerHTML = orders.map((order, index) => {
-                const statusClass = `status-${order.status || 'pending'}`;
-                const formattedDate = new Date(order.timestamp).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-                
-                return `
-                    <div class="order-card fade-in-up" style="animation-delay: ${index * 0.1}s">
-                        <div class="order-header">
-                            <div class="order-number">Order #${order.id.toString().slice(-6)}</div>
-                            <span class="order-status ${statusClass}">${order.status?.replace('_', ' ') || 'Pending'}</span>
-                        </div>
-                        <div class="order-meta">
-                            <span><i class="fas fa-calendar"></i> ${formattedDate}</span>
-                            <span><i class="fas fa-map-marker-alt"></i> ${order.address?.substring(0, 30)}${order.address?.length > 30 ? '...' : ''}</span>
-                            <span><i class="fas fa-phone"></i> ${order.phone}</span>
-                        </div>
-                        <div class="order-items">
-                            ${order.items.map(item => `
-                                <div class="order-item">
-                                    <div class="item-info">
-                                        <div class="item-icon">🍕</div>
-                                        <div class="item-details">
-                                            <h4>${item.name}</h4>
-                                            <p>${item.quantity}x $${item.price.toFixed(2)}</p>
-                                        </div>
-                                    </div>
-                                    <div class="item-price">$${(item.price * item.quantity).toFixed(2)}</div>
-                                </div>
-                            `).join('')}
-                        </div>
-                        <div class="order-footer">
-                            <div class="order-total">
-                                Total: $${order.total.toFixed(2)}
-                            </div>
-                            <div class="order-actions">
-                                <button class="btn btn-secondary">
-                                    <i class="fas fa-receipt"></i>
-                                    Invoice
-                                </button>
-                                <button class="btn btn-primary" onclick="reorder(${order.id})">
-                                    <i class="fas fa-shopping-cart"></i>
-                                    Reorder
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            totalOrdersEl.textContent = orders.length;
-            deliveredOrdersEl.textContent = deliveredCount;
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, config);
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        localStorage.removeItem('token');
+                        window.location.href = 'login.html';
+                        return;
+                    }
+                    throw new Error(await response.text());
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('API Error:', error);
+                throw error;
+            }
         }
 
-        function reorder(orderId) {
-            const orders = JSON.parse(localStorage.getItem('orders')) || [];
-            const order = orders.find(o => o.id === orderId);
-            
-            if (order) {
-                // Add items back to cart
-                let cart = JSON.parse(localStorage.getItem('cart')) || [];
-                order.items.forEach(item => {
-                    const existing = cart.find(c => c.name === item.name);
-                    if (existing) {
-                        existing.quantity += item.quantity;
-                    } else {
-                        cart.push({...item});
+        // Load orders from database
+        async function loadOrders() {
+            try {
+                const ordersList = document.getElementById('ordersList');
+                const totalOrdersEl = document.getElementById('totalOrders');
+                const deliveredOrdersEl = document.getElementById('deliveredOrders');
+
+                // Show loading
+                ordersList.innerHTML = `
+                    <div class="loading">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading your orders...</p>
+                    </div>
+                `;
+
+                // Fetch orders from database
+                const orders = await apiRequest('/api/orders');
+                
+                if (orders.length === 0) {
+                    ordersList.innerHTML = `
+                        <div class="orders-empty fade-in-up">
+                            <i class="fas fa-list"></i>
+                            <h3>No orders yet</h3>
+                            <p>Your order history will appear here once you place your first order</p>
+                            <a href="menu.html" class="btn btn-primary" style="margin-top: 2rem;">Order Now</a>
+                        </div>
+                    `;
+                    totalOrdersEl.textContent = '0';
+                    deliveredOrdersEl.textContent = '0';
+                    return;
+                }
+
+                // Calculate stats
+                const deliveredCount = orders.filter(order => order.status === 'delivered').length;
+
+                // Render orders
+                ordersList.innerHTML = orders.map((order, index) => {
+                    const statusClass = `status-${order.status || 'pending'}`;
+                    const formattedDate = new Date(order.created_at).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    
+                    return `
+                        <div class="order-card fade-in-up" style="animation-delay: ${index * 0.1}s">
+                            <div class="order-header">
+                                <div class="order-number">${order.order_number}</div>
+                                <span class="order-status ${statusClass}">${order.status?.replace('_', ' ') || 'Pending'}</span>
+                            </div>
+                            <div class="order-meta">
+                                <span><i class="fas fa-calendar"></i> ${formattedDate}</span>
+                                <span><i class="fas fa-map-marker-alt"></i> ${order.delivery_address?.substring(0, 30)}${order.delivery_address?.length > 30 ? '...' : ''}</span>
+                                <span><i class="fas fa-phone"></i> ${order.phone}</span>
+                            </div>
+                            <div class="order-items" data-order-id="${order.id}">
+                                <div class="loading" style="padding: 2rem;">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <p>Loading order items...</p>
+                                </div>
+                            </div>
+                            <div class="order-footer">
+                                <div class="order-total">
+                                    Total: $${parseFloat(order.total_amount).toFixed(2)}
+                                </div>
+                                <div class="order-actions">
+                                    <button class="btn btn-secondary">
+                                        <i class="fas fa-receipt"></i>
+                                        Invoice
+                                    </button>
+                                    <button class="btn btn-primary" onclick="reorder(${order.id})">
+                                        <i class="fas fa-shopping-cart"></i>
+                                        Reorder
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                // Update stats
+                totalOrdersEl.textContent = orders.length;
+                deliveredOrdersEl.textContent = deliveredCount;
+
+                // Load order items for each order
+                orders.forEach(order => {
+                    loadOrderItems(order.id);
+                });
+
+            } catch (error) {
+                console.error('Failed to load orders:', error);
+                document.getElementById('ordersList').innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Failed to load orders. Please try refreshing the page.
+                    </div>
+                `;
+            }
+        }
+
+        // Load order items for specific order
+        async function loadOrderItems(orderId) {
+            try {
+                const orderItemsContainer = document.querySelector(`[data-order-id="${orderId}"]`);
+                const token = getToken();
+                
+                const response = await fetch(`${API_BASE}/api/admin/orders/${orderId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
                     }
                 });
-                localStorage.setItem('cart', JSON.stringify(cart));
+
+                if (!response.ok) throw new Error('Failed to fetch order items');
+
+                const order = await response.json();
                 
-                alert(`${order.items.length} items added to cart!`);
-                window.location.href = 'cart.html';
+                // Fetch order items and menu items
+                const connResponse = await fetch(`${API_BASE}/api/admin/orders/${orderId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    }
+                });
+                
+                // For now, show placeholder items since we need order_items table data
+                // This will be enhanced when you add the order items endpoint
+                orderItemsContainer.innerHTML = `
+                    <div class="order-item">
+                        <div class="item-info">
+                            <div class="item-icon">🍽️</div>
+                            <div class="item-details">
+                                <h4>Main Course Items</h4>
+                                <p>Loading details...</p>
+                            </div>
+                        </div>
+                        <div class="item-price">$${order.total_amount}</div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                console.error('Failed to load order items:', error);
+                document.querySelector(`[data-order-id="${orderId}"]`).innerHTML = `
+                    <div style="padding: 2rem; text-align: center; color: #666;">
+                        <i class="fas fa-info-circle"></i>
+                        <p>Items loading...</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Reorder functionality (adds to cart)
+        async function reorder(orderId) {
+            try {
+                // Fetch order details
+                const order = await apiRequest(`/api/admin/orders/${orderId}`);
+                
+                // For now, just redirect to menu with notification
+                // You can enhance this to actually add items to cart when cart API is ready
+                alert(`Order ${order.order_number} items ready for reorder!`);
+                window.location.href = 'menu.html';
+                
+            } catch (error) {
+                alert('Failed to prepare reorder. Please try again.');
             }
         }
 
@@ -550,6 +670,7 @@
         document.getElementById('logoutBtn').addEventListener('click', (e) => {
             e.preventDefault();
             if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('token');
                 localStorage.removeItem('userName');
                 window.location.href = 'login.html';
             }
@@ -557,11 +678,16 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            renderOrders();
+            // Check if user is logged in
+            if (!getToken()) {
+                window.location.href = 'login.html';
+                return;
+            }
+            loadOrders();
         });
 
-        // Auto-refresh every 30 seconds (for real-time updates)
-        setInterval(renderOrders, 30000);
+        // Auto-refresh every 30 seconds
+        setInterval(loadOrders, 30000);
     </script>
 </body>
 </html>

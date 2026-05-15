@@ -476,6 +476,45 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
     }
 });
 
+// Add this to your server.js after the orders routes
+// ADD THIS after your existing /api/orders route (around line 250)
+app.get('/api/orders/:id/items', authenticateToken, async (req, res) => {
+    let conn;
+    try {
+        const { id } = req.params;
+        
+        // Verify user owns this order
+        const [orderCheck] = await pool.execute(
+            'SELECT id FROM orders WHERE id = ? AND user_id = ?', 
+            [id, req.user.id]
+        );
+        
+        if (orderCheck.length === 0) {
+            return res.status(403).json({ error: 'Order not found' });
+        }
+        
+        conn = await pool.getConnection();
+        const [items] = await conn.execute(`
+            SELECT 
+                oi.quantity,
+                oi.price_at_order,
+                mi.name,
+                mi.image_url
+            FROM order_items oi
+            JOIN menu_items mi ON oi.menu_item_id = mi.id
+            WHERE oi.order_id = ?
+            ORDER BY oi.id
+        `, [id]);
+        
+        res.json(items);
+        conn.release();
+    } catch (error) {
+        console.error('🚨 Order items error:', error);
+        if (conn) conn.release();
+        res.status(500).json({ error: 'Failed to load order items' });
+    }
+});
+
 // ===== MENU ROUTES =====
 app.get('/api/menu', async (req, res) => {
     let conn;
