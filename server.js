@@ -923,7 +923,7 @@ app.put('/api/menu/:id', authenticateToken, isAdmin, upload.single('image'), asy
         let image_url = oldItem[0]?.image_url || '';
 
         if (req.file) {
-            image_url = `/images/${req.file.filename}`;
+            image_url = req.file.path;
         }
 
         await conn.execute(
