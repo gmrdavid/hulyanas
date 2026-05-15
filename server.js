@@ -644,26 +644,54 @@ app.post('/api/cart', authenticateToken, async (req, res) => {
     }
 });
 
+// Replace your existing PUT /api/cart/:menuItemId with this:
 app.put('/api/cart/:menuItemId', authenticateToken, async (req, res) => {
     let conn;
     try {
         const { menuItemId } = req.params;
         const { quantity } = req.body;
         
-        if (quantity < 1) {
-            return res.status(400).json({ error: 'Quantity must be at least 1' });
-        }
-
         conn = await pool.getConnection();
+        
+        // Check if item exists first
+        const [existing] = await conn.execute(
+            'SELECT quantity FROM cart WHERE user_id = ? AND menu_item_id = ?', 
+            [req.user.id, menuItemId]
+        );
+        
+        if (existing.length === 0) {
+            return res.status(404).json({ error: 'Cart item not found' });
+        }
+        
+        let newQuantity;
+        if (quantity < 0) {
+            // DECREMENT: quantity = -1
+            newQuantity = Math.max(1, existing[0].quantity + quantity);
+        } else if (quantity > 1000) {
+            // INCREMENT: quantity = 999 (hack for +1)
+            newQuantity = existing[0].quantity + 1;
+        } else {
+            // EXACT quantity from cart page
+            newQuantity = Math.max(1, quantity);
+        }
+        
         const [result] = await conn.execute(
             'UPDATE cart SET quantity = ?, updated_at = NOW() WHERE user_id = ? AND menu_item_id = ?',
-            [quantity, req.user.id, menuItemId]
+            [newQuantity, req.user.id, menuItemId]
         );
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'Cart item not found' });
         }
-        res.json({ success: true });
+        
+        // Return updated item for frontend
+        const [updatedItem] = await conn.execute(`
+            SELECT c.*, mi.name, mi.price, mi.image_url 
+            FROM cart c JOIN menu_items mi ON c.menu_item_id = mi.id 
+            WHERE c.user_id = ? AND c.menu_item_id = ?
+        `, [req.user.id, menuItemId]);
+        
+        res.json({ success: true, item: updatedItem[0] });
     } catch (error) {
         console.error('🚨 Cart PUT error:', error);
         res.status(500).json({ error: 'Failed to update cart' });
