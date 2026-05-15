@@ -462,6 +462,22 @@ app.get('/api/menu', authenticateToken, isAdmin, async (req, res) => {
     }
 });
 
+// ✅ CUSTOMER: Get only available items
+app.get('/api/menu/public', async (req, res) => {
+    try {
+        const conn = await pool.getConnection();
+        const [rows] = await conn.execute(
+            `SELECT id, name, description, price, category, image_url, is_available 
+             FROM menu_items WHERE is_available = 1 ORDER BY category, name`
+        );
+        conn.release();
+        res.json(rows);
+    } catch (error) {
+        console.error('🚨 Public menu error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 
 // ===== ADMIN ROUTES =====
 
@@ -561,22 +577,31 @@ app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
     }
 });
 
-// Menu management (Admin only)
+// ✅ FIXED: Add menu item, Admin only
 app.post('/api/menu', authenticateToken, isAdmin, upload.single('image'), async (req, res) => {
     try {
         const { name, description, price, category, is_available } = req.body;
         const image_url = req.file ? `/images/${req.file.filename}` : null;
 
+        console.log('📥 ADD MENU:', { name, price, is_available, image: req.file?.filename });
+
         const conn = await pool.getConnection();
         const [result] = await conn.execute(
             `INSERT INTO menu_items (name, description, price, category, image_url, is_available)
              VALUES (?, ?, ?, ?, ?, ?)`,
-            [name, description, parseFloat(price), category || 'main', image_url, is_available === 'true']
+            [
+                name, 
+                description || null, 
+                parseFloat(price), 
+                category || 'main', 
+                image_url, 
+                is_available === '1' || is_available === 'true' ? 1 : 0  // ✅ FIXED: Handle both '1' and 'true'
+            ]
         );
         conn.release();
 
         res.status(201).json({ 
-            message: 'Menu item added successfully',
+            message: 'Menu item added successfully!',
             id: result.insertId 
         });
     } catch (error) {
@@ -585,26 +610,45 @@ app.post('/api/menu', authenticateToken, isAdmin, upload.single('image'), async 
     }
 });
 
+
+/ ✅ FIXED: Update menu item
 app.put('/api/menu/:id', authenticateToken, isAdmin, upload.single('image'), async (req, res) => {
     try {
         const { id } = req.params;
         const { name, description, price, category, is_available } = req.body;
+
+        console.log('📝 UPDATE MENU:', { id, name, price, is_available });
 
         const conn = await pool.getConnection();
         const [oldItem] = await conn.execute(`SELECT image_url FROM menu_items WHERE id=?`, [id]);
         let image_url = oldItem[0]?.image_url || '';
 
         if (req.file) {
+            // Delete old image if exists
+            if (oldItem[0]?.image_url) {
+                try {
+                    await fs.unlink(`public${oldItem[0].image_url}`);
+                } catch (e) { console.log('Old image delete failed:', e.message); }
+            }
             image_url = `/images/${req.file.filename}`;
         }
 
         await conn.execute(
-            `UPDATE menu_items SET name=?, description=?, price=?, category=?, image_url=?, is_available=?, updated_at=NOW() WHERE id=?`,
-            [name, description, parseFloat(price), category, image_url, is_available === 'true', id]
+            `UPDATE menu_items SET name=?, description=?, price=?, category=?, image_url=?, 
+             is_available=?, updated_at=NOW() WHERE id=?`,
+            [
+                name, 
+                description || null, 
+                parseFloat(price), 
+                category || 'main', 
+                image_url, 
+                is_available === '1' || is_available === 'true' ? 1 : 0,  // ✅ FIXED
+                id
+            ]
         );
         conn.release();
 
-        res.json({ message: 'Menu item updated successfully' });
+        res.json({ message: 'Menu item updated successfully!' });
     } catch (error) {
         console.error('🚨 Update menu error:', error);
         res.status(500).json({ error: error.message });
