@@ -569,6 +569,167 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
     }
 });
 
+// ===== CART ROUTES ===== (Add after orders routes around line 300)
+// Get user's cart
+app.get('/api/cart', authenticateToken, async (req, res) => {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        
+        // Get cart items with menu details
+        const [rows] = await conn.execute(`
+            SELECT 
+                c.id,
+                c.menu_item_id,
+                c.quantity,
+                mi.name,
+                mi.price,
+                mi.image_url,
+                mi.is_available
+            FROM cart c
+            JOIN menu_items mi ON c.menu_item_id = mi.id
+            WHERE c.user_id = ? AND mi.is_available = 1
+            ORDER BY c.created_at DESC
+        `, [req.user.id]);
+        
+        res.json({ items: rows });
+        conn.release();
+    } catch (error) {
+        console.error('🚨 Cart error:', error);
+        if (conn) conn.release();
+        res.status(500).json({ error: 'Failed to load cart' });
+    }
+});
+
+// Add/update cart item
+app.post('/api/cart', authenticateToken, async (req, res) => {
+    let conn;
+    try {
+        const { menu_item_id, quantity } = req.body;
+        
+        if (!menu_item_id || quantity < 1) {
+            return res.status(400).json({ error: 'Invalid item or quantity' });
+        }
+
+        conn = await pool.getConnection();
+        await conn.beginTransaction();
+
+        // Check if item exists and is available
+        const [menuCheck] = await conn.execute(
+            'SELECT id, price FROM menu_items WHERE id = ? AND is_available = 1', 
+            [menu_item_id]
+        );
+        
+        if (menuCheck.length === 0) {
+            await conn.rollback();
+            return res.status(404).json({ error: 'Menu item not available' });
+        }
+
+        // Upsert cart item
+        const [existing] = await conn.execute(
+            'SELECT id, quantity FROM cart WHERE user_id = ? AND menu_item_id = ?', 
+            [req.user.id, menu_item_id]
+        );
+
+        if (existing.length > 0) {
+            // Update quantity
+            await conn.execute(
+                'UPDATE cart SET quantity = ?, updated_at = NOW() WHERE id = ?',
+                [quantity, existing[0].id]
+            );
+        } else {
+            // Insert new item
+            await conn.execute(
+                'INSERT INTO cart (user_id, menu_item_id, quantity) VALUES (?, ?, ?)',
+                [req.user.id, menu_item_id, quantity]
+            );
+        }
+
+        await conn.commit();
+        res.json({ success: true });
+        
+    } catch (error) {
+        console.error('🚨 Cart add error:', error);
+        if (conn) await conn.rollback();
+        res.status(500).json({ error: 'Failed to update cart' });
+    } finally {
+        if (conn) conn.release();
+    }
+});
+
+// Update cart item quantity
+app.put('/api/cart/:menuItemId', authenticateToken, async (req, res) => {
+    let conn;
+    try {
+        const { menuItemId } = req.params;
+        const { quantity } = req.body;
+        
+        if (quantity < 1) {
+            return res.status(400).json({ error: 'Quantity must be at least 1' });
+        }
+
+        conn = await pool.getConnection();
+        
+        const [result] = await conn.execute(
+            'UPDATE cart SET quantity = ?, updated_at = NOW() WHERE user_id = ? AND menu_item_id = ?',
+            [quantity, req.user.id, menuItemId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Cart item not found' });
+        }
+
+        res.json({ success: true });
+        
+    } catch (error) {
+        console.error('🚨 Cart update error:', error);
+        res.status(500).json({ error: 'Failed to update cart item' });
+    } finally {
+        if (conn) conn.release();
+    }
+});
+
+// Delete cart item
+app.delete('/api/cart/:menuItemId', authenticateToken, async (req, res) => {
+    let conn;
+    try {
+        const { menuItemId } = req.params;
+        
+        conn = await pool.getConnection();
+        const [result] = await conn.execute(
+            'DELETE FROM cart WHERE user_id = ? AND menu_item_id = ?',
+            [req.user.id, menuItemId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Cart item not found' });
+        }
+
+        res.json({ success: true });
+        
+    } catch (error) {
+        console.error('🚨 Cart delete error:', error);
+        res.status(500).json({ error: 'Failed to remove cart item' });
+    } finally {
+        if (conn) conn.release();
+    }
+});
+
+// Clear entire cart
+app.delete('/api/cart', authenticateToken, async (req, res) => {
+    let conn;
+    try {
+        conn = await pool.getConnection();
+        await conn.execute('DELETE FROM cart WHERE user_id = ?', [req.user.id]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('🚨 Cart clear error:', error);
+        res.status(500).json({ error: 'Failed to clear cart' });
+    } finally {
+        if (conn) conn.release();
+    }
+});
+
 // ===== MENU ROUTES =====
 app.get('/api/menu', async (req, res) => {
     let conn;
