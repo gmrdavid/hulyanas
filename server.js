@@ -95,11 +95,22 @@ const isAdmin = (req, res, next) => {
 
 // ===== 🚀 USER DASHBOARD API ENDPOINTS =====
 // 👤 Get user profile by ID (for dashboard)
+// 👤 Get user profile by ID (for dashboard)
 app.get('/api/user/:id', authenticateToken, async (req, res) => {
     let conn;
 
     try {
         const { id } = req.params;
+
+        // ✅ INSERT HERE
+        if (
+            req.user.id !== parseInt(req.params.id) &&
+            req.user.role !== 'admin'
+        ) {
+            return res.status(403).json({
+                error: 'Unauthorized'
+            });
+        }
 
         conn = await pool.getConnection();
 
@@ -126,7 +137,6 @@ app.get('/api/user/:id', authenticateToken, async (req, res) => {
 
         const user = rows[0];
 
-        // Total orders
         const [orderCount] = await conn.execute(
             `SELECT COUNT(*) AS total_orders
              FROM orders
@@ -142,9 +152,7 @@ app.get('/api/user/:id', authenticateToken, async (req, res) => {
             email: user.email,
             full_name: `${user.first_name} ${user.last_name}`.trim(),
             role: user.role,
-            total_orders: parseInt(
-                orderCount[0].total_orders || 0
-            )
+            total_orders: parseInt(orderCount[0].total_orders || 0)
         });
 
     } catch (error) {
@@ -160,7 +168,7 @@ app.get('/api/user/:id', authenticateToken, async (req, res) => {
 });
 
 // 📊 Get user statistics (REAL DATABASE QUERIES)
-app.get('/api/user/:id/stats', async (req, res) => {
+app.get('/api/user/:id/stats', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
         const conn = await pool.getConnection();
@@ -193,7 +201,7 @@ app.get('/api/user/:id/stats', async (req, res) => {
 
 
 /// 📋 Get user recent activity (REAL DATABASE)
-app.get('/api/user/:id/activity', async (req, res) => {
+app.get('/api/user/:id/activity', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
         const conn = await pool.getConnection();
