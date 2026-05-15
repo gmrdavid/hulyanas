@@ -566,8 +566,16 @@
                                     Total: $${parseFloat(order.total_amount).toFixed(2)}
                                 </div>
                                 <div class="order-actions">
-                                    <button class="btn btn-secondary" 
-                                        onclick="showInvoice(${order.id}, '${order.order_number}', ${order.total_amount})">
+                                    <button class="btn btn-secondary"
+                                    onclick="downloadInvoice(
+                                        ${order.id},
+                                        '${order.order_number}',
+                                        ${order.total_amount},
+                                        '${order.status}',
+                                        '${order.customer_name || ''}',
+                                        '${order.delivery_address || ''}',
+                                        '${order.phone || ''}'
+                                    )">
                                         <i class="fas fa-receipt"></i>
                                         Invoice
                                     </button>
