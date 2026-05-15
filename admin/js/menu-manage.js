@@ -209,7 +209,7 @@ async function handleMenuFormSubmit(e) {
 
         const url = currentEditId ? `/api/menu/${currentEditId}` : '/api/menu';
 
-        const token = localStorage.getItem('token');
+       const token = localStorage.getItem('token');
 
         const response = await fetch(url, {
             method: currentEditId ? 'PUT' : 'POST',
@@ -257,6 +257,11 @@ function showToast(message, type = 'success') {
 // Initialize everything when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Menu manager initialized');
+
+    if (!localStorage.getItem('token')) {
+    window.location.href = '/index.html';
+    return;
+    }
     
     // Form submit handler
     const menuForm = document.getElementById('menuForm');
