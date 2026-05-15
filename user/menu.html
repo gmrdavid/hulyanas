@@ -619,69 +619,82 @@
         });
     }
 
-    function renderMenuItems(items) {
-        const container = document.getElementById('menuItems');
-        container.innerHTML = '';
-        if (items.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state fade-in-up">
-                    <i class="fas fa-utensils"></i>
-                    <h3>No items available</h3>
-                    <p>Check back soon for our delicious menu</p>
-                </div>
-            `;
-            return;
-        }
-        items.forEach((item, index) => {
-            const card = createMenuCard(item);
-            card.style.animationDelay = `${index * 0.1}s`;
-            card.classList.add('fade-in-up');
-            container.appendChild(card);
-        });
-    }
-
-    async function createMenuCard(item) {
-        // Get quantity from database cart
-        let quantity = 0;
-        try {
-            const cartData = await apiRequest('/api/cart');
-            const cartItem = cartData.items?.find(c => (c.menu_item_id || c.id) === item.id);
-            quantity = cartItem ? cartItem.quantity : 0;
-        } catch (e) {
-            console.log('Cart check failed, showing 0');
-        }
-
-        const imageUrl = item.image_url ? `${API_BASE}${item.image_url}` : '';
-
-        const card = document.createElement('div');
-        card.className = 'menu-card';
-        card.innerHTML = `
-            <div class="menu-image">
-                ${imageUrl ? `<img src="${imageUrl}" alt="${item.name}" style="width:100%;height:100%;object-fit:cover;">` : `<i class="fas fa-utensils"></i>`}
-            </div>
-            <div class="menu-content">
-                <h3 class="menu-name">${item.name}</h3>
-                <p class="menu-description">${item.description || 'No description available'}</p>
-                <div class="menu-footer">
-                    <div class="menu-price">$${Number(item.price).toFixed(2)}</div>
-                    <div class="add-to-cart-container">
-                        ${quantity > 0 ? `
-                            <div class="quantity-controls">
-                                <button class="qty-btn" data-action="decrease" data-id="${item.id}">-</button>
-                                <span class="quantity">${quantity}</span>
-                                <button class="qty-btn" data-action="increase" data-id="${item.id}">+</button>
-                            </div>
-                        ` : `
-                            <button class="add-to-cart" data-id="${item.id}">
-                                <i class="fas fa-plus"></i> Add
-                            </button>
-                        `}
-                    </div>
-                </div>
+   function renderMenuItems(items) {
+    const container = document.getElementById('menuItems');
+    container.innerHTML = '';
+    
+    if (items.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state fade-in-up">
+                <i class="fas fa-utensils"></i>
+                <h3>No items available</h3>
+                <p>Check back soon for our delicious menu</p>
             </div>
         `;
-        return card;
+        return;
     }
+    
+    items.forEach((item, index) => {
+        const card = createMenuCard(item);
+        card.classList.add('fade-in-up');
+        
+        // ✅ FIXED: Check if element exists before setting animationDelay
+        if (card.style) {
+            card.style.animationDelay = `${index * 0.1}s`;
+        }
+        
+        container.appendChild(card);
+    });
+}
+
+ async function createMenuCard(item) {
+    let quantity = 0;
+    try {
+        const cartData = await apiRequest('/api/cart');
+        const cartItem = cartData.items?.find(c => (c.menu_item_id || c.id) === item.id);
+        quantity = cartItem ? cartItem.quantity : 0;
+    } catch (e) {
+        console.log('Cart check failed, showing 0');
+    }
+
+    // ✅ FIXED: Correct image path + fallback
+    const imageUrl = item.image_url 
+        ? `https://hulyanas.onrender.com${item.image_url}` 
+        : 'https://via.placeholder.com/300x220/f8f8f8/666?text=🍽️';
+
+    const card = document.createElement('div');
+    card.className = 'menu-card';
+    card.innerHTML = `
+        <div class="menu-image">
+            <img src="${imageUrl}" 
+                 alt="${item.name}" 
+                 style="width:100%;height:100%;object-fit:cover;"
+                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+            <i class="fas fa-utensils" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:3rem;color:#ccc;"></i>
+        </div>
+        <div class="menu-content">
+            <h3 class="menu-name">${item.name}</h3>
+            <p class="menu-description">${item.description || 'No description available'}</p>
+            <div class="menu-footer">
+                <div class="menu-price">$${Number(item.price).toFixed(2)}</div>
+                <div class="add-to-cart-container">
+                    ${quantity > 0 ? `
+                        <div class="quantity-controls">
+                            <button class="qty-btn" data-action="decrease" data-id="${item.id}">-</button>
+                            <span class="quantity">${quantity}</span>
+                            <button class="qty-btn" data-action="increase" data-id="${item.id}">+</button>
+                        </div>
+                    ` : `
+                        <button class="add-to-cart" data-id="${item.id}">
+                            <i class="fas fa-plus"></i> Add
+                        </button>
+                    `}
+                </div>
+            </div>
+        </div>
+    `;
+    return card;
+}
 
     function setupEventListeners() {
         // Category filter (unchanged)
@@ -774,8 +787,11 @@
     }
 
     function staggerAnimations() {
+    // ✅ FIXED: Only animate existing elements
         document.querySelectorAll('.fade-in-up').forEach((el, index) => {
-            el.style.animationDelay = `${index * 0.1}s`;
+            if (el.style) {
+                el.style.animationDelay = `${index * 0.1}s`;
+            }
         });
     }
 
