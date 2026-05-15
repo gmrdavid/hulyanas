@@ -531,121 +531,173 @@
     </div>
 
     <script>
-        // Sample cart data (replace with your actual cart logic)
-        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+    // API Configuration
+    const API_BASE = window.location.hostname === 'localhost' 
+        ? `http://localhost:${window.location.port}`
+        : window.location.origin;
 
-        function renderCart() {
-            const cartItemsEl = document.getElementById('cartItems');
-            const cartTotalEl = document.getElementById('cartTotal');
-            const subtotalEl = document.getElementById('subtotal');
-            const totalEl = document.getElementById('total');
-            const checkoutBtn = document.getElementById('checkoutBtn');
+    // Get token from localStorage
+    function getToken() {
+        return localStorage.getItem('token');
+    }
 
-            if (cart.length === 0) {
-                cartItemsEl.innerHTML = `
-                    <div class="cart-empty fade-in-up">
-                        <i class="fas fa-shopping-cart"></i>
-                        <h3>Your cart is empty</h3>
-                        <p>Add some delicious items from the menu to get started</p>
-                        <a href="menu.html" class="btn btn-primary" style="margin-top: 1.5rem;">Browse Menu</a>
-                    </div>
-                `;
-                cartTotalEl.textContent = '$0.00';
-                subtotalEl.textContent = '$0.00';
-                totalEl.textContent = '$0.00';
-                checkoutBtn.style.display = 'none';
-                return;
-            }
-
-            let total = 0;
-            cartItemsEl.innerHTML = cart.map((item, index) => {
-                const itemTotal = item.price * item.quantity;
-                total += itemTotal;
-                return `
-                    <div class="cart-item fade-in-up" data-index="${index}">
-                        <img src="${item.image || 'https://via.placeholder.com/80x80/1a1a1a/ffffff?text=🍕'}" 
-                             alt="${item.name}" class="item-image">
-                        <div class="item-details">
-                            <div class="item-name">${item.name}</div>
-                            <div class="item-price">$${item.price.toFixed(2)}</div>
-                            <div class="quantity-controls">
-                                <button class="quantity-btn" onclick="updateQuantity(${index}, -1)">−</button>
-                                <span class="quantity">${item.quantity}</span>
-                                <button class="quantity-btn" onclick="updateQuantity(${index}, 1)">+</button>
-                            </div>
-                        </div>
-                        <a href="#" class="remove-item" onclick="removeItem(${index}); return false;" title="Remove item">
-                            <i class="fas fa-times"></i>
-                        </a>
-                    </div>
-                `;
-            }).join('');
-
-            const formattedTotal = total.toFixed(2);
-            cartTotalEl.textContent = `$${formattedTotal}`;
-            subtotalEl.textContent = `$${formattedTotal}`;
-            totalEl.textContent = `$${formattedTotal}`;
-            checkoutBtn.style.display = 'block';
+    // API Helper
+    async function apiRequest(endpoint, options = {}) {
+        const token = getToken();
+        if (!token) {
+            window.location.href = 'login.html';
+            return;
         }
 
-        function updateQuantity(index, change) {
-            if (cart[index]) {
-                cart[index].quantity += change;
-                if (cart[index].quantity <= 0) {
-                    cart.splice(index, 1);
+        const config = {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            ...options
+        };
+
+        try {
+            const response = await fetch(`${API_BASE}${endpoint}`, config);
+            if (!response.ok) {
+                if (response.status === 401) {
+                    localStorage.removeItem('token');
+                    window.location.href = 'login.html';
+                    return;
                 }
-                localStorage.setItem('cart', JSON.stringify(cart));
-                renderCart();
+                throw new Error(await response.text());
             }
+            return await response.json();
+        } catch (error) {
+            console.error('API Error:', error);
+            throw error;
         }
+    }
 
-        function removeItem(index) {
-            if (cart[index]) {
-                cart.splice(index, 1);
-                localStorage.setItem('cart', JSON.stringify(cart));
-                renderCart();
-            }
-        }
+    // Cart stays in localStorage (fast + session-based)
+    let cart = JSON.parse(localStorage.getItem('cart')) || [];
 
-        // Modal functionality
-        const modal = document.getElementById('checkoutModal');
+    function renderCart() {
+        const cartItemsEl = document.getElementById('cartItems');
+        const cartTotalEl = document.getElementById('cartTotal');
+        const subtotalEl = document.getElementById('subtotal');
+        const totalEl = document.getElementById('total');
         const checkoutBtn = document.getElementById('checkoutBtn');
-        const closeBtn = document.querySelector('.close');
-        const checkoutForm = document.getElementById('checkoutForm');
 
-        checkoutBtn.addEventListener('click', () => {
-            if (cart.length > 0) {
-                modal.style.display = 'block';
+        if (cart.length === 0) {
+            cartItemsEl.innerHTML = `
+                <div class="cart-empty fade-in-up">
+                    <i class="fas fa-shopping-cart"></i>
+                    <h3>Your cart is empty</h3>
+                    <p>Add some delicious items from the menu to get started</p>
+                    <a href="menu.html" class="btn btn-primary" style="margin-top: 1.5rem;">Browse Menu</a>
+                </div>
+            `;
+            cartTotalEl.textContent = '$0.00';
+            subtotalEl.textContent = '$0.00';
+            totalEl.textContent = '$0.00';
+            checkoutBtn.style.display = 'none';
+            return;
+        }
+
+        let total = 0;
+        cartItemsEl.innerHTML = cart.map((item, index) => {
+            const itemTotal = item.price * item.quantity;
+            total += itemTotal;
+            return `
+                <div class="cart-item fade-in-up" data-index="${index}">
+                    <img src="${item.image || 'https://via.placeholder.com/80x80/1a1a1a/ffffff?text=🍽️'}" 
+                         alt="${item.name}" class="item-image">
+                    <div class="item-details">
+                        <div class="item-name">${item.name}</div>
+                        <div class="item-price">$${item.price.toFixed(2)}</div>
+                        <div class="quantity-controls">
+                            <button class="quantity-btn" onclick="updateQuantity(${index}, -1)">−</button>
+                            <span class="quantity">${item.quantity}</span>
+                            <button class="quantity-btn" onclick="updateQuantity(${index}, 1)">+</button>
+                        </div>
+                    </div>
+                    <a href="#" class="remove-item" onclick="removeItem(${index}); return false;" title="Remove item">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+            `;
+        }).join('');
+
+        const formattedTotal = total.toFixed(2);
+        cartTotalEl.textContent = `$${formattedTotal}`;
+        subtotalEl.textContent = `$${formattedTotal}`;
+        totalEl.textContent = `$${formattedTotal}`;
+        checkoutBtn.style.display = 'block';
+    }
+
+    function updateQuantity(index, change) {
+        if (cart[index]) {
+            cart[index].quantity += change;
+            if (cart[index].quantity <= 0) {
+                cart.splice(index, 1);
             }
-        });
+            localStorage.setItem('cart', JSON.stringify(cart));
+            renderCart();
+        }
+    }
 
-        closeBtn.addEventListener('click', () => {
+    function removeItem(index) {
+        if (cart[index]) {
+            cart.splice(index, 1);
+            localStorage.setItem('cart', JSON.stringify(cart));
+            renderCart();
+        }
+    }
+
+    // Modal functionality
+    const modal = document.getElementById('checkoutModal');
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    const closeBtn = document.querySelector('.close');
+    const checkoutForm = document.getElementById('checkoutForm');
+
+    checkoutBtn.addEventListener('click', () => {
+        if (cart.length > 0) {
+            modal.style.display = 'block';
+        }
+    });
+
+    closeBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+
+    window.addEventListener('click', (e) => {
+        if (e.target === modal) {
             modal.style.display = 'none';
-        });
+        }
+    });
 
-        window.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.style.display = 'none';
-            }
-        });
-
-        checkoutForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            // Process order (save to localStorage or send to server)
-            const order = {
-                id: Date.now(),
+    // **NEW: Database Checkout**
+    checkoutForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        try {
+            const formData = {
                 items: cart,
                 total: parseFloat(document.getElementById('total').textContent.replace('$', '')),
-                address: document.getElementById('deliveryAddress').value,
+                delivery_address: document.getElementById('deliveryAddress').value,
                 phone: document.getElementById('deliveryPhone').value,
-                payment: document.getElementById('paymentMethod').value,
-                timestamp: new Date().toISOString()
+                payment_method: document.getElementById('paymentMethod').value
             };
-            
-            // Save order
-            let orders = JSON.parse(localStorage.getItem('orders')) || [];
-            orders.unshift(order);
-            localStorage.setItem('orders', JSON.stringify(orders));
+
+            // Send to your existing orders endpoint
+            const response = await fetch(`${API_BASE}/api/orders`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${getToken()}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            });
+
+            if (!response.ok) throw new Error('Order failed');
+
+            const order = await response.json();
             
             // Clear cart
             cart = [];
@@ -654,24 +706,33 @@
             modal.style.display = 'none';
             renderCart();
             
-            // Redirect to orders or show success
-            alert('Order placed successfully! Check your orders page.');
+            alert(`Order ${order.order_number} placed successfully!`);
             window.location.href = 'orders.html';
-        });
+            
+        } catch (error) {
+            alert('Checkout failed: ' + error.message);
+        }
+    });
 
-        // Logout
-        document.getElementById('logoutBtn').addEventListener('click', (e) => {
-            e.preventDefault();
-            if (confirm('Are you sure you want to logout?')) {
-                localStorage.removeItem('userName');
-                window.location.href = 'login.html';
-            }
-        });
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', (e) => {
+        e.preventDefault();
+        if (confirm('Are you sure you want to logout?')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('userName');
+            localStorage.removeItem('cart'); // Clear cart on logout
+            window.location.href = 'login.html';
+        }
+    });
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            renderCart();
-        });
-    </script>
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!getToken()) {
+            window.location.href = 'login.html';
+            return;
+        }
+        renderCart();
+    });
+</script>
 </body>
 </html>
