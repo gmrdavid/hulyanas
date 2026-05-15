@@ -545,6 +545,18 @@
             transform: scale(1.05);
         }
 
+        .action-edit {
+            background: #f0f0f0;
+            color: #666;
+            border: 1px solid #e0e0e0;
+        }
+
+        .action-edit:hover {
+            background: #e0e0e0;
+            color: #1a1a1a;
+            transform: scale(1.05);
+        }
+
         .action-delete {
             background: #f8d7da;
             color: #721c24;
