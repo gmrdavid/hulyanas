@@ -941,47 +941,52 @@ app.put('/api/menu/:id', authenticateToken, isAdmin, upload.single('image'), asy
 
 app.delete('/api/menu/:id', authenticateToken, isAdmin, async (req, res) => {
     let conn;
+
     try {
         const { id } = req.params;
-        
-        console.log(`🗑️ DELETE REQUEST: menu item ID ${id}`);
-        
+
         conn = await pool.getConnection();
-        
         await conn.beginTransaction();
-        
-        const [menuItem] = await conn.execute(`SELECT id, image_url FROM menu_items WHERE id = ?`, [id]);
-        
-        if (menuItem.length === 0) {
-            await conn.rollback();
-            conn.release();
+
+        const [rows] = await conn.execute(
+            `SELECT id, image_url FROM menu_items WHERE id = ?`,
+            [id]
+        );
+
+        if (rows.length === 0) {
             return res.status(404).json({ error: 'Menu item not found' });
         }
-        
-        const [orderItemsDeleted] = await conn.execute(`DELETE oi FROM order_items oi JOIN orders o ON oi.order_id = o.id WHERE oi.menu_item_id = ?`,[id]);
-        
-        const [result] = await conn.execute(`DELETE FROM menu_items WHERE id = ?`, [id]);
-        
-        await conn.commit();
-        conn.release();
-        
-        res.json({ 
-            message: 'Menu item permanently deleted!',
-            deletedId: id,
-            affectedRows: result.affectedRows
-        });
-        
-    } catch (error) {
-        console.error('🚨 Delete menu error:', error);
-        if (conn) {
-            try {
-                await conn.rollback();
-            } catch (rollbackErr) {
-                console.error('Rollback failed:', rollbackErr);
-            }
-            conn.release();
+
+        const item = rows[0];
+
+        // delete image from cloudinary
+        if (item.image_url) {
+            const parts = item.image_url.split('/');
+            const fileName = parts[parts.length - 1];
+            const publicId = `hulyanas-menu/${fileName.split('.')[0]}`;
+
+            await cloudinary.uploader.destroy(publicId);
         }
+
+        // soft delete instead of hard delete
+        await conn.execute(
+            `UPDATE menu_items SET is_available = 0 WHERE id = ?`,
+            [id]
+        );
+
+        await conn.commit();
+
+        res.json({
+            message: 'Menu item disabled successfully',
+            id
+        });
+
+    } catch (error) {
+        if (conn) await conn.rollback();
         res.status(500).json({ error: error.message });
+
+    } finally {
+        if (conn) conn.release();
     }
 });
 
