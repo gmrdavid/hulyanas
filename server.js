@@ -480,8 +480,8 @@ app.get('/api/menu', async (req, res) => {
     try {
         const conn = await pool.getConnection();
         const [rows] = await conn.execute(
-            `SELECT id, name, description, price, category, image_url, is_available 
-             FROM menu_items WHERE is_available = TRUE ORDER BY category, name`
+            `SELECT id, name, description, price, category, image_url, parseInt(is_available)
+             FROM menu_items WHERE parseInt(is_available) = TRUE ORDER BY category, name`
         );
         conn.release();
         res.json(rows);
@@ -503,7 +503,7 @@ app.get('/api/admin/menu', authenticateToken, isAdmin, async (req, res) => {
                 price,
                 category,
                 image_url,
-                is_available
+                parseInt(is_available)
             FROM menu_items
             ORDER BY created_at DESC
         `);
@@ -528,7 +528,7 @@ app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
     try {
         const conn = await pool.getConnection();
         const [[menuItems], [totalOrders], [revenue], [totalUsers]] = await Promise.all([
-            conn.execute(`SELECT COUNT(*) as count FROM menu_items WHERE is_available = TRUE`),
+            conn.execute(`SELECT COUNT(*) as count FROM menu_items WHERE parseInt(is_available) = TRUE`),
             conn.execute(`SELECT COUNT(*) as count FROM orders WHERE status IN ('preparing', 'out_for_delivery', 'delivered')`),
             conn.execute(`SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders WHERE status NOT IN ('cancelled', 'pending')`),
             conn.execute(`SELECT COUNT(*) as count FROM users WHERE role = 'customer'`)
@@ -646,7 +646,7 @@ app.post('/api/menu', authenticateToken, upload.single('image'), async (req, res
                 price,
                 category,
                 imageUrl,
-                is_available
+                parseInt(is_available)
             ]
         );
 
@@ -694,7 +694,7 @@ app.put('/api/menu/:id', authenticateToken, upload.single('image'), async (req, 
                 price = ?,
                 category = ?,
                 image_url = ?,
-                is_available = ?
+                parseInt(is_available) = ?
             WHERE id = ?`,
             [
                 name,
@@ -702,7 +702,7 @@ app.put('/api/menu/:id', authenticateToken, upload.single('image'), async (req, 
                 price,
                 category,
                 imageUrl,
-                is_available,
+                parseInt(is_available),
                 id
             ]
         );
