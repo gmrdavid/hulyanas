@@ -682,8 +682,12 @@
 
         async function downloadInvoice(orderId, orderNumber, totalAmount, status, customerName, address, phone) {
             try {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF("p", "mm", "a4");
+                if (!window.jspdf) {
+                alert("jsPDF not loaded");
+                return;
+            }
+
+            const doc = new window.jspdf.jsPDF("p", "mm", "a4");
 
                 const items = await apiRequest(`/api/orders/${orderId}/items`);
 

@@ -536,6 +536,7 @@ app.get('/api/orders/:id/items', authenticateToken, async (req, res) => {
         conn = await pool.getConnection();
         const [items] = await conn.execute(`
             SELECT 
+                oi.menu_item_id,
                 oi.quantity,
                 oi.price_at_order,
                 mi.name,
