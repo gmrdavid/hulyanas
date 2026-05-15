@@ -668,7 +668,6 @@ app.post('/api/menu', authenticateToken, upload.single('image'), async (req, res
 app.put('/api/menu/:id', authenticateToken, upload.single('image'), async (req, res) => {
     try {
         const { id } = req.params;
-
         const { name, description, price, category, is_available } = req.body;
 
         const [existing] = await pool.execute(
@@ -677,9 +676,7 @@ app.put('/api/menu/:id', authenticateToken, upload.single('image'), async (req, 
         );
 
         if (existing.length === 0) {
-            return res.status(404).json({
-                message: 'Menu item not found'
-            });
+            return res.status(404).json({ message: 'Menu item not found' });
         }
 
         let imageUrl = existing[0].image_url;
@@ -690,35 +687,75 @@ app.put('/api/menu/:id', authenticateToken, upload.single('image'), async (req, 
 
         await pool.execute(
             `UPDATE menu_items 
-            SET 
-                name = ?,
-                description = ?,
-                price = ?,
-                category = ?,
-                image_url = ?,
-                is_available = ?
-            WHERE id = ?`,
+             SET name = ?,
+                 description = ?,
+                 price = ?,
+                 category = ?,
+                 image_url = ?,
+                 is_available = ?
+             WHERE id = ?`,
             [
                 name,
                 description,
                 price,
                 category,
-                image_url,
+                imageUrl,
                 parseInt(is_available),
                 id
             ]
         );
 
-        res.json({
-            message: 'Menu item updated successfully'
-        });
+        res.json({ message: 'Menu item updated successfully' });
 
     } catch (error) {
         console.error('Update menu error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});app.put('/api/menu/:id', authenticateToken, upload.single('image'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, description, price, category, is_available } = req.body;
 
-        res.status(500).json({
-            message: 'Server error'
-        });
+        const [existing] = await pool.execute(
+            'SELECT * FROM menu_items WHERE id = ?',
+            [id]
+        );
+
+        if (existing.length === 0) {
+            return res.status(404).json({ message: 'Menu item not found' });
+        }
+
+        let imageUrl = existing[0].image_url;
+
+        if (req.file) {
+            imageUrl = `/images/${req.file.filename}`;
+        }
+
+        await pool.execute(
+            `UPDATE menu_items 
+             SET name = ?,
+                 description = ?,
+                 price = ?,
+                 category = ?,
+                 image_url = ?,
+                 is_available = ?
+             WHERE id = ?`,
+            [
+                name,
+                description,
+                price,
+                category,
+                imageUrl,
+                parseInt(is_available),
+                id
+            ]
+        );
+
+        res.json({ message: 'Menu item updated successfully' });
+
+    } catch (error) {
+        console.error('Update menu error:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 
@@ -726,21 +763,25 @@ app.delete('/api/menu/:id', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
 
+        const [item] = await pool.execute(
+            'SELECT image_url FROM menu_items WHERE id = ?',
+            [id]
+        );
+
+        if (item.length === 0) {
+            return res.status(404).json({ message: 'Menu item not found' });
+        }
+
         await pool.execute(
             'DELETE FROM menu_items WHERE id = ?',
             [id]
         );
 
-        res.json({
-            message: 'Menu item deleted successfully'
-        });
+        res.json({ message: 'Menu item deleted successfully' });
 
     } catch (error) {
         console.error('Delete menu error:', error);
-
-        res.status(500).json({
-            message: 'Server error'
-        });
+        res.status(500).json({ message: 'Server error' });
     }
 });
 
