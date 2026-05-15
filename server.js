@@ -483,18 +483,20 @@ app.get('/api/menu', async (req, res) => {
     try {
         conn = await pool.getConnection();
 
-        const [rows] = await conn.execute(`
-            SELECT id, name, description, price, category, image_url, is_available
-            FROM menu_items
-            ORDER BY created_at DESC
-        `);
+        const [dbInfo] = await conn.execute(`SELECT DATABASE() AS db`);
+        const [rows] = await conn.execute(`SELECT * FROM menu_items`);
 
-        console.log("MENU ITEMS FOUND:", rows.length);
+        console.log("CONNECTED DATABASE:", dbInfo);
+        console.log("MENU ROWS:", rows);
 
-        res.json(rows);
+        res.json({
+            database: dbInfo,
+            count: rows.length,
+            data: rows
+        });
 
     } catch (error) {
-        console.error('Menu error:', error);
+        console.error(error);
         res.status(500).json({ error: error.message });
 
     } finally {
