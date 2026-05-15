@@ -28,7 +28,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.static('public'));
 app.use('/user', express.static('user'));
 app.use('/admin', express.static('admin'));
-app.use('/images', express.static(path.join(__dirname, 'public/images')));
+app.use('/images', express.static(path.join(__dirname, 'images')));
 
 // MySQL Connection Pool
 const pool = mysql.createPool({
@@ -446,17 +446,38 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
 
 // ===== MENU ROUTES =====
 app.get('/api/menu', async (req, res) => {
+    let conn;
+
     try {
-        const conn = await pool.getConnection();
-        const [rows] = await conn.execute(
-            `SELECT id, name, description, price, category, image_url, is_available 
-             FROM menu_items WHERE is_available = TRUE ORDER BY category, name`
-        );
-        conn.release();
+        conn = await pool.getConnection();
+
+        const [rows] = await conn.execute(`
+            SELECT 
+                id,
+                name,
+                description,
+                price,
+                category,
+                image_url,
+                is_available
+            FROM menu_items
+            WHERE is_available = 1
+            ORDER BY id DESC
+        `);
+
         res.json(rows);
+
     } catch (error) {
-        console.error('🚨 Menu error:', error);
-        res.status(500).json({ error: error.message });
+
+        console.error('🚨 Menu fetch error:', error);
+
+        res.status(500).json({
+            error: error.message
+        });
+
+    } finally {
+
+        if (conn) conn.release();
     }
 });
 

@@ -546,7 +546,7 @@
             const data = await response.json();
 
             // only active items
-            menuData = data.filter(item => item.status === 'active');
+            menuData = data.filter(item => item.is_available == 1);
 
         } catch (error) {
             console.error('🚨 Error loading menu:', error);
@@ -613,8 +613,8 @@
         const cartItem = cart.find(c => c.id === item.id);
         const quantity = cartItem ? cartItem.quantity : 0;
 
-        const imageUrl = item.image
-            ? `http://localhost:3000/uploads/${item.image}`
+        const imageUrl = item.image_url
+            ? `http://localhost:3000${item.image_url}`
             : '';
 
         const card = document.createElement('div');
@@ -752,7 +752,7 @@
                 id: item.id,
                 name: item.name,
                 price: item.price,
-                image: item.image,
+                image_url: item.image_url,
                 quantity: 1
             });
         }
