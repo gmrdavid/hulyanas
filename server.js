@@ -46,9 +46,7 @@ const pool = mysql.createPool({
 });
 
 // JWT Secret
-if (!process.env.JWT_SECRET) {
-    throw new Error('JWT_SECRET is missing in .env');}
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || 'hulyanas_secret_key_2024_secure_change_this';
 
 // Multer setup
 const storage = multer.diskStorage({
