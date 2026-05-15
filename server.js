@@ -50,18 +50,15 @@ const JWT_SECRET = process.env.JWT_SECRET || 'hulyanas_secret_key_2024_secure_ch
 
 // Multer setup
 const storage = multer.diskStorage({
-    destination: async (req, file, cb) => {
-        try {
-            await fs.mkdir('public/images', { recursive: true });
-            cb(null, 'public/images/');
-        } catch (err) {
-            cb(err, '');
-        }
+    destination: (req, file, cb) => {
+        cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname));
+        const uniqueName = Date.now() + '-' + file.originalname;
+        cb(null, uniqueName);
     }
 });
+
 const upload = multer({ 
     storage,
     limits: { fileSize: 5 * 1024 * 1024 },
@@ -70,6 +67,12 @@ const upload = multer({
         else cb(new Error('Only image files'), false);
     }
 });
+
+const uploadDir = path.join(__dirname, 'images');
+
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir);
+}
 
 // Auth middleware
 const authenticateToken = async (req, res, next) => {
