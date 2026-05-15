@@ -453,11 +453,11 @@ app.get('/api/menu', authenticateToken, isAdmin, async (req, res) => {
         const [rows] = await conn.execute(
             `SELECT id, name, description, price, category, image_url, is_available 
              FROM menu_items ORDER BY category, name`
-        );  // ✅ Removed WHERE is_available = TRUE
+        );
         conn.release();
         res.json(rows);
     } catch (error) {
-        console.error('🚨 Menu error:', error);
+        console.error('Menu error:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -473,7 +473,7 @@ app.get('/api/menu/public', async (req, res) => {
         conn.release();
         res.json(rows);
     } catch (error) {
-        console.error('🚨 Public menu error:', error);
+        console.error('Public menu error:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -583,7 +583,7 @@ app.post('/api/menu', authenticateToken, isAdmin, upload.single('image'), async 
         const { name, description, price, category, is_available } = req.body;
         const image_url = req.file ? `/images/${req.file.filename}` : null;
 
-        console.log('📥 ADD MENU:', { name, price, is_available, image: req.file?.filename });
+        console.log('ADD MENU:', { name, price, is_available, image: req.file?.filename });
 
         const conn = await pool.getConnection();
         const [result] = await conn.execute(
@@ -595,7 +595,7 @@ app.post('/api/menu', authenticateToken, isAdmin, upload.single('image'), async 
                 parseFloat(price), 
                 category || 'main', 
                 image_url, 
-                is_available === '1' || is_available === 'true' ? 1 : 0  // ✅ FIXED: Handle both '1' and 'true'
+                is_available === '1' || is_available === 'true' ? 1 : 0
             ]
         );
         conn.release();
@@ -605,26 +605,24 @@ app.post('/api/menu', authenticateToken, isAdmin, upload.single('image'), async 
             id: result.insertId 
         });
     } catch (error) {
-        console.error('🚨 Add menu error:', error);
+        console.error('Add menu error:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-
-/ ✅ FIXED: Update menu item
+// ✅ FIXED: Update menu item
 app.put('/api/menu/:id', authenticateToken, isAdmin, upload.single('image'), async (req, res) => {
     try {
         const { id } = req.params;
         const { name, description, price, category, is_available } = req.body;
 
-        console.log('📝 UPDATE MENU:', { id, name, price, is_available });
+        console.log('UPDATE MENU:', { id, name, price, is_available });
 
         const conn = await pool.getConnection();
         const [oldItem] = await conn.execute(`SELECT image_url FROM menu_items WHERE id=?`, [id]);
         let image_url = oldItem[0]?.image_url || '';
 
         if (req.file) {
-            // Delete old image if exists
             if (oldItem[0]?.image_url) {
                 try {
                     await fs.unlink(`public${oldItem[0].image_url}`);
@@ -642,7 +640,7 @@ app.put('/api/menu/:id', authenticateToken, isAdmin, upload.single('image'), asy
                 parseFloat(price), 
                 category || 'main', 
                 image_url, 
-                is_available === '1' || is_available === 'true' ? 1 : 0,  // ✅ FIXED
+                is_available === '1' || is_available === 'true' ? 1 : 0,
                 id
             ]
         );
@@ -650,7 +648,7 @@ app.put('/api/menu/:id', authenticateToken, isAdmin, upload.single('image'), asy
 
         res.json({ message: 'Menu item updated successfully!' });
     } catch (error) {
-        console.error('🚨 Update menu error:', error);
+        console.error('Update menu error:', error);
         res.status(500).json({ error: error.message });
     }
 });
