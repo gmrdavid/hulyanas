@@ -444,34 +444,41 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
     }
 });
 
-//Edit User Role (Admin only)
-app.put('/api/admin/users/:id/role', authenticateToken, async (req, res) => {
+// Edit User Role (Admin only)
+app.put('/api/admin/users/:id/role', authenticateToken, isAdmin, async (req, res) => {
+    let conn;
+
     try {
         const { id } = req.params;
         const { role } = req.body;
 
         console.log('Update request:', { id, role });
 
-        if (!role) return res.status(400).json({ error: 'Role required' });
+        if (!role) {
+            return res.status(400).json({ error: 'Role required' });
+        }
 
-        const [result] = await db.query(
+        conn = await pool.getConnection();
+
+        const [result] = await conn.execute(
             'UPDATE users SET role = ? WHERE id = ?',
             [role, id]
         );
-
-        console.log('DB result:', result);
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        res.json({ success: true, message: 'Role updated' });
+        res.json({ success: true, message: 'Role updated successfully' });
 
     } catch (error) {
-        console.error('DATABASE ERROR:', error); // 👈 IMPORTANT
+        console.error('DATABASE ERROR:', error);
         res.status(500).json({
             error: error.message
         });
+
+    } finally {
+        if (conn) conn.release();
     }
 });
 
