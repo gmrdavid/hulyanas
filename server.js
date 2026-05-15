@@ -491,8 +491,10 @@ app.get('/api/menu', async (req, res) => {
 });
 
 app.get('/api/admin/menu', authenticateToken, isAdmin, async (req, res) => {
+    let conn;
+
     try {
-        const conn = await pool.getConnection();
+        conn = await pool.getConnection();
 
         const [rows] = await conn.execute(`
             SELECT 
@@ -507,8 +509,6 @@ app.get('/api/admin/menu', authenticateToken, isAdmin, async (req, res) => {
             ORDER BY created_at DESC
         `);
 
-        conn.release();
-
         res.json(rows);
 
     } catch (error) {
@@ -517,6 +517,9 @@ app.get('/api/admin/menu', authenticateToken, isAdmin, async (req, res) => {
         res.status(500).json({
             error: error.message
         });
+
+    } finally {
+        if (conn) conn.release();
     }
 });
 
