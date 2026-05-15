@@ -515,73 +515,44 @@
     <!-- Toast notification -->
     <div class="toast" id="toast"></div>
 
-<!-- Replace ONLY the <script> section in your menu.html with this: -->
 <script>
     const API_URL = 'https://hulyanas.onrender.com/api';
-    const API_BASE = 'https://hulyanas.onrender.com';
 
     let menuData = [];
-    let cartCount = 0; // Database-driven cart count
+    let cart = JSON.parse(localStorage.getItem('cart')) || [];
     let currentCategory = 'all';
-
-    function getToken() { 
-        return localStorage.getItem('token'); 
-    }
-
-    async function apiRequest(endpoint, options = {}) {
-        const token = getToken();
-        if (!token) { 
-            window.location.href = 'login.html'; 
-            return; 
-        }
-        
-        try {
-            const response = await fetch(`${API_BASE}${endpoint}`, {
-                headers: { 
-                    'Authorization': `Bearer ${token}`, 
-                    'Content-Type': 'application/json' 
-                },
-                ...options
-            });
-            
-            if (!response.ok) {
-                if (response.status === 401) { 
-                    localStorage.removeItem('token'); 
-                    window.location.href = 'login.html'; 
-                    return; 
-                }
-                throw new Error(await response.text());
-            }
-            return await response.json();
-        } catch (error) {
-            console.error('API Error:', error);
-            throw error;
-        }
-    }
 
     // Initialize
     document.addEventListener('DOMContentLoaded', async function () {
-        if (!getToken()) {
-            window.location.href = 'login.html';
-            return;
-        }
-        
         await loadMenuFromDatabase();
-        await loadCartCount();
+        updateCartDisplay();
         renderCategories();
         renderMenuItems(menuData);
         staggerAnimations();
         setupEventListeners();
     });
 
-    // LOAD MENU FROM DATABASE (unchanged)
+    // LOAD MENU FROM DATABASE
     async function loadMenuFromDatabase() {
         try {
             const response = await fetch(`${API_URL}/menu`);
-            if (!response.ok) throw new Error('Failed to fetch menu');
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch menu');
+            }
+
             const apiResponse = await response.json();
-            menuData = (apiResponse.data || apiResponse).filter(item => item.is_available == 1);
+            
+            // ✅ Fix: Handle both flat array and {data: []} response
+            const rawData = apiResponse.data || apiResponse;
+            
+            // ✅ Only available items
+            menuData = Array.isArray(rawData) 
+                ? rawData.filter(item => item.is_available == 1)
+                : [];
+                
             console.log('✅ Loaded menu items:', menuData.length);
+
         } catch (error) {
             console.error('🚨 Error loading menu:', error);
             document.getElementById('menuItems').innerHTML = `
@@ -594,215 +565,305 @@
         }
     }
 
-    // ✅ NEW: Load cart count from database
-    async function loadCartCount() {
-        try {
-            const data = await apiRequest('/api/cart');
-            cartCount = data.items ? data.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
-            updateCartDisplay();
-        } catch (error) {
-            console.error('Load cart count failed:', error);
-            cartCount = 0;
-        }
-    }
-
     function renderCategories() {
-        const categories = ['all', ...Array.from(new Set(menuData.map(item => item.category)))];
+        const categories = [
+            'all',
+            ...Array.from(new Set(menuData.map(item => item.category)))
+        ];
+
         const container = document.getElementById('menuCategories');
+
         container.innerHTML = '';
+
         categories.forEach((category, index) => {
             const btn = document.createElement('button');
+
             btn.className = `category-btn ${index === 0 ? 'active' : ''}`;
             btn.dataset.category = category;
-            btn.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+
+            btn.textContent =
+                category.charAt(0).toUpperCase() + category.slice(1);
+
             container.appendChild(btn);
         });
     }
 
-   function renderMenuItems(items) {
-    const container = document.getElementById('menuItems');
-    container.innerHTML = '';
-    
-    if (items.length === 0) {
-        container.innerHTML = `
-            <div class="empty-state fade-in-up">
-                <i class="fas fa-utensils"></i>
-                <h3>No items available</h3>
-                <p>Check back soon for our delicious menu</p>
-            </div>
-        `;
-        return;
-    }
-    
-    items.forEach((item, index) => {
-        const card = createMenuCard(item);
-        card.classList.add('fade-in-up');
-        
-        // ✅ FIXED: Check if element exists before setting animationDelay
-        if (card.style) {
-            card.style.animationDelay = `${index * 0.1}s`;
+    function renderMenuItems(items) {
+        const container = document.getElementById('menuItems');
+        container.innerHTML = '';
+
+        if (items.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state fade-in-up">
+                    <i class="fas fa-utensils"></i>
+                    <h3>No items available</h3>
+                    <p>Check back soon for our delicious menu</p>
+                </div>
+            `;
+            return;
         }
-        
-        container.appendChild(card);
-    });
-}
 
- async function createMenuCard(item) {
-    let quantity = 0;
-    try {
-        const cartData = await apiRequest('/api/cart');
-        const cartItem = cartData.items?.find(c => (c.menu_item_id || c.id) === item.id);
-        quantity = cartItem ? cartItem.quantity : 0;
-    } catch (e) {
-        console.log('Cart check failed, showing 0');
+        items.forEach((item, index) => {
+            const card = createMenuCard(item);
+
+            card.style.animationDelay = `${index * 0.1}s`;
+            card.classList.add('fade-in-up');
+
+            container.appendChild(card);
+        });
     }
 
-    // ✅ FIXED: Correct image path + fallback
-    const imageUrl = item.image_url 
-        ? `https://hulyanas.onrender.com${item.image_url}` 
-        : 'https://via.placeholder.com/300x220/f8f8f8/666?text=🍽️';
+    function createMenuCard(item) {
+        const cartItem = cart.find(c => c.id === item.id);
+        const quantity = cartItem ? cartItem.quantity : 0;
 
-    const card = document.createElement('div');
-    card.className = 'menu-card';
-    card.innerHTML = `
-        <div class="menu-image">
-            <img src="${imageUrl}" 
-                 alt="${item.name}" 
-                 style="width:100%;height:100%;object-fit:cover;"
-                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-            <i class="fas fa-utensils" style="display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:3rem;color:#ccc;"></i>
-        </div>
-        <div class="menu-content">
-            <h3 class="menu-name">${item.name}</h3>
-            <p class="menu-description">${item.description || 'No description available'}</p>
-            <div class="menu-footer">
-                <div class="menu-price">$${Number(item.price).toFixed(2)}</div>
-                <div class="add-to-cart-container">
-                    ${quantity > 0 ? `
-                        <div class="quantity-controls">
-                            <button class="qty-btn" data-action="decrease" data-id="${item.id}">-</button>
-                            <span class="quantity">${quantity}</span>
-                            <button class="qty-btn" data-action="increase" data-id="${item.id}">+</button>
-                        </div>
-                    ` : `
-                        <button class="add-to-cart" data-id="${item.id}">
-                            <i class="fas fa-plus"></i> Add
-                        </button>
-                    `}
+        const imageUrl = item.image_url
+            ? `https://hulyanas.onrender.com${item.image_url}`
+            : '';
+
+        const card = document.createElement('div');
+        card.className = 'menu-card';
+
+        card.innerHTML = `
+            <div class="menu-image">
+                ${
+                    imageUrl
+                        ? `<img 
+                                src="${imageUrl}" 
+                                alt="${item.name}" 
+                                style="
+                                    width:100%;
+                                    height:100%;
+                                    object-fit:cover;
+                                "
+                           >`
+                        : `<i class="fas fa-utensils"></i>`
+                }
+            </div>
+
+            <div class="menu-content">
+                <h3 class="menu-name">${item.name}</h3>
+
+                <p class="menu-description">
+                    ${item.description || 'No description available'}
+                </p>
+
+                <div class="menu-footer">
+                    <div class="menu-price">
+                        ₱${Number(item.price).toFixed(2)}
+                    </div>
+
+                    <div class="add-to-cart-container">
+                        ${
+                            quantity > 0
+                                ? `
+                                <div class="quantity-controls">
+                                    <button 
+                                        class="qty-btn" 
+                                        data-action="decrease" 
+                                        data-id="${item.id}"
+                                    >-</button>
+
+                                    <span class="quantity">${quantity}</span>
+
+                                    <button 
+                                        class="qty-btn" 
+                                        data-action="increase" 
+                                        data-id="${item.id}"
+                                    >+</button>
+                                </div>
+                            `
+                                : `
+                                <button 
+                                    class="add-to-cart" 
+                                    data-id="${item.id}"
+                                >
+                                    <i class="fas fa-plus"></i> Add
+                                </button>
+                            `
+                        }
+                    </div>
                 </div>
             </div>
-        </div>
-    `;
-    return card;
-}
+        `;
+
+        return card;
+    }
 
     function setupEventListeners() {
-        // Category filter (unchanged)
-        document.getElementById('menuCategories').addEventListener('click', (e) => {
-            if (e.target.classList.contains('category-btn')) {
-                document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
-                e.target.classList.add('active');
-                currentCategory = e.target.dataset.category;
-                const filteredItems = currentCategory === 'all' ? menuData : menuData.filter(item => item.category === currentCategory);
-                renderMenuItems(filteredItems);
-            }
-        });
 
-        // ✅ FIXED: Database cart actions
-        document.addEventListener('click', async (e) => {
+        // CATEGORY FILTER
+        document.getElementById('menuCategories')
+            .addEventListener('click', (e) => {
+
+                if (e.target.classList.contains('category-btn')) {
+
+                    document.querySelectorAll('.category-btn')
+                        .forEach(btn => btn.classList.remove('active'));
+
+                    e.target.classList.add('active');
+
+                    currentCategory = e.target.dataset.category;
+
+                    const filteredItems =
+                        currentCategory === 'all'
+                            ? menuData
+                            : menuData.filter(
+                                item => item.category === currentCategory
+                            );
+
+                    renderMenuItems(filteredItems);
+                }
+            });
+
+        // CART ACTIONS
+        document.addEventListener('click', (e) => {
+
             const addBtn = e.target.closest('.add-to-cart');
             const qtyBtn = e.target.closest('.qty-btn');
 
             if (addBtn) {
-                await addToCart(parseInt(addBtn.dataset.id));
+                addToCart(parseInt(addBtn.dataset.id));
             }
 
             if (qtyBtn) {
-                await handleQuantityChange(parseInt(qtyBtn.dataset.id), qtyBtn.dataset.action);
+                handleQuantityChange(
+                    parseInt(qtyBtn.dataset.id),
+                    qtyBtn.dataset.action
+                );
             }
         });
 
-        document.getElementById('cartSummary').addEventListener('click', () => {
-            window.location.href = 'cart.html';
-        });
-    }
-
-    // ✅ FIXED: Database add to cart
-    async function addToCart(itemId) {
-        try {
-            const response = await apiRequest('/api/cart', {
-                method: 'POST',
-                body: JSON.stringify({ menu_item_id: itemId, quantity: 1 })
+        // CART SUMMARY CLICK
+        document.getElementById('cartSummary')
+            .addEventListener('click', () => {
+                window.location.href = 'cart.html';
             });
-            
-            if (response.success) {
-                showToast('Item added to cart!');
-                await loadCartCount();
-                rerenderCurrentCategory();
-            }
-        } catch (error) {
-            console.error('Add to cart failed:', error);
-            showToast('Failed to add item');
-        }
     }
 
-    // ✅ FIXED: Database quantity change
-    async function handleQuantityChange(itemId, action) {
-        try {
-            if (action === 'increase') {
-                await apiRequest(`/api/cart/${itemId}`, {
-                    method: 'PUT',
-                    body: JSON.stringify({ quantity: 999 }) // Server will increment
-                });
-            } else if (action === 'decrease') {
-                await apiRequest(`/api/cart/${itemId}`, {
-                    method: 'PUT',
-                    body: JSON.stringify({ quantity: -1 }) // Server will decrement
-                });
-            }
-            await loadCartCount();
-            rerenderCurrentCategory();
-        } catch (error) {
-            console.error('Quantity change failed:', error);
+    function addToCart(itemId) {
+
+        const item = menuData.find(i => i.id === itemId);
+
+        if (!item) return;
+
+        const existingItem = cart.find(c => c.id === itemId);
+
+        if (existingItem) {
+            existingItem.quantity += 1;
+        } else {
+            cart.push({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                image_url: item.image_url,
+                quantity: 1
+            });
         }
+
+        localStorage.setItem('cart', JSON.stringify(cart));
+
+        updateCartDisplay();
+
+        showToast('Item added to cart!');
+
+        rerenderCurrentCategory();
     }
 
-    async function rerenderCurrentCategory() {
-        const filteredItems = currentCategory === 'all' ? menuData : menuData.filter(item => item.category === currentCategory);
+    function handleQuantityChange(itemId, action) {
+
+        const cartItem = cart.find(c => c.id === itemId);
+
+        if (!cartItem) return;
+
+        if (action === 'increase') {
+            cartItem.quantity += 1;
+        }
+
+        if (action === 'decrease') {
+
+            if (cartItem.quantity > 1) {
+                cartItem.quantity -= 1;
+            } else {
+                cart = cart.filter(c => c.id !== itemId);
+            }
+        }
+
+        localStorage.setItem('cart', JSON.stringify(cart));
+
+        updateCartDisplay();
+
+        rerenderCurrentCategory();
+    }
+
+    function rerenderCurrentCategory() {
+
+        const filteredItems =
+            currentCategory === 'all'
+                ? menuData
+                : menuData.filter(
+                    item => item.category === currentCategory
+                );
+
         renderMenuItems(filteredItems);
     }
 
     function updateCartDisplay() {
-        document.getElementById('cartCount').textContent = cartCount;
-        document.getElementById('cartTotal').textContent = cartCount;
-        // Note: Subtotal requires full cart data - simplified to count only
-        document.getElementById('cartSubtotal').textContent = '0.00';
+
+        const totalItems = cart.reduce(
+            (sum, item) => sum + (item.quantity || 0),
+            0
+        );
+
+        const subtotal = cart.reduce(
+            (sum, item) =>
+                sum + (Number(item.price) * (item.quantity || 0)),
+            0
+        );
+
+        document.getElementById('cartCount').textContent = totalItems;
+        document.getElementById('cartTotal').textContent = totalItems;
+
+        document.getElementById('cartSubtotal').textContent =
+            subtotal.toFixed(2);
     }
 
     function showToast(message) {
+
         const toast = document.getElementById('toast');
+
         toast.textContent = message;
+
         toast.classList.add('show', 'success');
-        setTimeout(() => toast.classList.remove('show'), 3000);
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
     }
 
     function staggerAnimations() {
-    // ✅ FIXED: Only animate existing elements
-        document.querySelectorAll('.fade-in-up').forEach((el, index) => {
-            if (el.style) {
-                el.style.animationDelay = `${index * 0.1}s`;
-            }
+
+        const elements = document.querySelectorAll('.fade-in-up');
+
+        elements.forEach((el, index) => {
+            el.style.animationDelay = `${index * 0.1}s`;
         });
     }
 
+    // NAVBAR EFFECT
     window.addEventListener('scroll', () => {
+
         const navbar = document.querySelector('.navbar');
+
         if (window.scrollY > 50) {
             navbar.style.background = 'rgba(255, 255, 255, 1)';
-            navbar.style.boxShadow = '0 2px 20px rgba(0, 0, 0, 0.08)';
+            navbar.style.boxShadow =
+                '0 2px 20px rgba(0, 0, 0, 0.08)';
         } else {
-            navbar.style.background = 'rgba(255, 255, 255, 0.98)';
-            navbar.style.boxShadow = '0 1px 10px rgba(0, 0, 0, 0.05)';
+            navbar.style.background =
+                'rgba(255, 255, 255, 0.98)';
+            navbar.style.boxShadow =
+                '0 1px 10px rgba(0, 0, 0, 0.05)';
         }
     });
 </script>
