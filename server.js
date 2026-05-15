@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
-const fs = require('fs').promises;
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT;
