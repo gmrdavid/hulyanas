@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const path = require('path');
 const multer = require('multer');
-const fs = require('fs');
+const fs = require('fs').promises;
 
 const app = express();
 const PORT = process.env.PORT;
@@ -50,15 +50,18 @@ const JWT_SECRET = process.env.JWT_SECRET || 'hulyanas_secret_key_2024_secure_ch
 
 // Multer setup
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadDir);
+    destination: async (req, file, cb) => {
+        try {
+            await fs.mkdir('public/images', { recursive: true });
+            cb(null, 'public/images/');
+        } catch (err) {
+            cb(err, '');
+        }
     },
     filename: (req, file, cb) => {
-        const uniqueName = Date.now() + '-' + file.originalname;
-        cb(null, uniqueName);
+        cb(null, Date.now() + '-' + Math.round(Math.random() * 1E9) + path.extname(file.originalname));
     }
 });
-
 const upload = multer({ 
     storage,
     limits: { fileSize: 5 * 1024 * 1024 },
@@ -67,12 +70,6 @@ const upload = multer({
         else cb(new Error('Only image files'), false);
     }
 });
-
-const uploadDir = path.join(__dirname, 'images');
-
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
-}
 
 // Auth middleware
 const authenticateToken = async (req, res, next) => {
@@ -447,23 +444,23 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
     }
 });
 
-// Edit User Role (Admin only)
-app.put('/api/admin/users/:id/role', authenticateToken, isAdmin, async (req, res) => {
-    let conn;
-
+app.put('/api/admin/users/:id/role', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
         const { role } = req.body;
 
-        console.log('Update request:', { id, role });
+        console.log('Updating user role:', { id, role });
 
         if (!role) {
-            return res.status(400).json({ error: 'Role required' });
+            return res.status(400).json({ error: 'Role is required' });
         }
 
-        conn = await pool.getConnection();
+        const allowedRoles = ['customer', 'staff', 'admin'];
+        if (!allowedRoles.includes(role)) {
+            return res.status(400).json({ error: 'Invalid role' });
+        }
 
-        const [result] = await conn.execute(
+        const [result] = await db.query(
             'UPDATE users SET role = ? WHERE id = ?',
             [role, id]
         );
@@ -472,16 +469,17 @@ app.put('/api/admin/users/:id/role', authenticateToken, isAdmin, async (req, res
             return res.status(404).json({ error: 'User not found' });
         }
 
-        res.json({ success: true, message: 'Role updated successfully' });
-
-    } catch (error) {
-        console.error('DATABASE ERROR:', error);
-        res.status(500).json({
-            error: error.message
+        res.json({
+            success: true,
+            message: 'User role updated successfully'
         });
 
-    } finally {
-        if (conn) conn.release();
+    } catch (error) {
+        console.error('Role update error:', error);
+
+        res.status(500).json({
+            error: 'Database error while updating role'
+        });
     }
 });
 
@@ -630,52 +628,52 @@ app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Menu management (Admin only)
-app.post('/menu', upload.single('image'), async (req, res) => {
+app.post('/api/menu', authenticateToken, isAdmin, upload.single('image'), async (req, res) => {
     try {
-        const { name, price } = req.body;
+        const { name, description, price, category, is_available } = req.body;
+        const image_url = req.file ? `/images/${req.file.filename}` : null;
 
-        const image_url = req.file ? req.file.filename : null;
-
-        await db.execute(
-            "INSERT INTO menu (name, price, image_url) VALUES (?, ?, ?)",
-            [name, price, image_url]
+        const conn = await pool.getConnection();
+        const [result] = await conn.execute(
+            `INSERT INTO menu_items (name, description, price, category, image_url, is_available)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [name, description, parseFloat(price), category || 'main', image_url, parseInt(is_available)]
         );
+        conn.release();
 
-        res.json({ message: "Menu added successfully" });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
+        res.status(201).json({ 
+            message: 'Menu item added successfully',
+            id: result.insertId 
+        });
+    } catch (error) {
+        console.error('🚨 Add menu error:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
-app.put('/menu/:id', upload.single('image'), async (req, res) => {
+app.put('/api/menu/:id', authenticateToken, isAdmin, upload.single('image'), async (req, res) => {
     try {
-        const { name, price } = req.body;
-        const id = req.params.id;
+        const { id } = req.params;
+        const { name, description, price, category, is_available } = req.body;
 
-        const [rows] = await db.execute(
-            "SELECT image_url FROM menu WHERE id = ?",
-            [id]
-        );
+        const conn = await pool.getConnection();
+        const [oldItem] = await conn.execute(`SELECT image_url FROM menu_items WHERE id=?`, [id]);
+        let image_url = oldItem[0]?.image_url || '';
 
-        let image_url = rows[0].image_url;
-
-        // if admin uploads new image
         if (req.file) {
-            image_url = req.file.filename;
+            image_url = `/images/${req.file.filename}`;
         }
 
-        await db.execute(
-            "UPDATE menu SET name = ?, price = ?, image_url = ? WHERE id = ?",
-            [name, price, image_url, id]
+        await conn.execute(
+            `UPDATE menu_items SET name=?, description=?, price=?, category=?, image_url=?, is_available=?, updated_at=NOW() WHERE id=?`,
+            [name, description, parseFloat(price), category, image_url, parseInt(is_available), id]
         );
+        conn.release();
 
-        res.json({ message: "Menu updated successfully" });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: "Server error" });
+        res.json({ message: 'Menu item updated successfully' });
+    } catch (error) {
+        console.error('🚨 Update menu error:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
