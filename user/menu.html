@@ -519,7 +519,7 @@
     const API_URL = 'https://hulyanas.onrender.com/api';
 
     let menuData = [];
-    let cart = JSON.parse(localStorage.getItem('cart')) || [];
+    let cart = [];
     let currentCategory = 'all';
 
     // ✅ ADD THIS HERE
@@ -534,14 +534,14 @@
     };
 
     // Initialize
-    document.addEventListener('DOMContentLoaded', async function () {
-        await loadMenuFromDatabase();
-        updateCartDisplay();
-        renderCategories();
-        renderMenuItems(menuData);
-        staggerAnimations();
-        setupEventListeners();
-    });
+   document.addEventListener('DOMContentLoaded', async function () {
+    await loadMenuFromDatabase();
+    await loadCartFromDatabase();
+    renderCategories();
+    renderMenuItems(menuData);
+    staggerAnimations();
+    setupEventListeners();
+});
 
     // LOAD MENU FROM DATABASE
     async function loadMenuFromDatabase() {
