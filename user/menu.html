@@ -576,6 +576,31 @@
         }
     }
 
+    async function loadCartFromDatabase() {
+
+    const token = localStorage.getItem('token');
+
+    if (!token) return;
+
+    try {
+
+        const response = await fetch(`${API_URL}/cart`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const data = await response.json();
+
+        cart = data.items || data || [];
+
+        updateCartDisplay();
+
+    } catch (error) {
+
+        console.error('Load cart error:', error);
+    }
+}
     function renderCategories() {
         const categories = [
             'all',
@@ -750,34 +775,49 @@
             });
     }
 
-    function addToCart(itemId) {
+    async function addToCart(itemId) {
 
-        const item = menuData.find(i => i.id === itemId);
+    const token = localStorage.getItem('token');
 
-        if (!item) return;
+    if (!token) {
+        alert('Please login first');
+        window.location.href = 'login.html';
+        return;
+    }
 
-        const existingItem = cart.find(c => c.id === itemId);
+    try {
 
-        if (existingItem) {
-            existingItem.quantity += 1;
-        } else {
-            cart.push({
-                id: item.id,
-                name: item.name,
-                price: item.price,
-                image_url: item.image_url,
+        const response = await fetch(`${API_URL}/cart`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                menu_item_id: itemId,
                 quantity: 1
-            });
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to add to cart');
         }
-
-        localStorage.setItem('cart', JSON.stringify(cart));
-
-        updateCartDisplay();
 
         showToast('Item added to cart!');
 
+        await loadCartFromDatabase();
+
         rerenderCurrentCategory();
+
+    } catch (error) {
+
+        console.error('Add to cart error:', error);
+
+        alert(error.message);
     }
+}
 
     function handleQuantityChange(itemId, action) {
 
