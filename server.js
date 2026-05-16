@@ -520,21 +520,23 @@ app.get('/api/orders', authenticateToken, async (req, res) => {
 // ADD THIS after your existing /api/orders route (around line 250)
 app.get('/api/orders/:id/items', authenticateToken, async (req, res) => {
     let conn;
+
     try {
         const { id } = req.params;
-        
-        // Verify user owns this order
+
+        // Verify ownership
         const [orderCheck] = await pool.execute(
             'SELECT id FROM orders WHERE id = ? AND user_id = ?', 
             [id, req.user.id]
         );
-        
+
         if (orderCheck.length === 0) {
             return res.status(403).json({ error: 'Order not found' });
         }
-        
+
         conn = await pool.getConnection();
-        const [items] = await conn.execute(`
+
+        const [rows] = await conn.execute(`
             SELECT 
                 oi.menu_item_id,
                 oi.quantity,
@@ -546,13 +548,21 @@ app.get('/api/orders/:id/items', authenticateToken, async (req, res) => {
             WHERE oi.order_id = ?
             ORDER BY oi.id
         `, [id]);
-        
+
+        // ✅ FIX: normalize image URLs
+        const items = rows.map(item => ({
+            ...item,
+            image_url: normalizeImageUrl(item.image_url)
+        }));
+
         res.json(items);
-        conn.release();
+
     } catch (error) {
         console.error('🚨 Order items error:', error);
-        if (conn) conn.release();
         res.status(500).json({ error: 'Failed to load order items' });
+
+    } finally {
+        if (conn) conn.release();
     }
 });
 
@@ -613,7 +623,6 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
 // ===== 🛒 CART ROUTES =====
 app.get('/api/cart', authenticateToken, async (req, res) => {
     let conn;
-
     try {
         conn = await pool.getConnection();
 
@@ -628,28 +637,21 @@ app.get('/api/cart', authenticateToken, async (req, res) => {
                 mi.is_available
             FROM cart c
             JOIN menu_items mi ON c.menu_item_id = mi.id
-            WHERE c.user_id = ? 
-            AND mi.is_available = 1
+            WHERE c.user_id = ? AND mi.is_available = 1
             ORDER BY c.created_at DESC
         `, [req.user.id]);
 
-        // ✅ NORMALIZE IMAGES
+        // ✅ FIX: normalize image URLs
         const items = rows.map(item => ({
             ...item,
             image_url: normalizeImageUrl(item.image_url)
         }));
 
-        console.log('🛒 CART ITEMS:', items);
-
         res.json({ items });
 
     } catch (error) {
         console.error('🚨 Cart GET error:', error);
-
-        res.status(500).json({
-            error: 'Failed to load cart',
-            items: []
-        });
+        res.status(500).json({ error: 'Failed to load cart', items: [] });
 
     } finally {
         if (conn) conn.release();
