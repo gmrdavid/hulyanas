@@ -628,7 +628,7 @@ app.get('/api/cart', authenticateToken, async (req, res) => {
             image_url: normalizeImageUrl(item.image_url)
         }));
 
-        res.json({ items });
+        res.json(items);
 
     } catch (error) {
         console.error('🚨 Cart GET error:', error);
