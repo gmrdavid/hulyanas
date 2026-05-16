@@ -9,7 +9,8 @@ const path = require('path');
 const multer = require('multer');
 
 const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const streamifier = require('streamifier');
+
 const fs = require('fs').promises;
 
 const app = express();
@@ -57,27 +58,7 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-const storage = new CloudinaryStorage({
-    cloudinary: cloudinary,
-    params: {
-        folder: 'hulyanas-menu',
-        allowed_formats: ['jpg', 'jpeg', 'png', 'webp']
-    }
-});
-
-const upload = multer({
-    storage: storage,
-    limits: {
-        fileSize: 5 * 1024 * 1024
-    },
-    fileFilter: (req, file, cb) => {
-        if (file.mimetype.startsWith('image/')) {
-            cb(null, true);
-        } else {
-            cb(new Error('Only image files allowed'), false);
-        }
-    }
-});
+const upload = multer({ storage: multer.memoryStorage() });
 
 // Auth middleware
 const authenticateToken = async (req, res, next) => {
@@ -844,6 +825,34 @@ app.get('/api/admin/menu', authenticateToken, isAdmin, async (req, res) => {
             error: error.message
         });
     }
+});
+
+app.post('/api/upload', upload.single('image'), async (req, res) => {
+  try {
+    const streamUpload = (req) => {
+      return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          { folder: 'hulyanas-menu' },
+          (error, result) => {
+            if (result) resolve(result);
+            else reject(error);
+          }
+        );
+
+        streamifier.createReadStream(req.file.buffer).pipe(stream);
+      });
+    };
+
+    const result = await streamUpload(req);
+
+    res.json({
+      imageUrl: result.secure_url
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Upload failed' });
+  }
 });
 
 // ===== ADMIN ROUTES =====
