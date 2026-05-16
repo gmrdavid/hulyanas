@@ -49,11 +49,7 @@ const pool = mysql.createPool({
 });
 
 // JWT Secret
-if (!process.env.JWT_SECRET) {
-    throw new Error('JWT_SECRET is missing');
-}
-
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || 'hulyanas_secret_key_2024_secure_change_this';
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -552,6 +548,7 @@ app.get('/api/orders/:id/items', authenticateToken, async (req, res) => {
         `, [id]);
         
         res.json(items);
+        conn.release();
     } catch (error) {
         console.error('🚨 Order items error:', error);
         if (conn) conn.release();
@@ -1209,8 +1206,11 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
         // =========================
         // AVG ORDER VALUE
         // =========================
-        const [avgResult] = await conn.execute(`SELECT COALESCE(AVG(o.total_amount), 0) AS avg_order_value FROM orders o
-        ${whereClause} AND LOWER(o.status) IN ('delivered', 'preparing','out_for_delivery')`, params);
+        const [avgResult] = await conn.execute(`
+            SELECT COALESCE(AVG(o.total_amount), 0) AS avg_order_value
+            FROM orders o
+            ${whereClause}
+            AND LOWER(o.status) = 'delivered' OR LOWER(o.status) = 'preparing' OR LOWER(o.status) = 'out_for_delivery'`, params);
 
         // =========================
         // ORDER TRENDS
