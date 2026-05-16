@@ -613,8 +613,10 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
 // ===== 🛒 CART ROUTES =====
 app.get('/api/cart', authenticateToken, async (req, res) => {
     let conn;
+
     try {
         conn = await pool.getConnection();
+
         const [rows] = await conn.execute(`
             SELECT 
                 c.id,
@@ -626,13 +628,29 @@ app.get('/api/cart', authenticateToken, async (req, res) => {
                 mi.is_available
             FROM cart c
             JOIN menu_items mi ON c.menu_item_id = mi.id
-            WHERE c.user_id = ? AND mi.is_available = 1
+            WHERE c.user_id = ? 
+            AND mi.is_available = 1
             ORDER BY c.created_at DESC
         `, [req.user.id]);
-        res.json({ items: rows });
+
+        // ✅ NORMALIZE IMAGES
+        const items = rows.map(item => ({
+            ...item,
+            image_url: normalizeImageUrl(item.image_url)
+        }));
+
+        console.log('🛒 CART ITEMS:', items);
+
+        res.json({ items });
+
     } catch (error) {
         console.error('🚨 Cart GET error:', error);
-        res.status(500).json({ error: 'Failed to load cart', items: [] });
+
+        res.status(500).json({
+            error: 'Failed to load cart',
+            items: []
+        });
+
     } finally {
         if (conn) conn.release();
     }
