@@ -1484,16 +1484,21 @@ app.use((error, req, res, next) => {
 });
 
 // Start Server
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
+
 const server = app.listen(PORT, () => {
     console.log('\n🚀 Hulyanas Hill Server v2.0 - LIVE!');
     console.log(`📍 Port: ${PORT}`);
-    console.log(`📱 Customer Dashboard: http://localhost:${PORT}/user/dashboard.html`);
-    console.log(`👑 Admin Dashboard: http://localhost:${PORT}/admin/dashboard.html`);
-    console.log(`🩺 Health Check: http://localhost:${PORT}/api/health`);
+
+    console.log(`📱 Customer Dashboard: ${BASE_URL}/user/dashboard.html`);
+    console.log(`👑 Admin Dashboard: ${BASE_URL}/admin/dashboard.html`);
+    console.log(`🩺 Health Check: ${BASE_URL}/api/health`);
+
     console.log('\n🆕 NEW USER DASHBOARD APIs:');
-    console.log(`   👤 GET  http://localhost:${PORT}/api/user/2`);
-    console.log(`   📊 GET  http://localhost:${PORT}/api/user/2/stats`);
-    console.log(`   📋 GET  http://localhost:${PORT}/api/user/2/activity`);
+    console.log(`   👤 GET  ${BASE_URL}/api/user/2`);
+    console.log(`   📊 GET  ${BASE_URL}/api/user/2/stats`);
+    console.log(`   📋 GET  ${BASE_URL}/api/user/2/activity`);
+
     console.log('\n✅ Server ready! Database connected.');
 });
 
