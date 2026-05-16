@@ -608,14 +608,15 @@
 
             let total = 0;
             cartItemsEl.innerHTML = cart.map(item => {
-                const itemTotal = item.price * item.quantity;
+                const price = parseFloat(item.price || 0);
+                const itemTotal = price * item.quantity;
                 total += itemTotal;
                 return `
                     <div class="cart-item fade-in-up" data-menu-id="${item.menu_item_id || item.id}">
                         <img src="${item.image_url ? `https://hulyanas.onrender.com${item.image_url}` : 'https://via.placeholder.com/80x80/1a1a1a/ffffff?text=🍽️'}" alt="${item.name}" class="item-image">
                         <div class="item-details">
                             <div class="item-name">${item.name}</div>
-                            <div class="item-price">$${item.price.toFixed(2)}</div>
+                            <div class="item-price">$${price.toFixed(2)}</div>
                             <div class="quantity-controls">
                                 <button class="quantity-btn" onclick="updateQuantity(${item.menu_item_id || item.id}, -1)">−</button>
                                 <span class="quantity">${item.quantity}</span>
