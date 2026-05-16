@@ -625,7 +625,9 @@ app.get('/api/cart', authenticateToken, async (req, res) => {
         // ✅ FIX: normalize image URLs
         const items = rows.map(item => ({
             ...item,
-            image_url: normalizeImageUrl(item.image_url)
+            image_url: item.image_url
+                ? normalizeImageUrl(item.image_url)
+                : '/images/default-food.png'
         }));
 
         res.json(items);
