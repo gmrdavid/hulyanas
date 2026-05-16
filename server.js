@@ -49,7 +49,11 @@ const pool = mysql.createPool({
 });
 
 // JWT Secret
-const JWT_SECRET = process.env.JWT_SECRET || 'hulyanas_secret_key_2024_secure_change_this';
+if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET is missing');
+}
+
+const JWT_SECRET = process.env.JWT_SECRET;
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
