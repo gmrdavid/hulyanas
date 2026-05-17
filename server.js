@@ -552,44 +552,25 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
     const conn = await pool.getConnection();
 
     try {
-        await conn.beginTransaction();
-
+        const { items, delivery_address, phone, payment_method, total } = req.body;
         const userId = req.user.id;
 
-        const {
-            items,
-            total,
-            delivery_address,
-            phone,
-            payment_method
-        } = req.body;
+        await conn.beginTransaction();
 
-        if (!items || items.length === 0) {
-            return res.status(400).json({ message: 'Cart is empty' });
-        }
-
-        // ✅ FIX 1: orders table uses total_amount
+        // 1. INSERT INTO ORDERS (FIXED COLUMN NAME)
         const [orderResult] = await conn.execute(
-            `INSERT INTO orders 
-            (user_id, total_amount, delivery_address, phone, payment_method, status)
-            VALUES (?, ?, ?, ?, ?, 'pending')`,
-            [
-                userId,
-                Number(total),
-                delivery_address,
-                phone,
-                payment_method
-            ]
+            `INSERT INTO orders (user_id, total_amount, delivery_address, phone, payment_method, status)
+             VALUES (?, ?, ?, ?, ?, 'pending')`,
+            [userId, total, delivery_address, phone, payment_method]
         );
 
         const orderId = orderResult.insertId;
 
-        // ✅ FIX 2: order_items uses price_at_order
+        // 2. INSERT ORDER ITEMS (FIXED price_at_order)
         for (const item of items) {
             await conn.execute(
-                `INSERT INTO order_items 
-                (order_id, menu_item_id, quantity, price_at_order)
-                VALUES (?, ?, ?, ?)`,
+                `INSERT INTO order_items (order_id, menu_item_id, quantity, price_at_order)
+                 VALUES (?, ?, ?, ?)`,
                 [
                     orderId,
                     item.id,
@@ -599,11 +580,8 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
             );
         }
 
-        // clear cart
-        await conn.execute(
-            `DELETE FROM cart WHERE user_id = ?`,
-            [userId]
-        );
+        // 3. CLEAR CART
+        await conn.execute(`DELETE FROM cart WHERE user_id = ?`, [userId]);
 
         await conn.commit();
 
@@ -616,8 +594,8 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
         await conn.rollback();
         console.error('ORDER ERROR:', error);
         res.status(500).json({
-            message: 'Order creation failed',
-            error: error.message
+            success: false,
+            message: 'Failed to create order'
         });
     } finally {
         conn.release();
