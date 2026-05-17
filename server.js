@@ -342,6 +342,15 @@ app.post('/api/login', async (req, res) => {
              FROM users WHERE (username = ? OR email = ?) AND is_active = 1`,
             [username, username]
         );
+
+        
+         await logActivity(
+            conn,
+            user.id,
+            'auth',
+            'Logged in'
+        );
+
         if (conn) conn.release();
         
         if (rows.length === 0) {
@@ -353,13 +362,6 @@ app.post('/api/login', async (req, res) => {
         if (!valid) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
-
-         await logActivity(
-            conn,
-            user.id,
-            'auth',
-            'Logged in'
-        );
         
         const token = jwt.sign(
             { id: user.id, username: user.username, role: user.role }, 
@@ -878,20 +880,23 @@ app.get('/api/admin/menu', authenticateToken, isAdmin, async (req, res) => {
 app.post('/api/upload', upload.single('image'), async (req, res) => {
   try {
     const streamUpload = (file) =>
-    new Promise((resolve, reject) => {
+      new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
-            { folder: 'hulyanas-menu' },
-            (err, result) => {
-                if (result) resolve(result);
-                else reject(err);
-            }
+          { folder: 'hulyanas-menu' },
+          (err, result) => {
+            if (result) resolve(result);
+            else reject(err);
+          }
         );
 
         streamifier.createReadStream(file.buffer).pipe(stream);
-    });
+      });
 
-        const result = await streamUpload(req.file);
-        const image_url = result.secure_url;
+    const result = await streamUpload(req.file);
+
+    res.json({
+      image_url: result.secure_url
+    });
 
   } catch (err) {
     console.error(err);
@@ -1512,7 +1517,7 @@ async function logActivity(pool, user_id, type, action, details = null) {
     } finally {
         conn.release();
     }
-}
+}   
 
 // Helper function
 function formatTimeAgo(date) {
