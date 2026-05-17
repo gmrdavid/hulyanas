@@ -699,19 +699,20 @@
                 // =========================
                 // LOGO (top-left)
                 // =========================
-                const logoUrl = "https://res.cloudinary.com/dta4irg3w/image/upload/v1779012111/hulyanas-logo_nixnhc.png";
+               const logoUrl = "https://res.cloudinary.com/dta4irg3w/image/upload/v1779012111/hulyanas-logo_nixnhc.png";
 
-                const loadImage = (url) =>
-                    new Promise((resolve) => {
-                        const img = new Image();
-                        img.crossOrigin = "anonymous";
-                        img.onload = () => resolve(img);
-                        img.src = url;
-                    });
+                const toDataURL = (url) =>
+                    fetch(url)
+                        .then(res => res.blob())
+                        .then(blob => new Promise(resolve => {
+                            const reader = new FileReader();
+                            reader.onloadend = () => resolve(reader.result);
+                            reader.readAsDataURL(blob);
+                        }));
 
-                const logo = await loadImage(logoUrl);
+                const logoData = await toDataURL(logoUrl);
 
-                doc.addImage(logo, "PNG", 14, 10, 30, 30);
+                doc.addImage(logoData, "PNG", 14, 10, 30, 30);
 
                 // =========================
                 // RESTAURANT INFO
