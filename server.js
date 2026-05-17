@@ -553,38 +553,29 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
     const conn = await pool.getConnection();
 
     try {
-        const { items, delivery_address, phone, payment_method, total } = req.body;
-        const userId = req.user.id;
+        const { items, total_amount, delivery_address, phone, payment_method } = req.body;
 
-        await conn.beginTransaction();
+        if (!items || items.length === 0) {
+            return res.status(400).json({ message: 'Cart is empty' });
+        }
 
-        // 1. INSERT INTO ORDERS (FIXED COLUMN NAME)
+        // Create order
         const [orderResult] = await conn.execute(
-            `INSERT INTO orders (user_id, total_amount, delivery_address, phone, payment_method, status)
-             VALUES (?, ?, ?, ?, ?, 'pending')`,
-            [userId, total, delivery_address, phone, payment_method]
+            `INSERT INTO orders (user_id, total_amount, delivery_address, phone, payment_method, created_at)
+             VALUES (?, ?, ?, ?, ?, NOW())`,
+            [req.user.id, total_amount, delivery_address, phone, payment_method]
         );
 
         const orderId = orderResult.insertId;
 
-        // 2. INSERT ORDER ITEMS (FIXED price_at_order)
+        // Insert order items
         for (const item of items) {
             await conn.execute(
                 `INSERT INTO order_items (order_id, menu_item_id, quantity, price_at_order)
                  VALUES (?, ?, ?, ?)`,
-                [
-                    orderId,
-                    item.id,
-                    item.quantity,
-                    item.price
-                ]
+                [orderId, item.id, item.quantity, item.price_at_order]
             );
         }
-
-        // 3. CLEAR CART
-        await conn.execute(`DELETE FROM cart WHERE user_id = ?`, [userId]);
-
-        await conn.commit();
 
         res.json({
             success: true,
@@ -592,14 +583,10 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
         });
 
     } catch (error) {
-        await conn.rollback();
         console.error('ORDER ERROR:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to create order'
-        });
+        res.status(500).json({ message: error.message });
     } finally {
-        if (conn) conn.release();
+        conn.release();
     }
 });
 
