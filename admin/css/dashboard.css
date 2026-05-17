@@ -306,24 +306,3 @@
         .loading { 
             opacity: 0.6; pointer-events: none; 
         }
-
-        .orders-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-        }
-
-        .status-filter {
-            padding: 0.6rem 1rem;
-            border-radius: 10px;
-            border: 1px solid #ddd;
-            font-weight: 500;
-            outline: none;
-            cursor: pointer;
-            background: #fff;
-        }
-
-        .status-filter:focus {
-            border-color: #1a1a1a;
-        }

@@ -44,29 +44,65 @@
         }
 
         // Load admin stats
-        let allOrders = []; // store globally
+        async function loadAdminStats() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/admin/stats', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const data = await response.json();
+                
+                document.getElementById('menuCount').setAttribute('data-target', data.menuItems);
+                document.getElementById('orderCount').setAttribute('data-target', data.totalOrders);
+                document.getElementById('revenueCount').setAttribute('data-target', data.revenue);
+                document.getElementById('userCount').setAttribute('data-target', data.totalUsers);
+                
+                animateCounters(data);
+                console.log('✅ Stats loaded:', data);
+            } catch (error) {
+                console.error('Stats error:', error);
+            }
+        }
 
         async function loadRecentOrders() {
             try {
                 const token = localStorage.getItem('token');
-
-                // ✅ LIMIT TO 10 (backend or frontend-safe)
-                const response = await fetch('/api/admin/recent-orders?limit=10', {
+                const response = await fetch('/api/admin/recent-orders', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-
                 const orders = await response.json();
+                
+                const tbody = document.getElementById('recentOrders');
+                if (orders.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:3rem;color:#999;">No recent orders found</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = orders.map(order => `
+                    <tr data-order-id="${order.id}">
+                        <td><strong>#${order.order_number || 'N/A'}</strong></td>
+                        <td>${order.customer || 'Unknown'}</td>
 
-                allOrders = orders; // store for filtering
+                        <td>
+                            <span class="order-status status-${order.status}">
+                                ${(order.status || 'unknown').replace(/_/g, ' ')}
+                            </span>
+                        </td>
 
-                renderOrders(allOrders);
+                        <td>
+                            <strong>₱${Number(order.total_amount || 0).toFixed(2)}</strong>
+                        </td>
 
+                        <td>${order.time_ago || 'N/A'}</td>
+                    </tr>
+                `).join('');
+                
                 console.log('✅ Orders loaded:', orders.length);
-
+                
             } catch (error) {
                 console.error('Orders error:', error);
-                document.getElementById('recentOrders').innerHTML =
-                    '<tr><td colspan="5" style="text-align:center;padding:3rem;color:#666;">Failed to load orders</td></tr>';
+                document.getElementById('recentOrders').innerHTML = 
+                    '<tr><td colspan="5" style="text-align:center;padding:3rem;color:#666;">Failed to load orders. Please refresh.</td></tr>';
             }
         }
 
