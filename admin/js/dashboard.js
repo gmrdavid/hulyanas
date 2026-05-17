@@ -123,13 +123,21 @@
         }
 
             // Filter by Status
-         function filterOrdersByStatus(status) {
+        function filterOrdersByStatus(status) {
             if (status === 'all') {
                 renderRecentOrders(allOrders);
                 return;
             }
 
-            const filtered = allOrders.filter(order => order.status === status);
+            const filtered = allOrders.filter(order => {
+                const orderStatus = (order.status || '')
+                    .toString()
+                    .trim()
+                    .toLowerCase();
+
+                return orderStatus === status.toLowerCase();
+            });
+
             renderRecentOrders(filtered);
         }
 
