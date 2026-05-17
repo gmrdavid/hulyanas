@@ -343,13 +343,6 @@ app.post('/api/login', async (req, res) => {
             [username, username]
         );
         if (conn) conn.release();
-
-        await logActivity(
-            conn,
-            user.id,
-            'auth',
-            'Logged in'
-        );
         
         if (rows.length === 0) {
             return res.status(401).json({ error: 'Invalid credentials' });
@@ -360,6 +353,13 @@ app.post('/api/login', async (req, res) => {
         if (!valid) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
+
+         await logActivity(
+            conn,
+            user.id,
+            'auth',
+            'Logged in'
+        );
         
         const token = jwt.sign(
             { id: user.id, username: user.username, role: user.role }, 
