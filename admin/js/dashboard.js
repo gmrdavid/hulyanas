@@ -64,100 +64,47 @@
             }
         }
 
-            let currentPage = 0;
-            const limit = 10;
-            let currentFilter = "all";
-
-            async function loadRecentOrders(reset = false) {
-
-                try {
-
-                    if (reset) {
-                        currentPage = 0;
-                        document.getElementById("recentOrders").innerHTML = "";
-                    }
-
-                    const offset = currentPage * limit;
-
-                    const response = await fetch(
-                        `/api/admin/orders?limit=${limit}&offset=${offset}&status=${currentFilter}`
-                    );
-
-                    const orders = await response.json();
-
-                    const tbody = document.getElementById("recentOrders");
-
-                    if (orders.length === 0 && currentPage === 0) {
-
-                        tbody.innerHTML = `
-                            <tr>
-                                <td colspan="5" style="text-align:center;padding:2rem;color:#777;">
-                                    No orders found
-                                </td>
-                            </tr>
-                        `;
-
-                        document.getElementById("loadMoreBtn").style.display = "none";
-                        return;
-                    }
-
-                    orders.forEach(order => {
-
-                        const row = document.createElement("tr");
-
-                        row.innerHTML = `
-                            <td>${order.order_number}</td>
-                            <td>${order.customer_name}</td>
-
-                            <td>
-                                <span class="status-badge status-${order.status}">
-                                    ${order.status.replaceAll("_", " ")}
-                                </span>
-                            </td>
-
-                            <td>₱${Number(order.total_amount).toFixed(2)}</td>
-
-                            <td>
-                                ${new Date(order.created_at).toLocaleDateString()}
-                            </td>
-                        `;
-
-                        tbody.appendChild(row);
-                    });
-
-                    currentPage++;
-
-                    if (orders.length < limit) {
-                        document.getElementById("loadMoreBtn").style.display = "none";
-                    } else {
-                        document.getElementById("loadMoreBtn").style.display = "flex";
-                    }
-
-                } catch (error) {
-                    console.error("Failed to load orders:", error);
+        async function loadRecentOrders() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/admin/recent-orders', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const orders = await response.json();
+                
+                const tbody = document.getElementById('recentOrders');
+                if (orders.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:3rem;color:#999;">No recent orders found</td></tr>';
+                    return;
                 }
+                
+                tbody.innerHTML = orders.map(order => `
+                    <tr data-order-id="${order.id}">
+                        <td><strong>#${order.order_number || 'N/A'}</strong></td>
+                        <td>${order.customer || 'Unknown'}</td>
+
+                        <td>
+                            <span class="order-status status-${order.status}">
+                                ${(order.status || 'unknown').replace(/_/g, ' ')}
+                            </span>
+                        </td>
+
+                        <td>
+                            <strong>₱${Number(order.total_amount || 0).toFixed(2)}</strong>
+                        </td>
+
+                        <td>${order.time_ago || 'N/A'}</td>
+                    </tr>
+                `).join('');
+                
+                console.log('✅ Orders loaded:', orders.length);
+                
+            } catch (error) {
+                console.error('Orders error:', error);
+                document.getElementById('recentOrders').innerHTML = 
+                    '<tr><td colspan="5" style="text-align:center;padding:3rem;color:#666;">Failed to load orders. Please refresh.</td></tr>';
             }
-
-            /* LOAD MORE */
-
-            document.getElementById("loadMoreBtn")
-            .addEventListener("click", () => {
-                loadRecentOrders();
-            });
-
-            /* FILTER */
-
-            document.getElementById("statusFilter")
-            .addEventListener("change", (e) => {
-
-                currentFilter = e.target.value;
-
-                loadRecentOrders(true);
-            });
-
-            /* INITIAL LOAD */
-
-            loadRecentOrders(true);
+        }
 
         // Activity feed
         async function loadActivityFeed() {
