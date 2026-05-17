@@ -549,59 +549,78 @@ app.get('/api/orders/:id/items', authenticateToken, async (req, res) => {
 
 // ADD THIS after your existing orders routes
 app.post('/api/orders', authenticateToken, async (req, res) => {
-    let conn;
+    const conn = await pool.getConnection();
 
     try {
-        const { items, total, delivery_address, phone, payment_method } = req.body;
-
-        if (!items || !items.length || !total || !delivery_address || !phone) {
-            return res.status(400).json({ error: 'Missing required fields' });
-        }
-
-        conn = await pool.getConnection();
         await conn.beginTransaction();
 
-        // 1. Insert order FIRST (no order_number yet)
-        const [result] = await conn.execute(
-            `INSERT INTO orders (user_id, total_amount, delivery_address, phone, payment_method, status)
-             VALUES (?, ?, ?, ?, ?, 'pending')`,
-            [req.user.id, total, delivery_address, phone, payment_method]
+        const userId = req.user.id;
+
+        const {
+            items,
+            total,
+            delivery_address,
+            phone,
+            payment_method
+        } = req.body;
+
+        if (!items || items.length === 0) {
+            return res.status(400).json({ message: 'Cart is empty' });
+        }
+
+        // ✅ FIX 1: orders table uses total_amount
+        const [orderResult] = await conn.execute(
+            `INSERT INTO orders 
+            (user_id, total_amount, delivery_address, phone, payment_method, status)
+            VALUES (?, ?, ?, ?, ?, 'pending')`,
+            [
+                userId,
+                Number(total),
+                delivery_address,
+                phone,
+                payment_method
+            ]
         );
 
-        const orderId = result.insertId;
+        const orderId = orderResult.insertId;
 
-        // 2. Generate order number in JS
-        const orderNumber = `#ORD-${new Date().getFullYear()}-${String(orderId).padStart(3, '0')}`;
-
-        // 3. Update order with order_number
-        await conn.execute(
-            `UPDATE orders SET order_number = ? WHERE id = ?`,
-            [orderNumber, orderId]
-        );
-
-        // 4. Insert items
+        // ✅ FIX 2: order_items uses price_at_order
         for (const item of items) {
             await conn.execute(
-                `INSERT INTO order_items (order_id, menu_item_id, quantity, price_at_order)
-                 VALUES (?, ?, ?, ?)`,
-                [orderId, item.id || item.menu_item_id, item.quantity, item.price]
+                `INSERT INTO order_items 
+                (order_id, menu_item_id, quantity, price_at_order)
+                VALUES (?, ?, ?, ?)`,
+                [
+                    orderId,
+                    item.id,
+                    item.quantity,
+                    item.price
+                ]
             );
         }
+
+        // clear cart
+        await conn.execute(
+            `DELETE FROM cart WHERE user_id = ?`,
+            [userId]
+        );
 
         await conn.commit();
 
         res.json({
             success: true,
-            order_number: orderNumber,
-            order_id: orderId
+            order_number: orderId
         });
 
     } catch (error) {
-        if (conn) await conn.rollback();
-        console.error('🚨 Order creation error:', error);
-        res.status(500).json({ error: error.message });
+        await conn.rollback();
+        console.error('ORDER ERROR:', error);
+        res.status(500).json({
+            message: 'Order creation failed',
+            error: error.message
+        });
     } finally {
-        if (conn) conn.release();
+        conn.release();
     }
 });
 
