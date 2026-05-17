@@ -178,6 +178,22 @@
             font-weight: 700;
             color: #1a1a1a;
         }
+         .filter-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-select,
+        .date-range {
+            padding: 1rem 1.5rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 16px;
+            font-size: 1rem;
+            background: #fff;
+            font-family: inherit;
+        }
 
         .recent-orders-section {
             background: #fff;
