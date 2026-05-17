@@ -106,6 +106,17 @@
             }
         }
 
+            // Filter by Status
+            document.getElementById('statusFilter').addEventListener('change', e => {
+                const value = e.target.value;
+                if (!value) {
+                    renderOrdersTable(orders);
+                } else {
+                    const filtered = orders.filter(o => o.status === value);
+                    renderOrdersTable(filtered);
+                }
+            });
+
         // Activity feed
         async function loadActivityFeed() {
             try {
