@@ -67,29 +67,34 @@
         let allOrders = [];
 
             async function loadRecentOrders() {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch('/api/admin/recent-orders', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                try {
+                    const token = localStorage.getItem('token');
+                    const response = await fetch('/api/admin/recent-orders', {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
 
-                const data = await response.json();
+                    const data = await response.json();
 
-                // ✅ SAFE FIX (IMPORTANT)
-                const orders = Array.isArray(data) ? data : data.orders || [];
+                    console.log("RAW API RESPONSE:", data); // 🔍 DEBUG
 
-                allOrders = orders;
+                    const orders =
+                        Array.isArray(data) ? data :
+                        Array.isArray(data?.orders) ? data.orders :
+                        Array.isArray(data?.data) ? data.data :
+                        [];
 
-                renderRecentOrders(allOrders);
+                    allOrders = orders;
 
-                console.log('✅ Orders loaded:', orders.length);
+                    console.log("PARSED ORDERS:", allOrders); // 🔍 DEBUG
 
-            } catch (error) {
-                console.error('Orders error:', error);
-                document.getElementById('recentOrders').innerHTML =
-                    '<tr><td colspan="5" style="text-align:center;padding:3rem;color:#666;">Failed to load orders. Please refresh.</td></tr>';
+                    renderRecentOrders(allOrders);
+
+                } catch (error) {
+                    console.error('Orders error:', error);
+                    document.getElementById('recentOrders').innerHTML =
+                        '<tr><td colspan="5" style="text-align:center;padding:3rem;color:#666;">Failed to load orders</td></tr>';
+                }
             }
-        }
 
         function renderRecentOrders(orders) {
             const tbody = document.getElementById('recentOrders');
