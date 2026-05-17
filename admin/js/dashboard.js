@@ -199,40 +199,44 @@
 
         // 🚀 MAIN INITIALIZATION
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('🔥 Loading Hulyanas Admin Dashboard...');
-            
-            // Auto-login if no token
-            if (!localStorage.getItem('token')) {
-                try {
-                    console.log('🔑 Attempting auto-login...');
-                    const loginRes = await fetch('/api/login', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username: 'admin', password: 'password' })
-                    }); 
-                    const loginData = await loginRes.json();
-                    localStorage.setItem('token', loginData.token);
-                    console.log('✅ Auto-login successful');
-                } catch (e) {
-                    console.log('ℹ️ No auto-login available');
-                }
+        console.log('🔥 Loading Hulyanas Admin Dashboard...');
+
+        // Auto-login if no token
+        if (!localStorage.getItem('token')) {
+            try {
+                console.log('🔑 Attempting auto-login...');
+                const loginRes = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'admin', password: 'password' })
+                }); 
+                const loginData = await loginRes.json();
+                localStorage.setItem('token', loginData.token);
+                console.log('✅ Auto-login successful');
+            } catch (e) {
+                console.log('ℹ️ No auto-login available');
             }
-            // Load all dashboard data in parallel
-            document.body.classList.add('loading');
-            await Promise.all([
-                loadAdminStats(),
-                loadRecentOrders(),
-                loadActivityFeed()
-            ]);
-            document.body.classList.remove('loading');
-            
-            console.log('✅ Dashboard fully loaded! ✨');
+        }
 
-            document.addEventListener('DOMContentLoaded', () => {
-                const filter = document.getElementById('statusFilter');
+        // Load dashboard data
+        document.body.classList.add('loading');
 
-                filter.addEventListener('change', (e) => {
-                    filterOrdersByStatus(e.target.value);
-                });
+        await Promise.all([
+            loadAdminStats(),
+            loadRecentOrders(),
+            loadActivityFeed()
+        ]);
+
+        document.body.classList.remove('loading');
+
+        console.log('✅ Dashboard fully loaded! ✨');
+
+        // ✅ ADD FILTER EVENT HERE (FIXED)
+        const filter = document.getElementById('statusFilter');
+
+        if (filter) {
+            filter.addEventListener('change', (e) => {
+                filterOrdersByStatus(e.target.value);
             });
-        });
+        }
+    });
