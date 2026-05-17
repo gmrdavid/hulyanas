@@ -227,4 +227,12 @@
             document.body.classList.remove('loading');
             
             console.log('✅ Dashboard fully loaded! ✨');
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const filter = document.getElementById('statusFilter');
+
+                filter.addEventListener('change', (e) => {
+                    filterOrdersByStatus(e.target.value);
+                });
+            });
         });
