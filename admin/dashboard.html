@@ -53,28 +53,7 @@
     
         <div class="admin-content">
             <div class="recent-orders-section">
-
-                <div class="orders-header">
                 <h1 class="section-title">Recent Orders</h1>
-
-                <div class="orders-filters">
-                    <input 
-                        type="text" 
-                        id="searchOrders"
-                        placeholder="Search order/customer..."
-                    >
-
-                    <select id="statusFilter">
-                        <option value="all">All Status</option>
-                        <option value="pending">Pending</option>
-                        <option value="preparing">Preparing</option>
-                        <option value="out_for_delivery">Out for Delivery</option>
-                        <option value="delivered">Delivered</option>
-                        <option value="cancelled">Cancelled</option>
-                    </select>
-                </div>
-            </div>
-
                 <table class="orders-table">
                     <thead>
                         <tr>
@@ -83,21 +62,13 @@
                             <th>Status</th>
                             <th>Total</th>
                             <th>Date</th>
+                            <!-- ✅ ACTIONS COLUMN REMOVED -->
                         </tr>
                     </thead>
-
                     <tbody id="recentOrders">
                         <!-- Dynamic content -->
                     </tbody>
                 </table>
-
-                <div class="load-more-container">
-                    <button id="loadMoreBtn" class="load-more-btn">
-                        <i class="fas fa-plus"></i>
-                        Load 10 More
-                    </button>
-                </div>
-
             </div>
 
             <div class="activity-feed">
