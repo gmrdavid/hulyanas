@@ -66,16 +66,19 @@
 
         let allOrders = [];
 
-        async function loadRecentOrders() {
+            async function loadRecentOrders() {
             try {
                 const token = localStorage.getItem('token');
                 const response = await fetch('/api/admin/recent-orders', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
 
-                const orders = await response.json();
+                const data = await response.json();
 
-                allOrders = orders; // ✅ store globally for filtering
+                // ✅ SAFE FIX (IMPORTANT)
+                const orders = Array.isArray(data) ? data : data.orders || [];
+
+                allOrders = orders;
 
                 renderRecentOrders(allOrders);
 
@@ -124,6 +127,11 @@
 
             // Filter by Status
         function filterOrdersByStatus(status) {
+            if (!allOrders || !Array.isArray(allOrders)) {
+                console.warn('⚠️ allOrders not ready yet');
+                return;
+            }
+
             if (status === 'all') {
                 renderRecentOrders(allOrders);
                 return;
