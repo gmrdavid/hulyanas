@@ -43,59 +43,64 @@
                 }, 20);
         }
 
-        // Load admin stats
-        async function loadAdminStats() {
+                // Load admin stats
+                async function loadAdminStats() {
+                    try {
+                        const token = localStorage.getItem('token');
+                        const response = await fetch('/api/admin/stats', {
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+                        const data = await response.json();
+                        
+                        document.getElementById('menuCount').setAttribute('data-target', data.menuItems);
+                        document.getElementById('orderCount').setAttribute('data-target', data.totalOrders);
+                        document.getElementById('revenueCount').setAttribute('data-target', data.revenue);
+                        document.getElementById('userCount').setAttribute('data-target', data.totalUsers);
+                        
+                        animateCounters(data);
+                        console.log('✅ Stats loaded:', data);
+                    } catch (error) {
+                        console.error('Stats error:', error);
+                    }
+                }
+
+                async function loadRecentOrders() {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('/api/admin/stats', {
+
+                const response = await fetch('/api/admin/recent-orders', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
+
                 const data = await response.json();
-                
-                document.getElementById('menuCount').setAttribute('data-target', data.menuItems);
-                document.getElementById('orderCount').setAttribute('data-target', data.totalOrders);
-                document.getElementById('revenueCount').setAttribute('data-target', data.revenue);
-                document.getElementById('userCount').setAttribute('data-target', data.totalUsers);
-                
-                animateCounters(data);
-                console.log('✅ Stats loaded:', data);
+
+                console.log("RAW API RESPONSE:", data);
+
+                // ✅ SUPER SAFE EXTRACTION (NO FAIL CASE)
+                let orders = [];
+
+                if (Array.isArray(data)) {
+                    orders = data;
+                } else if (Array.isArray(data?.orders)) {
+                    orders = data.orders;
+                } else if (Array.isArray(data?.data)) {
+                    orders = data.data;
+                } else if (Array.isArray(data?.result)) {
+                    orders = data.result;
+                }
+
+                allOrders = orders;
+
+                console.log("PARSED ORDERS:", allOrders);
+
+                renderRecentOrders(allOrders);
+
             } catch (error) {
-                console.error('Stats error:', error);
+                console.error('Orders error:', error);
+                document.getElementById('recentOrders').innerHTML =
+                    '<tr><td colspan="5" style="text-align:center;padding:3rem;color:#666;">Failed to load orders</td></tr>';
             }
         }
-
-        let allOrders = [];
-
-            async function loadRecentOrders() {
-                try {
-                    const token = localStorage.getItem('token');
-                    const response = await fetch('/api/admin/recent-orders', {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-
-                    const data = await response.json();
-
-                    console.log("RAW API RESPONSE:", data); // 🔍 DEBUG
-
-                    const orders =
-                        Array.isArray(data) ? data :
-                        Array.isArray(data?.orders) ? data.orders :
-                        Array.isArray(data?.data) ? data.data :
-                        [];
-
-                    allOrders = orders;
-
-                    console.log("PARSED ORDERS:", allOrders); // 🔍 DEBUG
-
-                    renderRecentOrders(allOrders);
-
-                } catch (error) {
-                    console.error('Orders error:', error);
-                    document.getElementById('recentOrders').innerHTML =
-                        '<tr><td colspan="5" style="text-align:center;padding:3rem;color:#666;">Failed to load orders</td></tr>';
-                }
-            }
-
         function renderRecentOrders(orders) {
             const tbody = document.getElementById('recentOrders');
 
