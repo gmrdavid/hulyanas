@@ -167,6 +167,10 @@
             letter-spacing: 0.5px;
         }
 
+        .stat-change {
+            display: none;
+}
+
         .content-header {
             display: flex;
             justify-content: space-between;
