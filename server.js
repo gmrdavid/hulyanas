@@ -1053,11 +1053,12 @@ app.delete('/api/menu/:id', authenticateToken, isAdmin, async (req, res) => {
 
         // delete image from cloudinary
         if (item.image_url) {
-            const parts = item.image_url.split('/');
-            const fileName = parts[parts.length - 1];
-            const publicId = `hulyanas-menu/${fileName.split('.')[0]}`;
+            const url = item.image_url;
+            const parts = url.split('/');
+            const fileWithExt = parts[parts.length - 1];
+            const publicId = fileWithExt.split('.')[0];
 
-            await cloudinary.uploader.destroy(publicId);
+            await cloudinary.uploader.destroy(`hulyanas-menu/${publicId}`);
         }
 
         // soft delete instead of hard delete
@@ -1247,7 +1248,11 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
             SELECT COALESCE(AVG(o.total_amount), 0) AS avg_order_value
             FROM orders o
             ${whereClause}
-            AND LOWER(o.status) = 'delivered' OR LOWER(o.status) = 'preparing' OR LOWER(o.status) = 'out_for_delivery'`, params);
+            AND (
+                LOWER(o.status) = 'delivered'
+                OR LOWER(o.status) = 'preparing'
+                OR LOWER(o.status) = 'out_for_delivery'
+            )`, params);
 
         // =========================
         // ORDER TRENDS
