@@ -49,10 +49,10 @@ const pool = mysql.createPool({
 });
 
 // JWT Secret
-const JWT_SECRET = process.env.JWT_SECRET 
 if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET is missing');
 }
+const JWT_SECRET = process.env.JWT_SECRET;
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -1509,18 +1509,22 @@ function normalizeImageUrl(url) {
     return `https://res.cloudinary.com/dta4irg3w/image/upload/${url}`;
 }
 
-async function logActivity(pool, user_id, type, action, details = null) {
-    const conn = await pool.getConnection();
+async function logActivity(db, user_id, type, action, details = null) {
     try {
+        const conn = db.getConnection ? await db.getConnection() : db;
+
         await conn.execute(
             `INSERT INTO activity_log (user_id, type, action, details, created_at)
              VALUES (?, ?, ?, ?, NOW())`,
             [user_id, type, action, details ? JSON.stringify(details) : null]
         );
-    } finally {
-        conn.release();
+
+        if (db.getConnection) conn.release();
+
+    } catch (err) {
+        console.error('Activity log error:', err);
     }
-}   
+} 
 
 // Helper function
 function formatTimeAgo(date) {
