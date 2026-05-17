@@ -576,10 +576,15 @@
         async function loadCart() {
             try {
                 const data = await apiRequest('/api/cart');
-                cart = data.items || data || []; // Handle both response formats
-                console.log('✅ Cart loaded:', cart);
-            } catch (error) {
-                console.error('Load cart failed:', error);
+
+                // FIX: always force array
+                cart = Array.isArray(data)
+                    ? data
+                    : (data.items || []);
+
+                console.log('Cart loaded:', cart);
+            } catch (err) {
+                console.error(err);
                 cart = [];
             }
         }
@@ -591,79 +596,94 @@
             const totalEl = document.getElementById('total');
             const checkoutBtn = document.getElementById('checkoutBtn');
 
-            if (cart.length === 0) {
-                cartItemsEl.innerHTML = `<div class="cart-empty fade-in-up">
+           if (cart.length === 0) {
+                cartItemsEl.innerHTML = `
+                <div class="cart-empty fade-in-up">
                     <i class="fas fa-shopping-cart"></i>
                     <h3>Your cart is empty</h3>
                     <p>Add some delicious items from the menu to get started</p>
                     <a href="menu.html" class="btn btn-primary" style="margin-top: 1.5rem;">Browse Menu</a>
                 </div>`;
+                
                 cartTotalEl.textContent = '$0.00';
                 subtotalEl.textContent = '$0.00';
                 totalEl.textContent = '$0.00';
                 checkoutBtn.style.display = 'none';
                 return;
             }
-
+            
             let total = 0;
             cartItemsEl.innerHTML = cart.map(item => {
-                const price = parseFloat(item.price || 0);
+                const id = item.menu_item_id ?? item.id;   // ✅ FIXED ID
+                const price = Number(item.price) || 0;
                 const itemTotal = price * item.quantity;
+
                 total += itemTotal;
                 return `
-                    <div class="cart-item fade-in-up" data-menu-id="${item.menu_item_id || item.id}">
-                        <img src="${item.image_url || 'https://via.placeholder.com/80x80/1a1a1a/ffffff?text=🍽️'}"alt="${item.name}"class="item-image">
+                     <div class="cart-item fade-in-up" data-menu-id="${id}">
+                        <img 
+                            src="${item.image_url || 'https://via.placeholder.com/80'}"
+                            alt="${item.name}"
+                            class="item-image"
+                        >
+
                         <div class="item-details">
                             <div class="item-name">${item.name}</div>
                             <div class="item-price">$${price.toFixed(2)}</div>
+
                             <div class="quantity-controls">
-                                <button class="quantity-btn" onclick="updateQuantity(${item.menu_item_id || item.id}, -1)">−</button>
+                                <button class="quantity-btn" onclick="updateQuantity(${id}, -1)">−</button>
                                 <span class="quantity">${item.quantity}</span>
-                                <button class="quantity-btn" onclick="updateQuantity(${item.menu_item_id || item.id}, 1)">+</button>
+                                <button class="quantity-btn" onclick="updateQuantity(${id}, 1)">+</button>
                             </div>
                         </div>
-                        <a href="#" class="remove-item" onclick="removeItem(${item.menu_item_id || item.id}); return false;" title="Remove">
+
+                        <a href="#" class="remove-item" onclick="removeItem(${id}); return false;">
                             <i class="fas fa-times"></i>
                         </a>
                     </div>`;
-            }).join('');
+                }).join('');
 
-            const formattedTotal = total.toFixed(2);
-            cartTotalEl.textContent = `$${formattedTotal}`;
-            subtotalEl.textContent = `$${formattedTotal}`;
-            totalEl.textContent = `$${formattedTotal}`;
+             const formatted = total.toFixed(2);
+
+            cartTotalEl.textContent = `$${formatted}`;
+            subtotalEl.textContent = `$${formatted}`;
+            totalEl.textContent = `$${formatted}`;
             checkoutBtn.style.display = 'block';
         }
 
         // ✅ FIXED: Global functions for onclick handlers
         window.updateQuantity = async (menuItemId, change) => {
+            const item = cart.find(i => (i.menu_item_id ?? i.id) == menuItemId);
+            if (!item) return;
+
+            const newQty = item.quantity + change;
+
             try {
-                const item = cart.find(i => (i.menu_item_id || i.id) == menuItemId);
-                if (item) {
-                    const newQuantity = item.quantity + change;
-                    if (newQuantity <= 0) {
-                        await apiRequest(`/api/cart/${menuItemId}`, { method: 'DELETE' });
-                    } else {
-                        await apiRequest(`/api/cart/${menuItemId}`, {
-                            method: 'PUT',
-                            body: JSON.stringify({ quantity: newQuantity })
-                        });
-                    }
-                    await loadCart();
-                    renderCart();
+                if (newQty <= 0) {
+                    await apiRequest(`/api/cart/${menuItemId}`, { method: 'DELETE' });
+                } else {
+                    await apiRequest(`/api/cart/${menuItemId}`, {
+                        method: 'PUT',
+                        body: JSON.stringify({ quantity: newQty })
+                    });
                 }
-            } catch (error) {
-                console.error('Update quantity failed:', error);
+
+                await loadCart();
+                renderCart();
+            } catch (err) {
+                console.error(err);
             }
         };
+
 
         window.removeItem = async (menuItemId) => {
             try {
                 await apiRequest(`/api/cart/${menuItemId}`, { method: 'DELETE' });
                 await loadCart();
                 renderCart();
-            } catch (error) {
-                console.error('Remove item failed:', error);
+            } catch (err) {
+                console.error(err);
             }
         };
 
@@ -748,10 +768,9 @@
                 window.location.href = 'login.html';
                 return;
             }
-            
+
             await loadCart();
             renderCart();
-            initModal();
         });
     </script>
 </body>
