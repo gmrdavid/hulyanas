@@ -343,6 +343,13 @@ app.post('/api/login', async (req, res) => {
             [username, username]
         );
         if (conn) conn.release();
+
+        await logActivity(
+            conn,
+            user.id,
+            'auth',
+            'Logged in'
+        );
         
         if (rows.length === 0) {
             return res.status(401).json({ error: 'Invalid credentials' });
@@ -423,6 +430,13 @@ app.put('/api/profile', authenticateToken, async (req, res) => {
             [first_name || '', last_name || '', phone || null, req.user.id]
         );
         if (conn) conn.release();
+
+        await logActivity(
+            conn,
+            req.user.id,
+            'profile',
+            'Updated profile'
+        );
         
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'User not found' });
