@@ -170,7 +170,7 @@ app.get('/api/user/:id/stats', authenticateToken, async (req, res) => {
             WHERE o.user_id = ?
         `, [parseInt(id)]);
         
-        conn.release();
+        if (conn) conn.release();
         
         const userStats = stats[0] || {};
         res.json({
@@ -206,7 +206,7 @@ app.get('/api/user/:id/activity', authenticateToken, async (req, res) => {
             LIMIT 5
         `, [parseInt(id)]);
         
-        conn.release();
+        if (conn) conn.release();
         
         const activities = rows.map(activity => ({
             id: activity.id,
@@ -261,7 +261,7 @@ app.post('/api/register', async (req, res) => {
             }
             throw err;
         } finally {
-            conn.release();
+            if (conn) conn.release();
         }
     } catch (error) {
         console.error('🚨 Register error:', error);
