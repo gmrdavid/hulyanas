@@ -569,18 +569,16 @@
                                 </div>
                                 <div class="order-actions">
                                     <button class="btn btn-secondary"
-                                    onclick='downloadInvoice(
-                                        ${order.id},
-                                        ${JSON.stringify(order.order_number)},
-                                        ${order.total_amount},
-                                        ${JSON.stringify(order.status)},
-                                        ${JSON.stringify(order.customer_name || "")},
-                                        ${JSON.stringify(order.delivery_address || "")},
-                                        ${JSON.stringify(order.phone || "")}
-                                    )'>
-                                        <i class="fas fa-receipt"></i>
-                                        Invoice
-                                    </button>
+                                        onclick='downloadInvoice(
+                                            ${order.id},
+                                            ${JSON.stringify(order.order_number)},
+                                            ${order.total_amount},
+                                            ${JSON.stringify(order.status)},
+                                            ${JSON.stringify(order.customer_name || "")}
+                                        )'>
+                                            <i class="fas fa-receipt"></i>
+                                            Invoice
+                                        </button>
                                     <button class="btn btn-primary" onclick="reorder(${order.id})">
                                         <i class="fas fa-shopping-cart"></i>
                                         Reorder
@@ -682,150 +680,212 @@
             }
         }
 
-        async function downloadInvoice(orderId, orderNumber, totalAmount, status, customerName, address, phone) {
-            try {
-                if (!window.jspdf) {
-                alert("jsPDF not loaded");
-                return;
-            }
+        async function downloadInvoice(orderId, orderNumber, totalAmount, status, customerName) {
+    try {
 
-            const doc = new window.jspdf.jsPDF("p", "mm", "a4");
-            doc.setFont("courier", "normal");
-            doc.setFontSize(11);
-
-                const items = await apiRequest(`/api/orders/${orderId}/items`);
-
-                // =========================
-                // COLORS
-                // =========================
-                const primary = [30, 30, 30];
-
-                // =========================
-                // LOGO (top-left)
-                // =========================
-               const logoUrl = "https://res.cloudinary.com/dta4irg3w/image/upload/v1779012111/hulyanas-logo_nixnhc.png";
-
-                const toDataURL = (url) =>
-                    fetch(url)
-                        .then(res => res.blob())
-                        .then(blob => new Promise(resolve => {
-                            const reader = new FileReader();
-                            reader.onloadend = () => resolve(reader.result);
-                            reader.readAsDataURL(blob);
-                        }));
-
-                const logoData = await toDataURL(logoUrl);
-
-                doc.addImage(logoData, "PNG", 14, 10, 30, 30);
-
-                // =========================
-                // RESTAURANT INFO
-                // =========================
-                doc.setFontSize(16);
-                doc.setTextColor(...primary);
-                doc.text("Hulyanas Hill Restaurant", 50, 18);
-
-                doc.setFontSize(10);
-                doc.text("Premium Dining Experience", 50, 24);
-                doc.text("www.facebook.com/hulyanashill/ | +63 961 633 4094", 50, 29);
-
-                // =========================
-                // INVOICE INFO (RIGHT SIDE)
-                // =========================
-                doc.setFontSize(11);
-                doc.text(`Invoice #: ${orderNumber}`, 140, 18);
-                doc.text(`Date: ${new Date().toLocaleDateString()}`, 140, 24);
-
-                // STATUS STAMP
-                doc.setFontSize(14);
-                doc.setTextColor(status === "delivered" ? 0 : 200, 0, 0);
-                doc.text(status.toUpperCase(), 140, 32);
-
-                doc.setTextColor(0, 0, 0);
-
-                // =========================
-                // CUSTOMER INFO BOX
-                // =========================
-                doc.setFontSize(11);
-                doc.text("Bill To:", 14, 50);
-
-                doc.setFontSize(10);
-                doc.text(customerName || "Guest", 14, 56);
-                doc.text(phone || "", 14, 62);
-                doc.text(address || "", 14, 68, { maxWidth: 80 });
-
-                // =========================
-                // ITEMS TABLE
-                // =========================
-                const rows = items.map(i => {
-                    const price = Number(i.price_at_order || 0);
-                    const qty = Number(i.quantity || 0);
-
-                    return [
-                        String(i.name),
-                        String(qty),
-                        `PHP ${price.toFixed(2)}`,
-                        `PHP ${(qty * price).toFixed(2)}`
-                    ];
-                });
-
-                doc.autoTable({
-                    startY: 80,
-                    head: [["Item", "Qty", "Price", "Total"]],
-                    body: rows,
-                    theme: "grid",
-                    styles: {
-                        fontSize: 10,
-                        cellPadding: 3
-                    },
-                    headStyles: {
-                        fillColor: [30, 30, 30]
-                    }
-                });
-
-                // =========================
-                // TOTALS SECTION
-                // =========================
-                const subtotal = items.reduce((sum, i) => {
-                const price = parseFloat(i.price_at_order) || 0;
-                const qty = parseInt(i.quantity) || 0;
-                return sum + (qty * price);
-            }, 0);
-
-                const vat = subtotal * 0.12;         // 12% VAT
-                const service = subtotal * 0.05;     // 5% service fee
-                const grandTotal = subtotal + vat + service;
-
-                const y = doc.lastAutoTable.finalY + 10;
-
-
-                doc.setFont("helvetica", "normal");
-
-                doc.text(`Subtotal: PHP ${subtotal.toFixed(2)}`, 140, y);
-                doc.text(`VAT (12%): PHP ${vat.toFixed(2)}`, 140, y + 6);
-                doc.text(`Service (5%): PHP ${service.toFixed(2)}`, 140, y + 12);
-
-                doc.setFont("helvetica", "bold");
-                doc.text(`TOTAL: PHP ${grandTotal.toFixed(2)}`, 140, y + 20);
-                doc.setFont("helvetica", "normal");
-
-                // =========================
-                // FOOTER
-                // =========================
-                doc.setFontSize(9);
-                doc.setFont(undefined, "normal");
-                doc.text("Thank you for dining with Hulyanas Hill!", 14, 280);
-
-                // =========================
-                // DOWNLOAD
-                // =========================
-                doc.save(`invoice-${orderNumber}.pdf`);
-
-            } catch (error) {
-                console.error(error);
-                alert("Failed to generate invoice PDF");
-            }
+        if (!window.jspdf) {
+            alert("jsPDF not loaded");
+            return;
         }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF("p", "mm", [220, 80]); // Thermal receipt size
+
+        // =========================
+        // SETTINGS
+        // =========================
+        doc.setFont("courier", "normal");
+
+        const pageWidth = 80;
+        let y = 10;
+
+        // =========================
+        // LOGO
+        // =========================
+        const logoUrl = "https://res.cloudinary.com/dta4irg3w/image/upload/v1779012111/hulyanas-logo_nixnhc.png";
+
+        const toDataURL = (url) =>
+            fetch(url)
+                .then(res => res.blob())
+                .then(blob => new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                }));
+
+        const logoData = await toDataURL(logoUrl);
+
+        // CENTERED LOGO
+        doc.addImage(logoData, "PNG", 25, y, 30, 30);
+        y += 35;
+
+        // =========================
+        // HEADER
+        // =========================
+        doc.setFontSize(16);
+        doc.setFont("courier", "bold");
+        doc.text("HULYANAS HILL", pageWidth / 2, y, { align: "center" });
+
+        y += 6;
+
+        doc.setFontSize(9);
+        doc.setFont("courier", "normal");
+        doc.text("Premium Dining Experience", pageWidth / 2, y, { align: "center" });
+
+        y += 5;
+
+        doc.text("Silago, Southern Leyte", pageWidth / 2, y, { align: "center" });
+
+        y += 5;
+
+        doc.text("+63 961 633 4094", pageWidth / 2, y, { align: "center" });
+
+        y += 4;
+
+        doc.text("facebook.com/hulyanashill", pageWidth / 2, y, { align: "center" });
+
+        y += 6;
+
+        // =========================
+        // DIVIDER
+        // =========================
+        doc.text("================================", pageWidth / 2, y, { align: "center" });
+
+        y += 6;
+
+        // =========================
+        // RECEIPT INFO
+        // =========================
+        doc.setFontSize(9);
+
+        doc.text(`Receipt No : ${orderNumber}`, 5, y);
+        y += 5;
+
+        doc.text(`Customer   : ${customerName || "Guest"}`, 5, y);
+        y += 5;
+
+        doc.text(`Date       : ${new Date().toLocaleString()}`, 5, y);
+        y += 5;
+
+        doc.text(`Status     : ${status.toUpperCase()}`, 5, y);
+
+        y += 6;
+
+        doc.text("--------------------------------", pageWidth / 2, y, { align: "center" });
+
+        y += 6;
+
+        // =========================
+        // ITEMS
+        // =========================
+        const items = await apiRequest(`/api/orders/${orderId}/items`);
+
+        doc.setFont("courier", "bold");
+        doc.text("ITEM", 5, y);
+        doc.text("QTY", 42, y);
+        doc.text("TOTAL", 60, y);
+
+        y += 4;
+
+        doc.text("--------------------------------", pageWidth / 2, y, { align: "center" });
+
+        y += 6;
+
+        doc.setFont("courier", "normal");
+
+        let subtotal = 0;
+
+        items.forEach(item => {
+
+            const qty = Number(item.quantity || 0);
+            const price = Number(item.price_at_order || 0);
+            const itemTotal = qty * price;
+
+            subtotal += itemTotal;
+
+            // Item Name
+            const splitName = doc.splitTextToSize(item.name, 34);
+
+            doc.text(splitName, 5, y);
+
+            doc.text(String(qty), 45, y);
+
+            doc.text(
+                `${itemTotal.toFixed(2)}`,
+                75,
+                y,
+                { align: "right" }
+            );
+
+            y += splitName.length * 5;
+        });
+
+        y += 2;
+
+        doc.text("--------------------------------", pageWidth / 2, y, { align: "center" });
+
+        y += 6;
+
+        // =========================
+        // TOTALS
+        // =========================
+        const vat = subtotal * 0.12;
+        const service = subtotal * 0.05;
+        const grandTotal = subtotal + vat + service;
+
+        doc.text("Subtotal", 5, y);
+        doc.text(`${subtotal.toFixed(2)}`, 75, y, { align: "right" });
+
+        y += 5;
+
+        doc.text("VAT (12%)", 5, y);
+        doc.text(`${vat.toFixed(2)}`, 75, y, { align: "right" });
+
+        y += 5;
+
+        doc.text("Service Fee", 5, y);
+        doc.text(`${service.toFixed(2)}`, 75, y, { align: "right" });
+
+        y += 6;
+
+        doc.text("================================", pageWidth / 2, y, { align: "center" });
+
+        y += 7;
+
+        doc.setFont("courier", "bold");
+        doc.setFontSize(12);
+
+        doc.text("TOTAL", 5, y);
+        doc.text(`${grandTotal.toFixed(2)}`, 75, y, { align: "right" });
+
+        y += 10;
+
+        // =========================
+        // FOOTER
+        // =========================
+        doc.setFont("courier", "normal");
+        doc.setFontSize(9);
+
+        doc.text("Thank you for dining!", pageWidth / 2, y, { align: "center" });
+
+        y += 5;
+
+        doc.text("Please come again.", pageWidth / 2, y, { align: "center" });
+
+        y += 5;
+
+        doc.text("This serves as your receipt.", pageWidth / 2, y, { align: "center" });
+
+        // =========================
+        // SAVE
+        // =========================
+        doc.save(`receipt-${orderNumber}.pdf`);
+
+    } catch (error) {
+        console.error(error);
+        alert("Failed to generate invoice PDF");
+    }
+}
 
         // Reorder functionality (adds to cart)
         async function reorder(orderId) {
