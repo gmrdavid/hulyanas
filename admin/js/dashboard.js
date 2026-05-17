@@ -80,6 +80,7 @@
 
                 try {
 
+
                     if (reset) {
                         offset = 0;
                         recentOrders.innerHTML = '';
@@ -224,33 +225,41 @@
         });
 
         // 🚀 MAIN INITIALIZATION
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log('🔥 Loading Hulyanas Admin Dashboard...');
-            
-            // Auto-login if no token
-            if (!localStorage.getItem('token')) {
-                try {
-                    console.log('🔑 Attempting auto-login...');
-                    const loginRes = await fetch('/api/login', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username: 'admin', password: 'password' })
-                    }); 
-                    const loginData = await loginRes.json();
-                    localStorage.setItem('token', loginData.token);
-                    console.log('✅ Auto-login successful');
-                } catch (e) {
-                    console.log('ℹ️ No auto-login available');
-                }
-            }
-            // Load all dashboard data in parallel
-            document.body.classList.add('loading');
-            await Promise.all([
-                loadAdminStats(),
-                loadRecentOrders(),
-                loadActivityFeed()
-            ]);
-            document.body.classList.remove('loading');
-            
-            console.log('✅ Dashboard fully loaded! ✨');
-        });
+       document.addEventListener('DOMContentLoaded', async () => {
+    console.log('🔥 Loading Hulyanas Admin Dashboard...');
+    
+    // Auto-login if no token
+    if (!localStorage.getItem('token')) {
+        try {
+            console.log('🔑 Attempting auto-login...');
+            const loginRes = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: 'admin', password: 'password' })
+            }); 
+
+            const loginData = await loginRes.json();
+
+            localStorage.setItem('token', loginData.token);
+
+            console.log('✅ Auto-login successful');
+
+        } catch (e) {
+
+            console.log('ℹ️ No auto-login available');
+        }
+    }
+
+    // Load dashboard data
+    document.body.classList.add('loading');
+
+    await Promise.all([
+        loadAdminStats(),
+        loadOrders(true),
+        loadActivityFeed()
+    ]);
+
+    document.body.classList.remove('loading');
+
+    console.log('✅ Dashboard fully loaded! ✨');
+});
