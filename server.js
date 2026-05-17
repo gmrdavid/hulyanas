@@ -981,18 +981,51 @@ app.get('/api/admin/recent-orders', authenticateToken, isAdmin, async (req, res)
 });
 
 // Admin orders
-app.get('/api/admin/orders', authenticateToken, isAdmin, async (req, res) => {
+app.get('/api/admin/orders', async (req, res) => {
+
     try {
-        const conn = await pool.getConnection();
-        const [rows] = await conn.execute(`
-            SELECT o.*, CONCAT(u.first_name, ' ', u.last_name) AS customer_name, u.phone
-            FROM orders o LEFT JOIN users u ON o.user_id = u.id
-            ORDER BY o.created_at DESC`);
-        if (conn) conn.release();
-        res.json(rows);
+
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = parseInt(req.query.offset) || 0;
+        const status = req.query.status || 'all';
+
+        let sql = `
+            SELECT 
+                id,
+                order_number,
+                customer_name,
+                status,
+                total_amount,
+                created_at
+            FROM orders
+        `;
+
+        const values = [];
+
+        if (status !== 'all') {
+            sql += ` WHERE status = ? `;
+            values.push(status);
+        }
+
+        sql += `
+            ORDER BY created_at DESC
+            LIMIT ?
+            OFFSET ?
+        `;
+
+        values.push(limit, offset);
+
+        const [orders] = await pool.execute(sql, values);
+
+        res.json(orders);
+
     } catch (error) {
-        console.error('🚨 Admin orders error:', error);
-        res.status(500).json({ error: error.message });
+
+        console.error(error);
+
+        res.status(500).json({
+            error: 'Failed to load orders'
+        });
     }
 });
 
