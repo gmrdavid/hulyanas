@@ -55,30 +55,26 @@
             <div class="recent-orders-section">
 
                 <div class="orders-header">
-                    <h1 class="section-title">Recent Orders</h1>
+                <h1 class="section-title">Recent Orders</h1>
 
-                    <div class="orders-filters">
-                        <input 
-                            type="text" 
-                            id="searchOrders"
-                            placeholder="Search order/customer..."
-                        >
+                <div class="orders-filters">
+                    <input 
+                        type="text" 
+                        id="searchOrders"
+                        placeholder="Search order/customer..."
+                    >
 
-                        <select id="statusFilter">
-                            <option value="all">All Status</option>
-                            <option value="pending">Pending</option>
-                            <option value="preparing">Preparing</option>
-                            <option value="out_for_delivery">Out for Delivery</option>
-                            <option value="delivered">Delivered</option>
-                            <option value="cancelled">Cancelled</option>
-                        </select>
-                    </div>
+                    <select id="statusFilter">
+                        <option value="all">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="preparing">Preparing</option>
+                        <option value="out_for_delivery">Out for Delivery</option>
+                        <option value="delivered">Delivered</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
                 </div>
-                <div class="load-more-container">
-                    <button id="loadMoreBtn" class="load-more-btn">
-                        Load More
-                    </button>
-                </div>
+            </div>
+
                 <table class="orders-table">
                     <thead>
                         <tr>
