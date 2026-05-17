@@ -138,7 +138,7 @@ app.get('/api/user/:id', authenticateToken, async (req, res) => {
             last_name: user.last_name,
             username: user.username,
             email: user.email,
-            full_name: `${user.first_name} ${user.last_name}`.trim(),
+            full_name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
             role: user.role,
             total_orders: parseInt(orderCount[0].total_orders || 0)
         });
@@ -377,7 +377,7 @@ app.post('/api/login', async (req, res) => {
                 username: user.username,
                 email: user.email,
                 role: user.role,
-                full_name: `${user.first_name} ${user.last_name}`.trim()
+                full_name: `${user.first_name || ''} ${user.last_name || ''}`.trim()
             },
             redirect: user.role === 'admin' ? '/admin/dashboard.html' : '/user/dashboard.html'
         });
@@ -412,7 +412,7 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
             last_name: user.last_name,
             phone: user.phone,
             role: user.role,
-            full_name: `${user.first_name} ${user.last_name}`.trim(),
+            full_name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
             created_at: user.created_at
         });
     } catch (error) {
