@@ -735,6 +735,35 @@
             const closeBtn = document.querySelector('.close');
             const form = document.getElementById('checkoutForm');
 
+            if (!checkoutBtn || !modal || !form) {
+                console.error('Modal elements missing');
+                return;
+            }
+
+            checkoutBtn.onclick = () => {
+                modal.style.display = 'block';
+            };
+
+            closeBtn.onclick = () => {
+                modal.style.display = 'none';
+            };
+
+            window.onclick = (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            };
+
+            form.onsubmit = (e) => {
+                e.preventDefault();
+                handleCheckout();
+            };
+        }
+            const modal = document.getElementById('checkoutModal');
+            const checkoutBtn = document.getElementById('checkoutBtn');
+            const closeBtn = document.querySelector('.close');
+            const form = document.getElementById('checkoutForm');
+
             checkoutBtn.addEventListener('click', () => {
                 modal.style.display = 'block';
             });
@@ -753,7 +782,6 @@
                 e.preventDefault();
                 handleCheckout();
             });
-        }
 
         // Logout
         document.getElementById('logoutBtn').addEventListener('click', (e) => {
@@ -771,6 +799,8 @@
 
             await loadCart();
             renderCart();
+
+            initModal();
         });
     </script>
 </body>
