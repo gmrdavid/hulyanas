@@ -14,7 +14,7 @@ const streamifier = require('streamifier');
 const fs = require('fs').promises;
 
 const app = express();
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 25482;
 
 // Middleware
 app.use(cors({
@@ -864,7 +864,12 @@ app.post('/api/upload', upload.single('image'), async (req, res) => {
 app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
     try {
         const conn = await pool.getConnection();
-        const [[menuItems], [totalOrders], [revenue], [totalUsers]] = await Promise.all([
+        const [
+            [menuItems],
+            [totalOrders],
+            [revenue],
+            [totalUsers]
+            ] = await Promise.all([
             conn.execute(`SELECT COUNT(*) as count FROM menu_items WHERE is_available = TRUE`),
             conn.execute(`SELECT COUNT(*) as count FROM orders WHERE status IN ('preparing', 'out_for_delivery', 'delivered')`),
             conn.execute(`SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders WHERE status NOT IN ('cancelled', 'pending')`),
@@ -1442,15 +1447,13 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
 // CONFIG / HELPERS
 // ===============================
 
-const normalizeImageUrl = (url) => {
+function normalizeImageUrl(url) {
     if (!url) return null;
 
-    // already full Cloudinary URL
     if (url.startsWith('http')) return url;
-
-    // fallback (old uploads or broken data)
+    
     return `https://res.cloudinary.com/dta4irg3w/image/upload/${url}`;
-};
+}
 
 // Helper function
 function formatTimeAgo(date) {
