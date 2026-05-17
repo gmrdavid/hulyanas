@@ -64,101 +64,100 @@
             }
         }
 
-            const recentOrders = document.getElementById('recentOrders');
-            const loadMoreBtn = document.getElementById('loadMoreBtn');
-
-            const statusFilter = document.getElementById('statusFilter');
-            const searchOrders = document.getElementById('searchOrders');
-
-            let offset = 0;
+            let currentPage = 0;
             const limit = 10;
+            let currentFilter = "all";
 
-            let currentStatus = 'all';
-            let currentSearch = '';
-
-            async function loadOrders(reset = false) {
+            async function loadRecentOrders(reset = false) {
 
                 try {
 
-                    
                     if (reset) {
-                        offset = 0;
-                        recentOrders.innerHTML = '';
+                        currentPage = 0;
+                        document.getElementById("recentOrders").innerHTML = "";
                     }
 
-                    const token = localStorage.getItem('token');
+                    const offset = currentPage * limit;
 
                     const response = await fetch(
-                        `/api/admin/orders?limit=${limit}&offset=${offset}&status=${currentStatus}&search=${encodeURIComponent(currentSearch)}`,
-                        {
-                            headers: {
-                                Authorization: `Bearer ${token}`
-                            }
-                        }
+                        `/api/admin/orders?limit=${limit}&offset=${offset}&status=${currentFilter}`
                     );
 
-                    const data = await response.json();
+                    const orders = await response.json();
 
-                    if (!data.orders) return;
+                    const tbody = document.getElementById("recentOrders");
 
-                    data.orders.forEach(order => {
+                    if (orders.length === 0 && currentPage === 0) {
 
-                        const row = document.createElement('tr');
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="5" style="text-align:center;padding:2rem;color:#777;">
+                                    No orders found
+                                </td>
+                            </tr>
+                        `;
+
+                        document.getElementById("loadMoreBtn").style.display = "none";
+                        return;
+                    }
+
+                    orders.forEach(order => {
+
+                        const row = document.createElement("tr");
 
                         row.innerHTML = `
                             <td>${order.order_number}</td>
                             <td>${order.customer_name}</td>
+
                             <td>
-                                <span class="status ${order.status}">
-                                    ${order.status}
+                                <span class="status-badge status-${order.status}">
+                                    ${order.status.replaceAll("_", " ")}
                                 </span>
                             </td>
+
                             <td>₱${Number(order.total_amount).toFixed(2)}</td>
-                            <td>${new Date(order.created_at).toLocaleString()}</td>
+
+                            <td>
+                                ${new Date(order.created_at).toLocaleDateString()}
+                            </td>
                         `;
 
-                        recentOrders.appendChild(row);
+                        tbody.appendChild(row);
                     });
 
-                    offset += limit;
+                    currentPage++;
 
-                    // hide button if no more orders
-                    loadMoreBtn.style.display =
-                        data.hasMore ? 'inline-block' : 'none';
+                    if (orders.length < limit) {
+                        document.getElementById("loadMoreBtn").style.display = "none";
+                    } else {
+                        document.getElementById("loadMoreBtn").style.display = "flex";
+                    }
 
                 } catch (error) {
-
-                    console.error('Failed to load orders:', error);
+                    console.error("Failed to load orders:", error);
                 }
             }
 
-            // =======================
-            // LOAD MORE
-            // =======================
-            loadMoreBtn.addEventListener('click', () => {
-                loadOrders();
+            /* LOAD MORE */
+
+            document.getElementById("loadMoreBtn")
+            .addEventListener("click", () => {
+                loadRecentOrders();
             });
 
-            // =======================
-            // FILTER
-            // =======================
-            statusFilter.addEventListener('change', e => {
-                currentStatus = e.target.value;
-                loadOrders(true);
+            /* FILTER */
+
+            document.getElementById("statusFilter")
+            .addEventListener("change", (e) => {
+
+                currentFilter = e.target.value;
+
+                loadRecentOrders(true);
             });
 
-            // =======================
-            // SEARCH
-            // =======================
-            searchOrders.addEventListener('input', e => {
-                currentSearch = e.target.value;
-                loadOrders(true);
-            });
+            /* INITIAL LOAD */
 
-            // =======================
-            // INITIAL LOAD
-            // =======================
-            loadOrders(true);
+            loadRecentOrders(true);
 
         // Activity feed
         async function loadActivityFeed() {
