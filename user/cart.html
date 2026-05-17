@@ -471,7 +471,7 @@
     <div class="cart-container">
         <div class="page-header">
             <h1>My Cart</h1>
-            <div class="cart-total" id="cartTotal">$0.00</div>
+            <div class="cart-total" id="cartTotal">₱0.00</div>
         </div>
 
         <div class="cart-content">
@@ -489,11 +489,11 @@
                     <h3>Order Summary</h3>
                     <div class="summary-row">
                         <span>Subtotal:</span>
-                        <span id="subtotal">$0.00</span>
+                        <span id="subtotal">₱0.00</span>
                     </div>
                     <div class="summary-row total">
                         <span>Total:</span>
-                        <span id="total">$0.00</span>
+                        <span id="total">₱0.00</span>
                     </div>
                     <button class="btn btn-primary" id="checkoutBtn" style="display: none;">
                         <i class="fas fa-credit-card"></i>Proceed to Checkout
@@ -605,9 +605,9 @@
                     <a href="menu.html" class="btn btn-primary" style="margin-top: 1.5rem;">Browse Menu</a>
                 </div>`;
                 
-                cartTotalEl.textContent = '$0.00';
-                subtotalEl.textContent = '$0.00';
-                totalEl.textContent = '$0.00';
+                cartTotalEl.textContent = '₱0.00';
+                subtotalEl.textContent = '₱0.00';
+                totalEl.textContent = '₱0.00';
                 checkoutBtn.style.display = 'none';
                 return;
             }
@@ -629,7 +629,7 @@
 
                         <div class="item-details">
                             <div class="item-name">${item.name}</div>
-                            <div class="item-price">$${price.toFixed(2)}</div>
+                            <div class="item-price">₱${price.toFixed(2)}</div>
 
                             <div class="quantity-controls">
                                 <button class="quantity-btn" onclick="updateQuantity(${id}, -1)">−</button>
@@ -646,9 +646,9 @@
 
              const formatted = total.toFixed(2);
 
-            cartTotalEl.textContent = `$${formatted}`;
-            subtotalEl.textContent = `$${formatted}`;
-            totalEl.textContent = `$${formatted}`;
+            cartTotalEl.textContent = `₱${formatted}`;
+            subtotalEl.textContent = `₱${formatted}`;
+            totalEl.textContent = `₱${formatted}`;
             checkoutBtn.style.display = 'block';
         }
 
