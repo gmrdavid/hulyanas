@@ -189,7 +189,7 @@ app.get('/api/user/:id/stats', authenticateToken, async (req, res) => {
 
 
 /// 📋 Get user recent activity (REAL DATABASE)
-//app.get('/api/user/:id/activity', authenticateToken, async (req, res) => {
+app.get('/api/user/:id/activity', authenticateToken, async (req, res) => {
     try {
         const { id } = req.params;
         const conn = await pool.getConnection();
@@ -222,42 +222,6 @@ app.get('/api/user/:id/stats', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error('🚨 User activity error:', error);
         res.status(500).json({ error: 'Failed to fetch activity' });
-    }
-//});
-
-app.get('/api/user/:id/activity', authenticateToken, async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const [activities] = await pool.execute(`
-            SELECT 
-                id,
-                type,
-                action,
-                details,
-                created_at
-            FROM user_activity
-            WHERE user_id = ?
-            ORDER BY created_at DESC
-            LIMIT 10
-        `, [id]);
-
-        // Parse JSON details
-        const formatted = activities.map(activity => ({
-            ...activity,
-            details: activity.details
-                ? JSON.parse(activity.details)
-                : null
-        }));
-
-        res.json(formatted);
-
-    } catch (error) {
-        console.error('Activity fetch error:', error);
-
-        res.status(500).json({
-            error: 'Failed to fetch activities'
-        });
     }
 });
 
