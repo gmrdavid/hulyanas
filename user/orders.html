@@ -563,7 +563,7 @@
                             </div>
                             <div class="order-footer">
                                 <div class="order-total">
-                                    Total: $${parseFloat(order.total_amount).toFixed(2)}
+                                    Total: ₱${parseFloat(order.total_amount).toFixed(2)}
                                 </div>
                                 <div class="order-actions">
                                     <button class="btn btn-secondary"
@@ -634,10 +634,10 @@
                             </div>
                             <div class="item-details">
                                 <h4>${item.name}</h4>
-                                <p>${item.quantity}x $${parseFloat(item.price_at_order).toFixed(2)}</p>
+                                <p>${item.quantity}x ₱${parseFloat(item.price_at_order).toFixed(2)}</p>
                             </div>
                         </div>
-                        <div class="item-price">$${(item.quantity * item.price_at_order).toFixed(2)}</div>
+                        <div class="item-price">₱${(item.quantity * item.price_at_order).toFixed(2)}</div>
                     </div>
                 `).join('');
                 
@@ -659,15 +659,15 @@
                 items.forEach(i => {
                     html += `
                         <p>
-                            ${i.name} - ${i.quantity} x $${i.price_at_order}
-                            = $${(i.quantity * i.price_at_order).toFixed(2)}
+                            ${i.name} - ${i.quantity} x ₱${i.price_at_order}
+                            = ₱${(i.quantity * i.price_at_order).toFixed(2)}
                         </p>
                     `;
                 });
 
                 html += `
                     <hr/>
-                    <h3>Total: $${parseFloat(totalAmount).toFixed(2)}</h3>
+                    <h3>Total: ₱${parseFloat(totalAmount).toFixed(2)}</h3>
                     </div>
                 `;
 
@@ -755,8 +755,8 @@
                 const rows = items.map(i => [
                     i.name,
                     i.quantity,
-                    `$${Number(i.price_at_order).toFixed(2)}`,
-                    `$${(i.quantity * i.price_at_order).toFixed(2)}`
+                    `₱${Number(i.price_at_order).toFixed(2)}`,
+                    `₱${(i.quantity * i.price_at_order).toFixed(2)}`
                 ]);
 
                 doc.autoTable({
@@ -788,13 +788,13 @@
 
                 doc.setFontSize(11);
 
-                doc.text(`Subtotal: $${subtotal.toFixed(2)}`, 140, y);
-                doc.text(`VAT (12%): $${vat.toFixed(2)}`, 140, y + 6);
-                doc.text(`Service (5%): $${service.toFixed(2)}`, 140, y + 12);
+                doc.text(`Subtotal: ₱${subtotal.toFixed(2)}`, 140, y);
+                doc.text(`VAT (12%): ₱${vat.toFixed(2)}`, 140, y + 6);
+                doc.text(`Service (5%): ₱${service.toFixed(2)}`, 140, y + 12);
 
                 doc.setFontSize(13);
                 doc.setFont(undefined, "bold");
-                doc.text(`TOTAL: $${grandTotal.toFixed(2)}`, 140, y + 20);
+                doc.text(`TOTAL: ₱${grandTotal.toFixed(2)}`, 140, y + 20);
 
                 // =========================
                 // FOOTER
