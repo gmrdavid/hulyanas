@@ -1501,17 +1501,17 @@ function normalizeImageUrl(url) {
     return `https://res.cloudinary.com/dta4irg3w/image/upload/${url}`;
 }
 
-async function logActivity(conn, user_id, type, action, details = null) {
-    await conn.execute(
-        `INSERT INTO activity_log (user_id, type, action, details, created_at)
-         VALUES (?, ?, ?, ?, NOW())`,
-        [
-            user_id,
-            type,
-            action,
-            details ? JSON.stringify(details) : null
-        ]
-    );
+async function logActivity(pool, user_id, type, action, details = null) {
+    const conn = await pool.getConnection();
+    try {
+        await conn.execute(
+            `INSERT INTO activity_log (user_id, type, action, details, created_at)
+             VALUES (?, ?, ?, ?, NOW())`,
+            [user_id, type, action, details ? JSON.stringify(details) : null]
+        );
+    } finally {
+        conn.release();
+    }
 }
 
 // Helper function
