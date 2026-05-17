@@ -566,7 +566,7 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
         } = req.body;
 
         // 1. Generate order number
-        const orderNumber = `#ORD-${Date.now()}`;
+        const orderNumber = `#ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
         // 2. Insert order
         const [orderResult] = await conn.execute(
