@@ -690,7 +690,8 @@
             }
 
             const doc = new window.jspdf.jsPDF("p", "mm", "a4");
-            doc.setFont("helvetica", "normal");
+            doc.setFont("courier", "normal");
+            doc.setFontSize(11);
 
                 const items = await apiRequest(`/api/orders/${orderId}/items`);
 
@@ -757,14 +758,14 @@
                 // ITEMS TABLE
                 // =========================
                 const rows = items.map(i => {
-                    const price = Number(i.price_at_order ?? 0);
-                    const qty = Number(i.quantity ?? 0);
+                    const price = Number(i.price_at_order || 0);
+                    const qty = Number(i.quantity || 0);
 
                     return [
-                        i.name,
-                        qty,
-                        `₱${price.toFixed(2)}`,
-                        `₱${(qty * price).toFixed(2)}`
+                        String(i.name),
+                        String(qty),
+                        `PHP ${price.toFixed(2)}`,
+                        `PHP ${(qty * price).toFixed(2)}`
                     ];
                 });
 
@@ -800,12 +801,12 @@
 
                 doc.setFont("helvetica", "normal");
 
-                doc.text(`Subtotal: ₱${subtotal.toFixed(2)}`, 140, y);
-                doc.text(`VAT (12%): ₱${vat.toFixed(2)}`, 140, y + 6);
-                doc.text(`Service (5%): ₱${service.toFixed(2)}`, 140, y + 12);
+                doc.text(`Subtotal: PHP ${subtotal.toFixed(2)}`, 140, y);
+                doc.text(`VAT (12%): PHP ${vat.toFixed(2)}`, 140, y + 6);
+                doc.text(`Service (5%): PHP ${service.toFixed(2)}`, 140, y + 12);
 
                 doc.setFont("helvetica", "bold");
-                doc.text(`TOTAL: ₱${grandTotal.toFixed(2)}`, 140, y + 20);
+                doc.text(`TOTAL: PHP ${grandTotal.toFixed(2)}`, 140, y + 20);
                 doc.setFont("helvetica", "normal");
 
                 // =========================
