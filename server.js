@@ -1221,7 +1221,7 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
         // =========================
         // TOTAL REVENUE
         // =========================
-        const [revenueResult] = await conn.execute(`SELECT COALESCE(SUM(o.total_amount), 0) AS total_revenue FROM orders o ${whereClause}AND LOWER(o.status) IN (
+        const [revenueResult] = await conn.execute(`SELECT COALESCE(SUM(o.total_amount), 0) AS total_revenue FROM orders o ${whereClause} AND LOWER(o.status) IN (
         'delivered',
         'preparing',
         'out_for_delivery')`, params);
