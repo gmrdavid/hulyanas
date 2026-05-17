@@ -735,7 +735,7 @@
             const closeBtn = document.querySelector('.close');
             const form = document.getElementById('checkoutForm');
 
-            if (!checkoutBtn || !modal || !form) {
+            if (!modal || !checkoutBtn || !closeBtn || !form) {
                 console.error('Modal elements missing');
                 return;
             }
@@ -754,34 +754,11 @@
                 }
             };
 
-            form.onsubmit = (e) => {
+            form.onsubmit = async (e) => {
                 e.preventDefault();
-                handleCheckout();
+                await handleCheckout();
             };
         }
-            const modal = document.getElementById('checkoutModal');
-            const checkoutBtn = document.getElementById('checkoutBtn');
-            const closeBtn = document.querySelector('.close');
-            const form = document.getElementById('checkoutForm');
-
-            checkoutBtn.addEventListener('click', () => {
-                modal.style.display = 'block';
-            });
-
-            closeBtn.addEventListener('click', () => {
-                modal.style.display = 'none';
-            });
-
-            window.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.style.display = 'none';
-                }
-            });
-
-            form.addEventListener('submit', (e) => {
-                e.preventDefault();
-                handleCheckout();
-            });
 
         // Logout
         document.getElementById('logoutBtn').addEventListener('click', (e) => {
