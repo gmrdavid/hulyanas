@@ -688,6 +688,7 @@
             }
 
             const doc = new window.jspdf.jsPDF("p", "mm", "a4");
+            doc.setFont("helvetica", "normal");
 
                 const items = await apiRequest(`/api/orders/${orderId}/items`);
 
@@ -753,12 +754,17 @@
                 // =========================
                 // ITEMS TABLE
                 // =========================
-                const rows = items.map(i => [
+                const rows = items.map(i => {
+                const price = parseFloat(i.price_at_order) || 0;
+                const qty = parseInt(i.quantity) || 0;
+
+                return [
                     i.name,
-                    i.quantity,
-                    `₱${Number(i.price_at_order).toFixed(2)}`,
-                    `₱${(i.quantity * i.price_at_order).toFixed(2)}`
-                ]);
+                    qty,
+                    `₱${price.toFixed(2)}`,
+                    `₱${(qty * price).toFixed(2)}`
+                ];
+            });
 
                 doc.autoTable({
                     startY: 80,
@@ -777,9 +783,11 @@
                 // =========================
                 // TOTALS SECTION
                 // =========================
-                const subtotal = items.reduce((sum, i) =>
-                    sum + i.quantity * i.price_at_order, 0
-                );
+                const subtotal = items.reduce((sum, i) => {
+                const price = parseFloat(i.price_at_order) || 0;
+                const qty = parseInt(i.quantity) || 0;
+                return sum + (qty * price);
+            }, 0);
 
                 const vat = subtotal * 0.12;         // 12% VAT
                 const service = subtotal * 0.05;     // 5% service fee
