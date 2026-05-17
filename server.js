@@ -588,6 +588,17 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
             );
         }
 
+        await logActivity(
+            conn,
+            userId,
+            'order',
+            'Placed order',
+            {
+                order_number: orderNumber,
+                total
+            }
+        );
+
         // 4. Clear cart
         await conn.execute(
             `DELETE FROM cart WHERE user_id = ?`,
@@ -659,6 +670,14 @@ app.post('/api/cart', authenticateToken, async (req, res) => {
         const { menu_item_id, quantity = 1 } = req.body;
         conn = await pool.getConnection();
         await conn.beginTransaction();
+
+        await logActivity(
+            conn,
+            req.user.id,
+            'cart',
+            'Added item to cart',
+            { menu_item_id, quantity }
+        );
 
         // Check menu item exists and available
         const [menuCheck] = await conn.execute(
@@ -1469,6 +1488,19 @@ function normalizeImageUrl(url) {
     if (url.startsWith('http')) return url;
     
     return `https://res.cloudinary.com/dta4irg3w/image/upload/${url}`;
+}
+
+async function logActivity(conn, user_id, type, action, details = null) {
+    await conn.execute(
+        `INSERT INTO activity_log (user_id, type, action, details, created_at)
+         VALUES (?, ?, ?, ?, NOW())`,
+        [
+            user_id,
+            type,
+            action,
+            details ? JSON.stringify(details) : null
+        ]
+    );
 }
 
 // Helper function
