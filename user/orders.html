@@ -531,7 +531,9 @@
                 }
 
                 // Calculate stats
-                const deliveredCount = orders.filter(order => order.status === 'delivered').length;
+                const deliveredCount = orders.filter(
+                    o => o.status === 'delivered'
+                ).length || 0;
 
                 // Render orders
                 ordersList.innerHTML = orders.map((order, index) => {
@@ -567,15 +569,15 @@
                                 </div>
                                 <div class="order-actions">
                                     <button class="btn btn-secondary"
-                                    onclick="downloadInvoice(
+                                    onclick='downloadInvoice(
                                         ${order.id},
-                                        '${order.order_number}',
+                                        ${JSON.stringify(order.order_number)},
                                         ${order.total_amount},
-                                        '${order.status}',
-                                        '${order.customer_name || ''}',
-                                        '${order.delivery_address || ''}',
-                                        '${order.phone || ''}'
-                                    )">
+                                        ${JSON.stringify(order.status)},
+                                        ${JSON.stringify(order.customer_name || "")},
+                                        ${JSON.stringify(order.delivery_address || "")},
+                                        ${JSON.stringify(order.phone || "")}
+                                    )'>
                                         <i class="fas fa-receipt"></i>
                                         Invoice
                                     </button>
@@ -840,7 +842,7 @@
                     await apiRequest('/api/cart', {
                         method: 'POST',
                         body: JSON.stringify({
-                            menu_item_id: item.menu_item_id,
+                            menu_item_id: item.menu_item_id || item.id,
                             quantity: item.quantity
                         })
                     });
@@ -876,7 +878,22 @@
         });
 
         // Auto-refresh every 30 seconds
-        setInterval(loadOrders, 30000);
+        let orderInterval;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!getToken()) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            loadOrders();
+
+            orderInterval = setInterval(loadOrders, 30000);
+        });
+
+        window.addEventListener('beforeunload', () => {
+            clearInterval(orderInterval);
+        });
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
