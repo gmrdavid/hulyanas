@@ -615,7 +615,7 @@
             let total = 0;
             cartItemsEl.innerHTML = cart.map(item => {
                 const id = item.menu_item_id ?? item.id;   // ✅ FIXED ID
-                const price = parseFloat(item.price) || 0;
+                const price = Number(item.price) || 0;
                 const itemTotal = price * item.quantity;
 
                 total += itemTotal;
@@ -699,7 +699,7 @@
                     return;
                 }
 
-                const total = cart.reduce((sum, item) => sum + (parseFloat(item.price) * item.quantity), 0);
+                const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
                 const response = await apiRequest('/api/orders', {
                     method: 'POST',
@@ -729,13 +729,16 @@
         }
 
         // Modal handling
-       function initModal() {
+        function initModal() {
             const modal = document.getElementById('checkoutModal');
             const checkoutBtn = document.getElementById('checkoutBtn');
             const closeBtn = document.querySelector('.close');
             const form = document.getElementById('checkoutForm');
 
-            if (!modal || !checkoutBtn || !closeBtn || !form) return;
+            if (!checkoutBtn || !modal || !form) {
+                console.error('Modal elements missing');
+                return;
+            }
 
             checkoutBtn.onclick = () => {
                 modal.style.display = 'block';
@@ -751,12 +754,34 @@
                 }
             };
 
-            form.onsubmit = async (e) => {
+            form.onsubmit = (e) => {
                 e.preventDefault();
-                await handleCheckout();
-                modal.style.display = 'none';
+                handleCheckout();
             };
         }
+            const modal = document.getElementById('checkoutModal');
+            const checkoutBtn = document.getElementById('checkoutBtn');
+            const closeBtn = document.querySelector('.close');
+            const form = document.getElementById('checkoutForm');
+
+            checkoutBtn.addEventListener('click', () => {
+                modal.style.display = 'block';
+            });
+
+            closeBtn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+
+            window.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                handleCheckout();
+            });
 
         // Logout
         document.getElementById('logoutBtn').addEventListener('click', (e) => {
