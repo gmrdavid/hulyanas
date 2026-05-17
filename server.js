@@ -341,7 +341,7 @@ app.post('/api/login', async (req, res) => {
              FROM users WHERE (username = ? OR email = ?) AND is_active = 1`,
             [username, username]
         );
-        conn.release();
+        if (conn) conn.release();
         
         if (rows.length === 0) {
             return res.status(401).json({ error: 'Invalid credentials' });
@@ -387,7 +387,7 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
              FROM users WHERE id = ?`,
             [req.user.id]
         );
-        conn.release();
+        if (conn) conn.release();
         
         if (rows.length === 0) {
             return res.status(404).json({ error: 'User not found' });
@@ -421,7 +421,7 @@ app.put('/api/profile', authenticateToken, async (req, res) => {
             `UPDATE users SET first_name = ?, last_name = ?, phone = ?, updated_at = NOW() WHERE id = ?`,
             [first_name || '', last_name || '', phone || null, req.user.id]
         );
-        conn.release();
+        if (conn) conn.release();
         
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'User not found' });
@@ -598,7 +598,7 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
             message: 'Failed to create order'
         });
     } finally {
-        conn.release();
+        if (conn) conn.release();
     }
 });
 
@@ -817,7 +817,7 @@ app.get('/api/admin/menu', authenticateToken, isAdmin, async (req, res) => {
             ORDER BY created_at DESC
         `);
 
-        conn.release();
+        if (conn) conn.release();
 
         res.json(rows);
 
@@ -875,7 +875,7 @@ app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
             conn.execute(`SELECT COALESCE(SUM(total_amount), 0) as revenue FROM orders WHERE status NOT IN ('cancelled', 'pending')`),
             conn.execute(`SELECT COUNT(*) as count FROM users WHERE role = 'customer'`)
         ]);
-        conn.release();
+        if (conn) conn.release();
         
         res.json({
             menuItems: parseInt(menuItems[0].count),
@@ -902,7 +902,7 @@ app.get('/api/admin/recent-orders', authenticateToken, isAdmin, async (req, res)
                    END as time_ago
             FROM orders o JOIN users u ON o.user_id = u.id 
             ORDER BY o.created_at DESC LIMIT 10`);
-        conn.release();
+        if (conn) conn.release();
         res.json(rows);
     } catch (error) {
         console.error('🚨 Admin recent orders error:', error);
@@ -918,7 +918,7 @@ app.get('/api/admin/orders', authenticateToken, isAdmin, async (req, res) => {
             SELECT o.*, CONCAT(u.first_name, ' ', u.last_name) AS customer_name, u.phone
             FROM orders o LEFT JOIN users u ON o.user_id = u.id
             ORDER BY o.created_at DESC`);
-        conn.release();
+        if (conn) conn.release();
         res.json(rows);
     } catch (error) {
         console.error('🚨 Admin orders error:', error);
@@ -933,7 +933,7 @@ app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
         const [rows] = await conn.execute(`
             SELECT id, username, email, first_name, last_name, phone, role, is_active, created_at
             FROM users ORDER BY id DESC`);
-        conn.release();
+        if (conn) conn.release();
         res.json(rows);
     } catch (error) {
         console.error('🚨 Admin users error:', error);
@@ -946,7 +946,7 @@ app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
     try {
         const conn = await pool.getConnection();
         const [rows] = await conn.execute(`SELECT type, action as message, created_at FROM activity_log ORDER BY created_at DESC LIMIT 10`);
-        conn.release();
+        if (conn) conn.release();
 
         const formatted = rows.map(row => ({
             type: row.type || 'system',
@@ -1091,7 +1091,7 @@ app.get('/api/admin/orders/:id', authenticateToken, isAdmin, async (req, res) =>
         const [rows] = await conn.execute(`
             SELECT o.*, CONCAT(u.first_name, ' ', u.last_name) as customer_name, u.phone
             FROM orders o LEFT JOIN users u ON o.user_id = u.id WHERE o.id = ?`, [id]);
-        conn.release();
+        if (conn) conn.release();
         
         if (rows.length === 0) return res.status(404).json({ error: 'Order not found' });
         res.json(rows[0]);
@@ -1114,7 +1114,7 @@ app.put('/api/admin/orders/:id/status', authenticateToken, isAdmin, async (req, 
             `UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?`,
             [status, req.params.id]
         );
-        conn.release();
+        if (conn) conn.release();
 
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'Order not found' });
@@ -1131,7 +1131,7 @@ app.delete('/api/admin/orders/:id', authenticateToken, isAdmin, async (req, res)
     try {
         const conn = await pool.getConnection();
         await conn.execute(`DELETE FROM orders WHERE id = ?`, [req.params.id]);
-        conn.release();
+        if (conn) conn.release();
         res.json({ message: 'Order deleted successfully' });
     } catch (error) {
         console.error('🚨 Delete order error:', error);
@@ -1144,7 +1144,7 @@ app.delete('/api/admin/users/:id', authenticateToken, isAdmin, async (req, res) 
     try {
         const conn = await pool.getConnection();
         await conn.execute(`DELETE FROM users WHERE id = ? AND role != 'admin'`, [req.params.id]);
-        conn.release();
+        if (conn) conn.release();
         res.json({ message: 'User deleted successfully' });
     } catch (error) {
         console.error('🚨 Delete user error:', error);
@@ -1475,7 +1475,7 @@ function formatTimeAgo(date) {
 app.get('/api/health', async (req, res) => {
     try {
         const conn = await pool.getConnection();
-        conn.release();
+        if (conn) conn.release();
         res.json({ 
             status: 'OK ✅', 
             timestamp: new Date().toISOString(),
