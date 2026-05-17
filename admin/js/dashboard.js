@@ -64,58 +64,74 @@
             }
         }
 
+        let allOrders = [];
+
         async function loadRecentOrders() {
             try {
                 const token = localStorage.getItem('token');
                 const response = await fetch('/api/admin/recent-orders', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
+
                 const orders = await response.json();
-                
-                const tbody = document.getElementById('recentOrders');
-                if (orders.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:3rem;color:#999;">No recent orders found</td></tr>';
-                    return;
-                }
-                
-                tbody.innerHTML = orders.map(order => `
-                    <tr data-order-id="${order.id}">
-                        <td><strong>#${order.order_number || 'N/A'}</strong></td>
-                        <td>${order.customer || 'Unknown'}</td>
 
-                        <td>
-                            <span class="order-status status-${order.status}">
-                                ${(order.status || 'unknown').replace(/_/g, ' ')}
-                            </span>
-                        </td>
+                allOrders = orders; // ✅ store globally for filtering
 
-                        <td>
-                            <strong>₱${Number(order.total_amount || 0).toFixed(2)}</strong>
-                        </td>
+                renderRecentOrders(allOrders);
 
-                        <td>${order.time_ago || 'N/A'}</td>
-                    </tr>
-                `).join('');
-                
                 console.log('✅ Orders loaded:', orders.length);
-                
+
             } catch (error) {
                 console.error('Orders error:', error);
-                document.getElementById('recentOrders').innerHTML = 
+                document.getElementById('recentOrders').innerHTML =
                     '<tr><td colspan="5" style="text-align:center;padding:3rem;color:#666;">Failed to load orders. Please refresh.</td></tr>';
             }
         }
 
+        function renderRecentOrders(orders) {
+            const tbody = document.getElementById('recentOrders');
+
+            if (!orders.length) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align:center;padding:3rem;color:#999;">
+                            No orders found
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = orders.map(order => `
+                <tr data-order-id="${order.id}">
+                    <td><strong>#${order.order_number || 'N/A'}</strong></td>
+                    <td>${order.customer || 'Unknown'}</td>
+
+                    <td>
+                        <span class="order-status status-${order.status}">
+                            ${(order.status || 'unknown').replace(/_/g, ' ')}
+                        </span>
+                    </td>
+
+                    <td>
+                        <strong>₱${Number(order.total_amount || 0).toFixed(2)}</strong>
+                    </td>
+
+                    <td>${order.time_ago || 'N/A'}</td>
+                </tr>
+            `).join('');
+        }
+
             // Filter by Status
-            document.getElementById('statusFilter').addEventListener('change', e => {
-                const value = e.target.value;
-                if (!value) {
-                    renderOrdersTable(orders);
-                } else {
-                    const filtered = orders.filter(o => o.status === value);
-                    renderOrdersTable(filtered);
-                }
-            });
+         function filterOrdersByStatus(status) {
+            if (status === 'all') {
+                renderRecentOrders(allOrders);
+                return;
+            }
+
+            const filtered = allOrders.filter(order => order.status === status);
+            renderRecentOrders(filtered);
+        }
 
         // Activity feed
         async function loadActivityFeed() {
