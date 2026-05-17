@@ -223,6 +223,117 @@
             text-transform: uppercase;
         }
 
+        .orders-header{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            margin-bottom:1.5rem;
+            gap:1rem;
+            flex-wrap:wrap;
+        }
+
+        .orders-controls{
+            display:flex;
+            align-items:center;
+            gap:1rem;
+        }
+
+        .filter-select{
+            padding:.75rem 1rem;
+            border:1px solid #ddd;
+            border-radius:12px;
+            background:#fff;
+            font-size:.95rem;
+            font-family:'Inter',sans-serif;
+            cursor:pointer;
+            outline:none;
+            transition:.2s ease;
+        }
+
+        .filter-select:focus{
+            border-color:#111;
+        }
+
+        .load-more-container{
+            margin-top:1.5rem;
+            display:flex;
+            justify-content:center;
+        }
+
+        .load-more-btn{
+            background:#111;
+            color:#fff;
+            border:none;
+            padding:.9rem 1.4rem;
+            border-radius:14px;
+            font-weight:600;
+            cursor:pointer;
+            transition:.25s ease;
+            display:flex;
+            align-items:center;
+            gap:.6rem;
+        }
+
+        .load-more-btn:hover{
+            background:#000;
+            transform:translateY(-2px);
+        }
+
+        .status-badge{
+            padding:.45rem .9rem;
+            border-radius:30px;
+            font-size:.75rem;
+            font-weight:700;
+            text-transform:uppercase;
+            letter-spacing:.5px;
+            display:inline-block;
+        }
+
+        .status-pending{
+            background:#fff3cd;
+            color:#856404;
+        }
+
+        .status-preparing{
+            background:#d1ecf1;
+            color:#0c5460;
+        }
+
+        .status-out_for_delivery{
+            background:#d4edda;
+            color:#155724;
+        }
+
+        .status-delivered{
+            background:#f1f1f1;
+            color:#111;
+        }
+
+        .status-cancelled{
+            background:#f8d7da;
+            color:#721c24;
+        }
+
+        @media(max-width:768px){
+
+            .orders-header{
+                align-items:stretch;
+            }
+
+            .orders-controls{
+                width:100%;
+            }
+
+            .filter-select{
+                width:100%;
+            }
+
+            .load-more-btn{
+                width:100%;
+                justify-content:center;
+            }
+        }
+
         .status-pending { background: #fff3cd; color: #856404; }
         .status-delivered { background: #d4edda; color: #155724; }
         .status-out_for_delivery {background: #d1ecf1; color: #0c5460; border-color: #bee5eb;}
