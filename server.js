@@ -961,132 +961,38 @@ app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
 
 // Admin recent orders
 app.get('/api/admin/recent-orders', authenticateToken, isAdmin, async (req, res) => {
-    let conn;
-
     try {
-        conn = await pool.getConnection();
-
-        const limit = parseInt(req.query.limit) || 10;
-
+        const conn = await pool.getConnection();
         const [rows] = await conn.execute(`
-            SELECT o.id, o.order_number,
-                   CONCAT(u.first_name, ' ', u.last_name) as customer,
+            SELECT o.id, o.order_number, CONCAT(u.first_name, ' ', u.last_name) as customer,
                    o.status, o.total_amount,
-                   CASE 
-                        WHEN TIMESTAMPDIFF(MINUTE, o.created_at, NOW()) < 60 
+                   CASE WHEN TIMESTAMPDIFF(MINUTE, o.created_at, NOW()) < 60 
                         THEN CONCAT(TIMESTAMPDIFF(MINUTE, o.created_at, NOW()), ' min ago')
                         ELSE CONCAT(TIMESTAMPDIFF(HOUR, o.created_at, NOW()), ' hr ago')
                    END as time_ago
-            FROM orders o 
-            JOIN users u ON o.user_id = u.id 
-            ORDER BY o.created_at DESC 
-            LIMIT ?
-        `, [limit]);
-
+            FROM orders o JOIN users u ON o.user_id = u.id 
+            ORDER BY o.created_at DESC LIMIT 10`);
+        if (conn) conn.release();
         res.json(rows);
-
     } catch (error) {
         console.error('🚨 Admin recent orders error:', error);
         res.status(500).json({ error: error.message });
-
-    } finally {
-        if (conn) conn.release();
     }
 });
 
 // Admin orders
-// Admin orders with pagination + filters
 app.get('/api/admin/orders', authenticateToken, isAdmin, async (req, res) => {
-    let conn;
-
     try {
-        conn = await pool.getConnection();
-
-        // =========================
-        // QUERY PARAMS
-        // =========================
-        const limit = parseInt(req.query.limit) || 10;
-        const offset = parseInt(req.query.offset) || 0;
-
-        const status = req.query.status || 'all';
-        const search = req.query.search || '';
-
-        // =========================
-        // BASE SQL
-        // =========================
-        let sql = `
-            SELECT 
-                o.id,
-                o.order_number,
-                CONCAT(u.first_name, ' ', u.last_name) AS customer_name,
-                o.status,
-                o.total_amount,
-                o.created_at
-            FROM orders o
-            JOIN users u ON o.user_id = u.id
-            WHERE 1=1
-        `;
-
-        const values = [];
-
-        // =========================
-        // STATUS FILTER
-        // =========================
-        if (status !== 'all') {
-            sql += ` AND o.status = ? `;
-            values.push(status);
-        }
-
-        // =========================
-        // SEARCH FILTER
-        // =========================
-        if (search.trim() !== '') {
-            sql += `
-                AND (
-                    o.order_number LIKE ?
-                    OR CONCAT(u.first_name, ' ', u.last_name) LIKE ?
-                )
-            `;
-
-            values.push(`%${search}%`);
-            values.push(`%${search}%`);
-        }
-
-        // =========================
-        // ORDER + LIMIT
-        // =========================
-        sql += `
-            ORDER BY o.created_at DESC
-            LIMIT ?
-            OFFSET ?
-        `;
-
-        values.push(limit);
-        values.push(offset);
-
-        // =========================
-        // EXECUTE
-        // =========================
-        const [orders] = await conn.execute(sql, values);
-
-        res.json({
-            success: true,
-            orders,
-            limit,
-            offset,
-            hasMore: orders.length === limit
-        });
-
-    } catch (error) {
-
-        console.error('🚨 Admin orders error:', error);
-
-        res.status(500).json({
-            error: 'Failed to load orders'
-        });
-
-    } finally {
+        const conn = await pool.getConnection();
+        const [rows] = await conn.execute(`
+            SELECT o.*, CONCAT(u.first_name, ' ', u.last_name) AS customer_name, u.phone
+            FROM orders o LEFT JOIN users u ON o.user_id = u.id
+            ORDER BY o.created_at DESC`);
         if (conn) conn.release();
+        res.json(rows);
+    } catch (error) {
+        console.error('🚨 Admin orders error:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 
