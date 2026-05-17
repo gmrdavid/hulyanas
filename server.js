@@ -429,7 +429,6 @@ app.put('/api/profile', authenticateToken, async (req, res) => {
             `UPDATE users SET first_name = ?, last_name = ?, phone = ?, updated_at = NOW() WHERE id = ?`,
             [first_name || '', last_name || '', phone || null, req.user.id]
         );
-        if (conn) conn.release();
 
         await logActivity(
             conn,
@@ -437,6 +436,8 @@ app.put('/api/profile', authenticateToken, async (req, res) => {
             'profile',
             'Updated profile'
         );
+
+        if (conn) conn.release();
         
         if (result.affectedRows === 0) {
             return res.status(404).json({ error: 'User not found' });
