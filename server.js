@@ -877,25 +877,21 @@ app.get('/api/admin/menu', authenticateToken, isAdmin, async (req, res) => {
 
 app.post('/api/upload', upload.single('image'), async (req, res) => {
   try {
-    const streamUpload = (req) => {
-      return new Promise((resolve, reject) => {
+    const streamUpload = (file) =>
+    new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
-          { folder: 'hulyanas-menu' },
-          (error, result) => {
-            if (result) resolve(result);
-            else reject(error);
-          }
+            { folder: 'hulyanas-menu' },
+            (err, result) => {
+                if (result) resolve(result);
+                else reject(err);
+            }
         );
 
-        streamifier.createReadStream(req.file.buffer).pipe(stream);
-      });
-    };
-
-    const result = await streamUpload(req);
-
-    res.json({
-      imageUrl: result.secure_url
+        streamifier.createReadStream(file.buffer).pipe(stream);
     });
+
+        const result = await streamUpload(req.file);
+        const image_url = result.secure_url;
 
   } catch (err) {
     console.error(err);
