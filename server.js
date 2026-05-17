@@ -188,38 +188,43 @@ app.get('/api/user/:id/stats', authenticateToken, async (req, res) => {
 
 /// 📋 Get user recent activity (REAL DATABASE)
 app.get('/api/user/:id/activity', authenticateToken, async (req, res) => {
+    let conn;
+
     try {
         const { id } = req.params;
-        const conn = await pool.getConnection();
-        
+
+        conn = await pool.getConnection();
+
         const [rows] = await conn.execute(`
-            SELECT al.id, al.type, al.action, al.details, al.created_at,
-                   CASE 
-                       WHEN al.type = 'order' AND JSON_EXTRACT(al.details, '$.order_number') IS NOT NULL 
-                       THEN CONCAT('Order ', JSON_UNQUOTE(JSON_EXTRACT(al.details, '$.order_number')))
-                       ELSE al.action 
-                   END as display_action
-            FROM activity_log al
-            WHERE al.user_id = ?
-            ORDER BY al.created_at DESC 
+            SELECT 
+                id,
+                type,
+                action,
+                details,
+                created_at
+            FROM activity_log
+            WHERE user_id = ?
+            ORDER BY created_at DESC
             LIMIT 5
         `, [parseInt(id)]);
-        
-        if (conn) conn.release();
-        
+
         const activities = rows.map(activity => ({
             id: activity.id,
             type: activity.type || 'system',
             action: activity.action,
-            display_action: activity.display_action || activity.action,
+            display_action: activity.action,
             details: activity.details ? JSON.parse(activity.details) : null,
             created_at: activity.created_at
         }));
-        
+
         res.json(activities);
+
     } catch (error) {
         console.error('🚨 User activity error:', error);
         res.status(500).json({ error: 'Failed to fetch activity' });
+
+    } finally {
+        if (conn) conn.release();
     }
 });
 
@@ -423,36 +428,55 @@ app.get('/api/profile', authenticateToken, async (req, res) => {
 
 // Update profile
 app.put('/api/profile', authenticateToken, async (req, res) => {
+    let conn;
+
     try {
         const { first_name, last_name, phone } = req.body;
-        const conn = await pool.getConnection();
-        
+
+        conn = await pool.getConnection();
+
+        // 1. Update user profile
         const [result] = await conn.execute(
-            `UPDATE users SET first_name = ?, last_name = ?, phone = ?, updated_at = NOW() WHERE id = ?`,
-            [first_name || '', last_name || '', phone || null, req.user.id]
+            `UPDATE users 
+             SET first_name = ?, last_name = ?, phone = ?, updated_at = NOW() 
+             WHERE id = ?`,
+            [
+                first_name || '',
+                last_name || '',
+                phone || null,
+                req.user.id
+            ]
         );
 
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // 2. Log activity (THIS IS NOW FIXED)
         await logActivity(
             conn,
             req.user.id,
             'profile',
-            'Updated profile'
+            'Updated profile',
+            {
+                first_name,
+                last_name,
+                phone
+            }
         );
 
-        if (conn) conn.release();
-        
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-        
-        res.json({ 
-            success: true, 
+        res.json({
+            success: true,
             message: 'Profile updated successfully',
             redirect: '/user/dashboard.html'
         });
+
     } catch (error) {
         console.error('🚨 Profile update error:', error);
         res.status(500).json({ error: error.message });
+
+    } finally {
+        if (conn) conn.release();
     }
 });
 
@@ -1506,22 +1530,23 @@ function normalizeImageUrl(url) {
     return `https://res.cloudinary.com/dta4irg3w/image/upload/${url}`;
 }
 
-async function logActivity(db, user_id, type, action, details = null) {
+async function logActivity(conn, user_id, type, action, details = null) {
     try {
-        const conn = db.getConnection ? await db.getConnection() : db;
-
         await conn.execute(
-            `INSERT INTO activity_log (user_id, type, action, details, created_at)
+            `INSERT INTO activity_log 
+             (user_id, type, action, details, created_at)
              VALUES (?, ?, ?, ?, NOW())`,
-            [user_id, type, action, details ? JSON.stringify(details) : null]
+            [
+                user_id,
+                type,
+                action,
+                details ? JSON.stringify(details) : null
+            ]
         );
-
-        if (db.getConnection) conn.release();
-
     } catch (err) {
         console.error('Activity log error:', err);
     }
-} 
+}
 
 // Helper function
 function formatTimeAgo(date) {
