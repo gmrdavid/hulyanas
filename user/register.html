@@ -517,7 +517,7 @@ function validateForm(data) {
         errors.push('Passwords do not match');
     }
     
-    if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+    if (data.email && !/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(data.email)) {
         errors.push('Please enter a valid email');
     }
     
