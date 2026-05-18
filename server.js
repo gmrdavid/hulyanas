@@ -976,17 +976,17 @@ app.get('/api/admin/recent-orders', async (req, res) => {
 
         // GET ORDERS
         const [rows] = await pool.query(`
-            SELECT 
-                o.id,
-                o.order_number,
-                o.total_amount,
-                o.status,
-                o.created_at,
-                u.first_name,
-                u.last_name,
-                o.payment_method
-            FROM orders o
-            JOIN users u ON o.user_id = u.id
+           SELECT 
+            o.id,
+            o.order_number,
+            o.total_amount,
+            o.status,
+            o.created_at,
+            u.first_name,
+            u.last_name,
+            o.payment_method
+        FROM orders o
+        JOIN users u ON o.user_id = u.id
             ORDER BY o.created_at DESC
             LIMIT ? OFFSET ?
         `, [limit, offset]);
