@@ -232,6 +232,7 @@ app.get('/api/user/:id/activity', authenticateToken, async (req, res) => {
 // =========================
 // EXPORT ORDERS EXCEL
 // =========================
+
 app.post('/api/export/orders', authenticateToken, isAdmin, async (req, res) => {
 
     let conn;
@@ -254,30 +255,27 @@ app.post('/api/export/orders', authenticateToken, isAdmin, async (req, res) => {
         `);
 
         const workbook = new ExcelJS.Workbook();
-
         const worksheet = workbook.addWorksheet('Orders');
 
         worksheet.columns = [
             { header: 'Order Number', key: 'order_number', width: 20 },
-            { header: 'Customer Name', key: 'customer_name', width: 25 },
+            { header: 'Customer', key: 'customer_name', width: 25 },
             { header: 'Phone', key: 'phone', width: 20 },
-            { header: 'Total Amount', key: 'total_amount', width: 15 },
+            { header: 'Total', key: 'total_amount', width: 15 },
             { header: 'Status', key: 'status', width: 20 },
-            { header: 'Payment Method', key: 'payment_method', width: 20 },
-            { header: 'Created At', key: 'created_at', width: 25 }
+            { header: 'Payment', key: 'payment_method', width: 20 },
+            { header: 'Date', key: 'created_at', width: 25 }
         ];
 
-        orders.forEach(order => {
-
+        orders.forEach(o => {
             worksheet.addRow({
-                ...order,
-                total_amount: `₱${Number(order.total_amount).toLocaleString('en-PH', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                })}`,
-                created_at: new Date(order.created_at).toLocaleString()
+                ...o,
+                total_amount: Number(o.total_amount || 0),
+                created_at: new Date(o.created_at).toLocaleString()
             });
         });
+
+        const buffer = await workbook.xlsx.writeBuffer();
 
         res.setHeader(
             'Content-Type',
@@ -286,16 +284,14 @@ app.post('/api/export/orders', authenticateToken, isAdmin, async (req, res) => {
 
         res.setHeader(
             'Content-Disposition',
-            'attachment; filename=hulyanas-orders.xlsx'
+            'attachment; filename=orders.xlsx'
         );
 
-        await workbook.xlsx.write(res);
-
-        res.end();
+        res.send(buffer);
 
     } catch (error) {
 
-        console.error('🚨 ORDERS EXPORT ERROR:', error);
+        console.error('🚨 EXPORT ORDERS ERROR:', error);
 
         res.status(500).json({
             error: error.message
