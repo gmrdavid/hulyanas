@@ -524,6 +524,10 @@
                             <option value="cash">Cash on Delivery</option>
                             <option value="gcash">Gcash</option>
                         </select>
+                        <div class="form-group" id="gcashRefGroup" style="display:none;">
+                            <label>GCash Reference Number *</label>
+                            <input type="text" id="gcashRef" placeholder="Enter reference number">
+                        </div>
                     </div>
                 </div>
                 <button type="submit" class="btn btn-primary">Place Order</button>
@@ -693,11 +697,16 @@
                 const deliveryAddress = document.getElementById('deliveryAddress').value;
                 const phone = document.getElementById('deliveryPhone').value;
                 const paymentMethod = document.getElementById('paymentMethod').value;
+                const gcashRef = document.getElementById('gcashRef').value;
 
                 if (!deliveryAddress || !phone) {
                     alert('Please fill in all required fields');
                     return;
                 }
+                if (paymentMethod === 'gcash' && !gcashRef) {
+                    alert('Please enter GCash reference number');
+                    return;
+}
 
                 const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
@@ -778,6 +787,18 @@
             renderCart();
 
             initModal();
+        });
+
+        document.getElementById('paymentMethod').addEventListener('change', function () {
+            const gcashGroup = document.getElementById('gcashRefGroup');
+
+            if (this.value === 'gcash') {
+                gcashGroup.style.display = 'block';
+                document.getElementById('gcashRef').required = true;
+            } else {
+                gcashGroup.style.display = 'none';
+                document.getElementById('gcashRef').required = false;
+            }
         });
     </script>
 </body>
