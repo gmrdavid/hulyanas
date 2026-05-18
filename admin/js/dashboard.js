@@ -52,7 +52,7 @@ function animateCounters(data) {
     // Revenue animation
 
     let currentRev = 0;
-    const targetRev = data.revenue;
+    const targetRev = Number(data.revenue) || 0;
     const revIncrement = targetRev / 50;
 
     const revTimer = setInterval(() => {
@@ -62,9 +62,9 @@ function animateCounters(data) {
         if (currentRev >= targetRev) {
 
             revenueEl.textContent =
-                `₱${targetRev.toLocaleString(undefined, {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0
+                `₱${targetRev.toLocaleString('en-PH', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
                 })}`;
 
             clearInterval(revTimer);
@@ -72,10 +72,12 @@ function animateCounters(data) {
         }
 
         revenueEl.textContent =
-            `₱${Math.floor(currentRev).toLocaleString()}`;
+            `₱${currentRev.toLocaleString('en-PH', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            })}`;
 
     }, 20);
-}
 
 
 // ===============================
