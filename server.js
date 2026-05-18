@@ -961,52 +961,95 @@ app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
 
 // Admin recent orders
 app.get('/api/admin/recent-orders', async (req, res) => {
+
     try {
+
         const page = parseInt(req.query.page) || 1;
         const limit = 10;
         const offset = (page - 1) * limit;
 
+        const status = req.query.status || 'all';
+
+        // ===============================
+        // BUILD WHERE CLAUSE
+        // ===============================
+
+        let whereClause = '';
+        let queryParams = [];
+
+        if (status !== 'all') {
+
+            whereClause = 'WHERE o.status = ?';
+            queryParams.push(status);
+        }
+
+        // ===============================
         // TOTAL COUNT
+        // ===============================
+
         const [countRows] = await pool.query(`
             SELECT COUNT(*) AS total
-            FROM orders
-        `);
+            FROM orders o
+            ${whereClause}
+        `, queryParams);
 
         const totalOrders = countRows[0].total;
 
+        // ===============================
         // GET ORDERS
+        // ===============================
+
+        queryParams.push(limit, offset);
+
         const [rows] = await pool.query(`
-           SELECT 
-            o.id,
-            o.order_number,
-            o.total_amount,
-            o.status,
-            o.created_at,
-            u.first_name,
-            u.last_name,
-            o.payment_method
-        FROM orders o
-        JOIN users u ON o.user_id = u.id
+            SELECT 
+                o.id,
+                o.order_number,
+                o.total_amount,
+                o.status,
+                o.created_at,
+                u.first_name,
+                u.last_name,
+                o.payment_method
+            FROM orders o
+            JOIN users u ON o.user_id = u.id
+            ${whereClause}
             ORDER BY o.created_at DESC
             LIMIT ? OFFSET ?
-        `, [limit, offset]);
+        `, queryParams);
 
-        // FORMAT RESULTS
+        // ===============================
+        // FORMAT DATA
+        // ===============================
+
         const formattedOrders = rows.map(order => ({
             ...order,
-            customer_name: `${order.first_name} ${order.last_name}`,
-            time_ago: new Date(order.created_at).toLocaleString()
+
+            customer_name:
+                `${order.first_name || ''} ${order.last_name || ''}`.trim(),
+
+            time_ago: new Date(order.created_at)
+                .toLocaleString()
         }));
+
+        // ===============================
+        // RESPONSE
+        // ===============================
 
         res.json({
             orders: formattedOrders,
             currentPage: page,
-            totalPages: Math.ceil(totalOrders / limit)
+            totalPages: Math.ceil(totalOrders / limit),
+            totalOrders
         });
 
     } catch (error) {
+
         console.error('RECENT ORDERS ERROR:', error);
-        res.status(500).json({ error: error.message });
+
+        res.status(500).json({
+            error: error.message
+        });
     }
 });
 
