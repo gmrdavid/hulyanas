@@ -1465,7 +1465,7 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
         // =========================
         // FILTERS
         // =========================
-        let whereClause = `WHERE LOWER(o.status) != 'cancelled' and LOWER(o.status) != 'pending'`;
+        let whereClause = `WHERE 1=1`;
         const params = [];
 
         if (days !== 'all') {
