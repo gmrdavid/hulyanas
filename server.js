@@ -232,8 +232,6 @@ app.get('/api/user/:id/activity', authenticateToken, async (req, res) => {
 // =========================
 // EXPORT ORDERS EXCEL
 // =========================
-const ExcelJS = require('exceljs');
-
 app.post('/api/export/orders', authenticateToken, isAdmin, async (req, res) => {
 
     let conn;
