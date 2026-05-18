@@ -142,7 +142,7 @@
                 return;
             }
 
-            if (status === 'all') {
+            if (status === 'All Status') {
                 renderRecentOrders(allOrders);
                 return;
             }
