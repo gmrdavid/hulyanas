@@ -41,7 +41,10 @@ let orders = [];
                     <td>${date}</td>
                     <td>
                         <span class="order-total">
-                            ₱${parseFloat(order.total_amount).toFixed(2)}
+                            ₱${parseFloat(order.total_amount || 0).toLocaleString('en-PH', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            })}
                         </span>
                     </td>
                     <td>
@@ -121,7 +124,10 @@ let orders = [];
     stats[0].textContent = totalOrders;
     stats[1].textContent = delivered;
     stats[2].textContent = pendingToday;
-    stats[3].textContent = `₱${revenue.toFixed(2)}`;
+    stats[3].textContent = `₱${revenue.toLocaleString('en-PH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    })}`;
 }
 
     // Open View Modal
@@ -138,7 +144,10 @@ let orders = [];
         document.getElementById('modalOrderNumber').textContent = order.order_number;
         document.getElementById('modalOrderDate').textContent = new Date(order.created_at).toLocaleString();
         document.getElementById('modalOrderStatus').innerHTML = `<span class="order-status status-${order.status}">${order.status}</span>`;
-        document.getElementById('modalOrderTotal').textContent = `₱${parseFloat(order.total_amount).toFixed(2)}`;
+        document.getElementById('modalOrderTotal').textContent = `₱${parseFloat(order.total_amount || 0).toLocaleString('en-PH', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        })}`;
         document.getElementById('modalOrderItems').innerHTML = `
             <div class="order-item-detail">
                 <div>
