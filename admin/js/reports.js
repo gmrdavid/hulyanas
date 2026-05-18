@@ -282,3 +282,62 @@ function showToast(message) {
         setTimeout(() => toast.remove(), 300);
     }, 3000);
 }
+
+// =========================
+// EXPORT REPORT
+// =========================
+async function exportReport(type) {
+
+    try {
+
+        document.body.classList.add('loading');
+
+        const response = await fetch(`/api/export/${type}`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Export failed: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+
+        const url = window.URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+
+        a.href = url;
+
+        a.download =
+            `hulyanas-${type}-report-${new Date()
+                .toISOString()
+                .split('T')[0]}.${type === 'dashboard' ? 'pdf' : 'csv'}`;
+
+        document.body.appendChild(a);
+
+        a.click();
+
+        a.remove();
+
+        window.URL.revokeObjectURL(url);
+
+        showToast(`✅ ${type.toUpperCase()} report downloaded!`);
+
+    } catch (error) {
+
+        console.error('Export error:', error);
+
+        showToast(`❌ Failed to export ${type}`);
+
+    } finally {
+
+        document.body.classList.remove('loading');
+    }
+}
+
+// ✅ MAKE GLOBAL
+window.exportReport = exportReport;
