@@ -1487,7 +1487,7 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
                     .trim()
                     .toLowerCase()
                     .replace(/ /g, '_')
-                    )
+                    )}
 
         // =========================
         // TOTAL ORDERS
