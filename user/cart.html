@@ -695,7 +695,7 @@ async function handleCheckout() {
         }
 
         if (paymentMethod === 'gcash' && !gcashRef.trim()) {
-            alert('Please enter GCash reference number');
+            alert('Please enter your GCash reference number');
             return;
         }
 
@@ -717,7 +717,7 @@ async function handleCheckout() {
                 phone: phone,
                 payment_method: paymentMethod,
 
-                // NOTE: backend currently does NOT store this
+                // NOTE: backend does NOT store this yet
                 gcash_reference: paymentMethod === 'gcash' ? gcashRef : null
             })
         });
