@@ -437,8 +437,9 @@
 
         .filter-group {
             display: flex;
-            align-items: center;
             gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
         }
 
         .filter-group label {
@@ -446,16 +447,21 @@
         }
 
         .filter-group select {
-            padding: 0.8rem 1rem;
-            border-radius: 12px;
-            border: 1px solid #ddd;
+            padding: 1rem 1.5rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 16px;
+            font-size: 1rem;
+            background: #fff;
             font-family: inherit;
         }
 
         .pagination-controls {
-            display: flex;
+           display: flex;
+            justify-content: center;
             align-items: center;
             gap: 1rem;
+            margin-top: 2rem;
+            padding: 1rem;
         }
 
         #pageInfo {
