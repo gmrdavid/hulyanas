@@ -524,9 +524,25 @@
                             <option value="cash">Cash on Delivery</option>
                             <option value="gcash">Gcash</option>
                         </select>
+                        <div id="gcashInfo" style="display:none; margin-top:10px; padding:12px; border:1px solid #e0e0e0; border-radius:10px; background:#fafafa;">
+                            <p style="margin:0; font-weight:600; color:#1a1a1a;">
+                                Send payment to:
+                            </p>
+                            <p style="margin:5px 0 0;">
+                                <strong>Name:</strong> Hulyanas Hill<br>
+                                <strong>GCash Number:</strong> 09XX XXX XXXX
+                            </p>
+                        </div>
                         <div class="form-group" id="gcashRefGroup" style="display:none;">
                             <label>GCash Reference Number *</label>
-                            <input type="text" id="gcashRef" placeholder="Enter reference number">
+                            <input 
+                                type="text" 
+                                id="gcashRef" 
+                                placeholder="e.g. 1001 543 610110"
+
+                                pattern="[0-9\\s-]{8,20}"
+                                title="Enter valid GCash reference number (13 digits)"
+                            >
                         </div>
                     </div>
                 </div>
@@ -774,13 +790,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 document.getElementById('paymentMethod').addEventListener('change', function () {
     const gcashGroup = document.getElementById('gcashRefGroup');
+    const gcashInfo = document.getElementById('gcashInfo');
+    const gcashInput = document.getElementById('gcashRef');
 
     if (this.value === 'gcash') {
         gcashGroup.style.display = 'block';
-        document.getElementById('gcashRef').required = true;
+        gcashInfo.style.display = 'block';
+        gcashInput.required = true;
     } else {
         gcashGroup.style.display = 'none';
-        document.getElementById('gcashRef').required = false;
+        gcashInfo.style.display = 'none';
+        gcashInput.required = false;
     }
 });
 </script>
