@@ -130,7 +130,7 @@ async function loadRecentOrders(page = 1) {
         const token = localStorage.getItem('token');
 
         const response = await fetch(
-            `/api/admin/recent-orders?page=${page}`,
+            `/api/admin/recent-orders?page=${page}&status=${selectedStatus}`,
             {
                 headers: {
                     Authorization: `Bearer ${token}`
@@ -143,7 +143,8 @@ async function loadRecentOrders(page = 1) {
         console.log("API RESPONSE:", data);
 
         const orders = data.orders || [];
-        allOrders = orders;
+
+        allOrders = orders; // always overwrite current page data
 
         currentPage = data.currentPage || 1;
         totalPages = data.totalPages || 1;
@@ -160,17 +161,7 @@ async function loadRecentOrders(page = 1) {
             currentPage === totalPages;
 
     } catch (error) {
-
         console.error(error);
-
-        document.getElementById('recentOrders').innerHTML = `
-            <tr>
-                <td colspan="5"
-                    style="text-align:center;padding:3rem;">
-                    Failed to load orders
-                </td>
-            </tr>
-        `;
     }
 }
 
@@ -235,29 +226,11 @@ function renderRecentOrders(orders) {
 
 function filterOrdersByStatus(status) {
 
-    if (!Array.isArray(allOrders)) return;
+    selectedStatus = status; // 🔥 IMPORTANT: store selected filter
 
-    if (!status || status.toLowerCase() === 'all') {
-        renderRecentOrders(allOrders);
-        return;
-    }
-
-    const filtered = allOrders.filter(order =>
-        (order.status || '')
-        .toLowerCase()
-        .trim() === status.toLowerCase()
-    );
-
-    renderRecentOrders(filtered);
-
-    // 🔥 FIX UI
-    document.getElementById('pageInfo').textContent =
-        `Filtered results (${filtered.length})`;
-
-    document.getElementById('prevPageBtn').disabled = true;
-    document.getElementById('nextPageBtn').disabled = true;
+    // reset to page 1 when filtering
+    loadRecentOrders(1);
 }
-
 
 // ===============================
 // LOAD ACTIVITY FEED
