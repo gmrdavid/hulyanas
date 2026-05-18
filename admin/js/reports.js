@@ -66,6 +66,19 @@
             document.getElementById('customersChange').textContent = `+${data.customer_growth || 0}%`;
         }
 
+
+        function destroyCharts() {
+            if (salesChart) salesChart.destroy();
+            if (revenueChart) revenueChart.destroy();
+            if (productsChart) productsChart.destroy();
+            if (customersChart) customersChart.destroy();
+
+            salesChart = null;
+            revenueChart = null;
+            productsChart = null;
+            customersChart = null;
+        }
+
         // Initialize charts with REAL database data
         function initCharts(data) {
             // 1. Sales Trend Chart - Orders by DAY_OF_WEEK
