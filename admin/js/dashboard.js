@@ -101,7 +101,16 @@
                     '<tr><td colspan="5" style="text-align:center;padding:3rem;color:#666;">Failed to load orders</td></tr>';
             }
         }
+        let allOrders = [];
+        let filteredOrders = [];
+
+        let currentPage = 1;
+        const ordersPerPage = 10;
+
         function renderRecentOrders(orders) {
+
+            filteredOrders = orders;
+
             const tbody = document.getElementById('recentOrders');
 
             if (!orders.length) {
@@ -112,8 +121,50 @@
                         </td>
                     </tr>
                 `;
+
+                document.getElementById('pageInfo').textContent = 'Page 0';
                 return;
             }
+
+            // PAGINATION
+            const start = (currentPage - 1) * ordersPerPage;
+            const end = start + ordersPerPage;
+
+            const paginatedOrders = orders.slice(start, end);
+
+            tbody.innerHTML = paginatedOrders.map(order => `
+                <tr data-order-id="${order.id}">
+                    <td><strong>#${order.order_number || 'N/A'}</strong></td>
+
+                    <td>${order.customer || 'Unknown'}</td>
+
+                    <td>
+                        <span class="order-status status-${order.status}">
+                            ${(order.status || 'unknown').replace(/_/g, ' ')}
+                        </span>
+                    </td>
+
+                    <td>
+                        <strong>₱${Number(order.total_amount || 0).toFixed(2)}</strong>
+                    </td>
+
+                    <td>${order.time_ago || 'N/A'}</td>
+                </tr>
+            `).join('');
+
+            // PAGE INFO
+            const totalPages = Math.ceil(orders.length / ordersPerPage);
+
+            document.getElementById('pageInfo').textContent =
+                `Page ${currentPage} of ${totalPages}`;
+
+            // BUTTON STATES
+            document.getElementById('prevPageBtn').disabled =
+                currentPage === 1;
+
+            document.getElementById('nextPageBtn').disabled =
+                currentPage === totalPages;
+        }
 
             tbody.innerHTML = orders.map(order => `
                 <tr data-order-id="${order.id}">
@@ -133,32 +184,27 @@
                     <td>${order.time_ago || 'N/A'}</td>
                 </tr>
             `).join('');
-        }
 
             // Filter by Status
-        function filterOrdersByStatus(status) {
-            console.log('Filtering status:', status);
+       function filterOrdersByStatus(status) {
+
+            currentPage = 1;
 
             if (!Array.isArray(allOrders)) {
-                console.warn('⚠️ allOrders is invalid');
                 return;
             }
 
-            // ✅ Show all orders
             if (!status || status.toLowerCase() === 'all') {
                 renderRecentOrders(allOrders);
                 return;
             }
 
-            // ✅ Filter specific status
             const filtered = allOrders.filter(order => {
                 return (order.status || '')
                     .toString()
                     .trim()
                     .toLowerCase() === status.toLowerCase();
             });
-
-            console.log('Filtered Orders:', filtered);
 
             renderRecentOrders(filtered);
         }
