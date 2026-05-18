@@ -299,57 +299,67 @@ function closeEditStatusModal() {
 }
 
 // INIT
-document.addEventListener('DOMContentLoaded', loadOrders);
+document.addEventListener('DOMContentLoaded', () => {
 
-document.getElementById('prevPageBtn').addEventListener('click', () => {
+    loadOrders();
 
-    if (currentPage > 1) {
-        currentPage--;
-        renderOrdersTable();
-    }
-});
+    const prevBtn = document.getElementById('prevPageBtn');
+    const nextBtn = document.getElementById('nextPageBtn');
+    const statusFilter = document.getElementById('statusFilter');
+    const dateFilter = document.getElementById('dateFilter');
 
-document.getElementById('nextPageBtn').addEventListener('click', () => {
-
-    const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
-
-    if (currentPage < totalPages) {
-        currentPage++;
-        renderOrdersTable();
-    }
-});
-
-document.getElementById('statusFilter').addEventListener('change', (e) => {
-
-    const value = e.target.value;
-
-    if (!value) {
-        filteredOrders = [...orders];
-    } else {
-        filteredOrders = orders.filter(o => o.status === value);
-    }
-
-    currentPage = 1; // IMPORTANT RESET
-    renderOrdersTable();
-});
-
-document.getElementById('dateFilter').addEventListener('change', (e) => {
-
-    const value = e.target.value;
-
-    if (!value) {
-        filteredOrders = [...orders];
-    } else {
-        filteredOrders = orders.filter(order => {
-
-            const orderDate = new Date(order.created_at)
-                .toISOString()
-                .split('T')[0];
-
-            return orderDate === value;
+    // SAFE BINDING (prevents null crash)
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderOrdersTable();
+            }
         });
     }
 
-    currentPage = 1; // IMPORTANT RESET
-    renderOrdersTable();
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
+
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderOrdersTable();
+            }
+        });
+    }
+
+    if (statusFilter) {
+        statusFilter.addEventListener('change', (e) => {
+
+            const value = e.target.value;
+
+            filteredOrders = value
+                ? orders.filter(o => o.status === value)
+                : [...orders];
+
+            currentPage = 1;
+            renderOrdersTable();
+        });
+    }
+
+    if (dateFilter) {
+        dateFilter.addEventListener('change', (e) => {
+
+            const value = e.target.value;
+
+            filteredOrders = value
+                ? orders.filter(order => {
+                    const orderDate = new Date(order.created_at)
+                        .toISOString()
+                        .split('T')[0];
+
+                    return orderDate === value;
+                })
+                : [...orders];
+
+            currentPage = 1;
+            renderOrdersTable();
+        });
+    }
 });
