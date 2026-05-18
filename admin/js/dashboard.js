@@ -137,24 +137,28 @@
 
             // Filter by Status
         function filterOrdersByStatus(status) {
-            if (!allOrders || !Array.isArray(allOrders)) {
-                console.warn('⚠️ allOrders not ready yet');
+            console.log('Filtering status:', status);
+
+            if (!Array.isArray(allOrders)) {
+                console.warn('⚠️ allOrders is invalid');
                 return;
             }
 
-            if (status === 'All Status') {
+            // ✅ Show all orders
+            if (!status || status.toLowerCase() === 'all') {
                 renderRecentOrders(allOrders);
                 return;
             }
 
+            // ✅ Filter specific status
             const filtered = allOrders.filter(order => {
-                const orderStatus = (order.status || '')
+                return (order.status || '')
                     .toString()
                     .trim()
-                    .toLowerCase();
-
-                return orderStatus === status.toLowerCase();
+                    .toLowerCase() === status.toLowerCase();
             });
+
+            console.log('Filtered Orders:', filtered);
 
             renderRecentOrders(filtered);
         }
