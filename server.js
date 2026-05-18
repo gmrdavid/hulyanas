@@ -892,27 +892,38 @@ app.get('/api/admin/menu', authenticateToken, async (req, res) => {
             FROM menu_items
         `;
 
-        let params = [];
+        let queryParams = [];
         let countParams = [];
+
+        // CATEGORY FILTER
 
         if (category !== 'all') {
 
             query += ` WHERE category = ? `;
             countQuery += ` WHERE category = ? `;
 
-            params.push(category);
+            queryParams.push(category);
             countParams.push(category);
         }
 
+        // PAGINATION
+
         query += `
             ORDER BY id DESC
-            LIMIT ?
-            OFFSET ?
+            LIMIT ? OFFSET ?
         `;
 
-        params.push(limit, offset);
+        queryParams.push(limit);
+        queryParams.push(offset);
 
-        const [rows] = await pool.execute(query, params);
+        // GET MENU ITEMS
+
+        const [menuRows] = await pool.execute(
+            query,
+            queryParams
+        );
+
+        // GET TOTAL COUNT
 
         const [countRows] = await pool.execute(
             countQuery,
@@ -922,7 +933,7 @@ app.get('/api/admin/menu', authenticateToken, async (req, res) => {
         const totalItems = countRows[0].total;
 
         res.json({
-            items: rows,
+            items: menuRows,
             currentPage: page,
             totalPages: Math.ceil(totalItems / limit),
             totalItems
@@ -930,10 +941,10 @@ app.get('/api/admin/menu', authenticateToken, async (req, res) => {
 
     } catch (error) {
 
-        console.error('Menu fetch error:', error);
+        console.error('❌ MENU API ERROR:', error);
 
         res.status(500).json({
-            error: 'Server error'
+            error: error.message
         });
     }
 });
