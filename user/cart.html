@@ -710,20 +710,26 @@
 
                 const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-                const response = await apiRequest('/api/orders', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        items: cart.map(item => ({
-                            id: item.menu_item_id || item.id,
-                            quantity: item.quantity,
-                            price: item.price
-                        })),
-                        total: total.toFixed(2),
-                        delivery_address: deliveryAddress,
-                        phone: phone,
-                        payment_method: paymentMethod
-                    })
-                });
+            const gcashRef = document.getElementById('gcashRef').value;
+
+            const response = await apiRequest('/api/orders', {
+                method: 'POST',
+                body: JSON.stringify({
+                    items: cart.map(item => ({
+                        id: item.menu_item_id || item.id,
+                        quantity: item.quantity,
+                        price: item.price
+                    })),
+                    total: total.toFixed(2),
+                    delivery_address: deliveryAddress,
+                    phone: phone,
+                    payment_method: paymentMethod,
+
+                    // ✅ NEW FIELDS
+                    gcash_reference: paymentMethod === 'gcash' ? gcashRef : null,
+                    payment_status: paymentMethod === 'gcash' ? 'pending_verification' : 'paid'
+                })
+            });
 
                 if (response.success) {
                     // Clear cart after successful order
