@@ -464,12 +464,11 @@
         }
 
         #pageInfo {
-                font-weight: 600;
-                color: #1a1a1a;
-                min-width: 100px;
-                text-align: center;
-            }
-
+            font-weight: 600;
+            color: #1a1a1a;
+            min-width: 100px;
+            text-align: center;
+        }
 
         .btn btn-secondary {
             padding: 0.8rem 1.5rem;
