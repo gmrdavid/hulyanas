@@ -1097,19 +1097,55 @@ app.get('/api/admin/recent-orders', async (req, res) => {
     }
 });
 
-// Admin orders
 app.get('/api/admin/orders', authenticateToken, isAdmin, async (req, res) => {
+    let conn;
+
     try {
-        const conn = await pool.getConnection();
-        const [rows] = await conn.execute(`
-            SELECT o.*, CONCAT(u.first_name, ' ', u.last_name) AS customer_name, u.phone
-            FROM orders o LEFT JOIN users u ON o.user_id = u.id
-            ORDER BY o.created_at DESC`);
-        if (conn) conn.release();
-        res.json(rows);
+        conn = await pool.getConnection();
+
+        // 1. Get all orders
+        const [orders] = await conn.execute(`
+            SELECT 
+                o.*,
+                CONCAT(u.first_name, ' ', u.last_name) AS customer_name,
+                u.phone
+            FROM orders o
+            LEFT JOIN users u ON o.user_id = u.id
+            ORDER BY o.created_at DESC
+        `);
+
+        // 2. Get all order items + menu info
+        const [items] = await conn.execute(`
+            SELECT 
+                oi.order_id,
+                oi.quantity,
+                m.name AS item_name
+            FROM order_items oi
+            LEFT JOIN menu m ON oi.menu_id = m.id
+        `);
+
+        // 3. Attach items to each order
+        const ordersWithItems = orders.map(order => {
+            const orderItems = items
+                .filter(i => i.order_id === order.id)
+                .map(i => ({
+                    name: i.item_name,
+                    quantity: i.quantity
+                }));
+
+            return {
+                ...order,
+                items: orderItems
+            };
+        });
+
+        res.json(ordersWithItems);
+
     } catch (error) {
         console.error('🚨 Admin orders error:', error);
         res.status(500).json({ error: error.message });
+    } finally {
+        if (conn) conn.release();
     }
 });
 
