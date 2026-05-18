@@ -1919,7 +1919,7 @@ app.use((error, req, res, next) => {
 });
 
 // Start Server
-const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
+const BASE_URL = process.env.BASE_URL || `https://hulyanas.onrender.com/:${PORT}`;
 
 const server = app.listen(PORT, () => {
     console.log('\n🚀 Hulyanas Hill Server v2.0 - LIVE!');
