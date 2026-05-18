@@ -499,7 +499,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // NEXT BUTTON
 
-    document.getElementById('nextPageBtn')
+   document.getElementById('nextPageBtn')
     .addEventListener('click', () => {
 
         if (currentPage < totalPages) {
