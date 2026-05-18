@@ -724,7 +724,8 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
             total,
             delivery_address,
             phone,
-            payment_method
+            payment_method,
+            gcash_reference,
         } = req.body;
 
         // 1. Generate order number
@@ -733,9 +734,9 @@ app.post('/api/orders', authenticateToken, async (req, res) => {
         // 2. Insert order
         const [orderResult] = await conn.execute(
             `INSERT INTO orders 
-            (order_number, user_id, total_amount, delivery_address, phone, payment_method)
-            VALUES (?, ?, ?, ?, ?, ?)`,
-            [orderNumber, userId, total, delivery_address, phone, payment_method]
+            (order_number, user_id, total_amount, delivery_address, phone, payment_method, gcash_reference)
+            VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [orderNumber, userId, total, delivery_address, phone, payment_method, gcash_reference]
         );
 
         const orderId = orderResult.insertId;
