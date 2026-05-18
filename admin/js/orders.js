@@ -20,12 +20,7 @@ async function loadOrders() {
 
         const data = await response.json();
 
-        if (!Array.isArray(data)) {
-            console.error("API ERROR:", data);
-            orders = [];
-        } else {
-            orders = data;
-        }
+        orders = Array.isArray(data) ? data : [];
 
         filteredOrders = [...orders];
         currentPage = 1;
@@ -47,9 +42,7 @@ function renderOrdersTable() {
 
     const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
 
-    if (currentPage > totalPages) {
-        currentPage = 1;
-    }
+    if (currentPage > totalPages) currentPage = 1;
 
     const start = (currentPage - 1) * ordersPerPage;
     const end = start + ordersPerPage;
@@ -67,7 +60,7 @@ function renderOrdersTable() {
             <td>
                 <div class="customer-info">
                     <div class="order-avatar">
-                        ${order.customer_name.charAt(0)}
+                        ${order.customer_name?.charAt(0) || "?"}
                     </div>
                     <div>
                         <div class="customer-name">${order.customer_name}</div>
@@ -82,7 +75,7 @@ function renderOrdersTable() {
 
             <td>
                 <span class="order-total">
-                    ₱${parseFloat(order.total_amount || 0).toLocaleString('en-PH', {
+                    ₱${Number(order.total_amount || 0).toLocaleString('en-PH', {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2
                     })}
@@ -165,7 +158,7 @@ function applyFilters() {
 }
 
 // =========================
-// LOAD STATS (FIXED ERROR)
+// LOAD STATS
 // =========================
 function loadStats() {
 
@@ -220,7 +213,7 @@ function toggleItems(orderId) {
         btn.textContent = "View less";
     } else {
         more.style.display = "none";
-        btn.textContent = btn.dataset.original || "View more";
+        btn.textContent = "View more";
     }
 }
 
@@ -241,11 +234,15 @@ function renderItemsCell(order) {
 
     return `
         <div>
-            ${preview.map(i => `<div>• ${i.menu_name || i.name} x${i.quantity}</div>`).join('')}
+            ${preview.map(i => `
+                <div>• ${i.menu_name || i.name} x${i.quantity}</div>
+            `).join('')}
 
             ${hasMore ? `
                 <div id="more-${order.id}" style="display:none;">
-                    ${items.slice(2).map(i => `<div>• ${i.menu_name || i.name} x${i.quantity}</div>`).join('')}
+                    ${items.slice(2).map(i => `
+                        <div>• ${i.menu_name || i.name} x${i.quantity}</div>
+                    `).join('')}
                 </div>
 
                 <button class="view-more-btn" onclick="toggleItems(${order.id})">
@@ -257,14 +254,91 @@ function renderItemsCell(order) {
 }
 
 // =========================
-// MODAL
+// VIEW ORDER (FIXED INVOICE)
 // =========================
 function openOrderModal(id) {
 
     const order = orders.find(o => o.id == id);
     if (!order) return;
 
+    currentOrderId = id;
+
+    document.getElementById('modalOrderId').textContent = order.order_number;
+    document.getElementById('modalCustomerName').textContent = order.customer_name;
+    document.getElementById('modalCustomerPhone').textContent = order.phone;
+    document.getElementById('modalCustomerAddress').textContent = order.delivery_address;
+    document.getElementById('modalPaymentMethod').textContent = order.payment_method;
+    document.getElementById('modalOrderNumber').textContent = order.order_number;
+    document.getElementById('modalOrderDate').textContent =
+        new Date(order.created_at).toLocaleString();
+
+    document.getElementById('modalOrderStatus').innerHTML =
+        `<span class="order-status status-${order.status}">${order.status}</span>`;
+
+    document.getElementById('modalOrderTotal').textContent =
+        `₱${Number(order.total_amount || 0).toLocaleString('en-PH', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        })}`;
+
+    // ✅ FIXED INVOICE ITEMS
+    document.getElementById('modalOrderItems').innerHTML =
+        (order.items || []).map(item => `
+            <div class="order-item-detail">
+                <div>
+                    ${item.menu_name || item.name} × ${item.quantity}
+                </div>
+                <div>
+                    ₱${Number(item.price_at_order || 0).toFixed(2)}
+                </div>
+            </div>
+        `).join('') || '<p>No items found</p>';
+
     document.getElementById('orderModal').style.display = 'block';
+}
+
+// =========================
+// EDIT STATUS
+// =========================
+function openEditStatusModal(id) {
+
+    const order = orders.find(o => o.id == id);
+    if (!order) return;
+
+    currentOrderId = id;
+
+    document.getElementById('editModalOrderId').textContent = order.order_number;
+    document.getElementById('statusSelect').value = order.status;
+
+    document.getElementById('editStatusModal').style.display = 'block';
+}
+
+// =========================
+// DELETE ORDER
+// =========================
+async function deleteOrder(id) {
+
+    if (!confirm("Delete this order?")) return;
+
+    try {
+        const token = localStorage.getItem('token');
+
+        await fetch(`/api/admin/orders/${id}`, {
+            method: 'DELETE',
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+
+        orders = orders.filter(o => o.id !== id);
+        filteredOrders = filteredOrders.filter(o => o.id !== id);
+
+        renderOrdersTable();
+        loadStats();
+
+    } catch (err) {
+        console.error("Delete failed:", err);
+    }
 }
 
 // =========================
