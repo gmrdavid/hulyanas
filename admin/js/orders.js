@@ -20,7 +20,12 @@ async function loadOrders() {
 
         const data = await response.json();
 
-        orders = Array.isArray(data) ? data : [];
+        if (!Array.isArray(data)) {
+            console.error("API ERROR:", data);
+            orders = [];
+        } else {
+            orders = data;
+        }
 
         filteredOrders = [...orders];
         currentPage = 1;
@@ -63,8 +68,8 @@ function renderOrdersTable() {
                         ${order.customer_name?.charAt(0) || "?"}
                     </div>
                     <div>
-                        <div class="customer-name">${order.customer_name}</div>
-                        <div class="customer-email">${order.phone}</div>
+                        <div class="customer-name">${order.customer_name || ""}</div>
+                        <div class="customer-email">${order.phone || ""}</div>
                     </div>
                 </div>
             </td>
@@ -88,7 +93,7 @@ function renderOrdersTable() {
                 </span>
             </td>
 
-            <td>${order.payment_method}</td>
+            <td>${order.payment_method || ""}</td>
 
             <td>
                 <div class="table-actions">
@@ -122,15 +127,13 @@ function updatePaginationButtons() {
     document.getElementById('pageInfo').textContent =
         `Page ${currentPage} of ${totalPages || 1}`;
 
-    document.getElementById('prevPageBtn').disabled =
-        currentPage === 1;
-
+    document.getElementById('prevPageBtn').disabled = currentPage === 1;
     document.getElementById('nextPageBtn').disabled =
         currentPage >= totalPages || totalPages === 0;
 }
 
 // =========================
-// FILTER SYSTEM
+// FILTERS
 // =========================
 function applyFilters() {
 
@@ -144,12 +147,9 @@ function applyFilters() {
     }
 
     if (date) {
-        filteredOrders = filteredOrders.filter(order => {
-            const orderDate = new Date(order.created_at)
-                .toISOString()
-                .split('T')[0];
-
-            return orderDate === date;
+        filteredOrders = filteredOrders.filter(o => {
+            const d = new Date(o.created_at).toISOString().split('T')[0];
+            return d === date;
         });
     }
 
@@ -158,19 +158,18 @@ function applyFilters() {
 }
 
 // =========================
-// LOAD STATS
+// STATS
 // =========================
 function loadStats() {
 
     const today = new Date().toISOString().split('T')[0];
 
     const totalOrders = orders.filter(o => o.status !== 'cancelled').length;
-
     const delivered = orders.filter(o => o.status === 'delivered').length;
 
     const pendingToday = orders.filter(o => {
-        const orderDate = new Date(o.created_at).toISOString().split('T')[0];
-        return o.status === 'pending' && orderDate === today;
+        const d = new Date(o.created_at).toISOString().split('T')[0];
+        return o.status === 'pending' && d === today;
     }).length;
 
     const revenue = orders
@@ -197,55 +196,31 @@ function loadStats() {
 }
 
 // =========================
-// ITEMS EXPAND
+// ITEMS
 // =========================
-function toggleItems(orderId) {
-
-    const more = document.getElementById(`more-${orderId}`);
-    const btn = more?.nextElementSibling;
-
-    if (!more || !btn) return;
-
-    const isHidden = more.style.display === "none" || more.style.display === "";
-
-    if (isHidden) {
-        more.style.display = "block";
-        btn.textContent = "View less";
-    } else {
-        more.style.display = "none";
-        btn.textContent = "View more";
-    }
-}
-
 function renderItemsCell(order) {
 
     const items = Array.isArray(order.items) ? order.items : [];
 
-    if (!items.length && order.order_items) {
-        return `<span>${order.order_items}</span>`;
-    }
-
-    if (!items.length) {
-        return `<span>No items</span>`;
-    }
+    if (!items.length) return `<span>No items</span>`;
 
     const preview = items.slice(0, 2);
     const hasMore = items.length > 2;
 
     return `
         <div>
-            ${preview.map(i => `
-                <div>• ${i.menu_name || i.name} x${i.quantity}</div>
-            `).join('')}
+            ${preview.map(i =>
+                `<div>• ${i.menu_name || i.name} x${i.quantity}</div>`
+            ).join('')}
 
             ${hasMore ? `
                 <div id="more-${order.id}" style="display:none;">
-                    ${items.slice(2).map(i => `
-                        <div>• ${i.menu_name || i.name} x${i.quantity}</div>
-                    `).join('')}
+                    ${items.slice(2).map(i =>
+                        `<div>• ${i.menu_name || i.name} x${i.quantity}</div>`
+                    ).join('')}
                 </div>
 
-                <button class="view-more-btn" onclick="toggleItems(${order.id})">
+                <button onclick="toggleItems(${order.id})">
                     View more (${items.length - 2})
                 </button>
             ` : ''}
@@ -253,8 +228,19 @@ function renderItemsCell(order) {
     `;
 }
 
+function toggleItems(orderId) {
+
+    const more = document.getElementById(`more-${orderId}`);
+    if (!more) return;
+
+    more.style.display =
+        more.style.display === "none" || more.style.display === ""
+            ? "block"
+            : "none";
+}
+
 // =========================
-// VIEW ORDER (FIXED INVOICE)
+// VIEW MODAL
 // =========================
 function openOrderModal(id) {
 
@@ -268,7 +254,7 @@ function openOrderModal(id) {
     document.getElementById('modalCustomerPhone').textContent = order.phone;
     document.getElementById('modalCustomerAddress').textContent = order.delivery_address;
     document.getElementById('modalPaymentMethod').textContent = order.payment_method;
-    document.getElementById('modalOrderNumber').textContent = order.order_number;
+
     document.getElementById('modalOrderDate').textContent =
         new Date(order.created_at).toLocaleString();
 
@@ -281,18 +267,12 @@ function openOrderModal(id) {
             maximumFractionDigits: 2
         })}`;
 
-    // ✅ FIXED INVOICE ITEMS
     document.getElementById('modalOrderItems').innerHTML =
-        (order.items || []).map(item => `
-            <div class="order-item-detail">
-                <div>
-                    ${item.menu_name || item.name} × ${item.quantity}
-                </div>
-                <div>
-                    ₱${Number(item.price_at_order || 0).toFixed(2)}
-                </div>
+        (order.items || []).map(i => `
+            <div>
+                ${i.menu_name} × ${i.quantity}
             </div>
-        `).join('') || '<p>No items found</p>';
+        `).join('');
 
     document.getElementById('orderModal').style.display = 'block';
 }
@@ -313,32 +293,66 @@ function openEditStatusModal(id) {
     document.getElementById('editStatusModal').style.display = 'block';
 }
 
+async function saveStatusChange() {
+
+    const newStatus = document.getElementById('statusSelect').value;
+
+    const token = localStorage.getItem('token');
+
+    await fetch(`/api/admin/orders/${currentOrderId}/status`, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: newStatus })
+    });
+
+    loadOrders();
+    closeEditStatusModal();
+}
+
 // =========================
-// DELETE ORDER
+// DELETE
 // =========================
 async function deleteOrder(id) {
 
     if (!confirm("Delete this order?")) return;
 
-    try {
-        const token = localStorage.getItem('token');
+    const token = localStorage.getItem('token');
 
-        await fetch(`/api/admin/orders/${id}`, {
-            method: 'DELETE',
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        });
+    await fetch(`/api/admin/orders/${id}`, {
+        method: "DELETE",
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    });
 
-        orders = orders.filter(o => o.id !== id);
-        filteredOrders = filteredOrders.filter(o => o.id !== id);
+    loadOrders();
+}
 
-        renderOrdersTable();
-        loadStats();
+// =========================
+// INVOICE PRINT FIX
+// =========================
+function printInvoice() {
 
-    } catch (err) {
-        console.error("Delete failed:", err);
-    }
+    const content = document.getElementById('orderModal').innerHTML;
+
+    const win = window.open('', '', 'width=800,height=600');
+
+    win.document.write(`
+        <html>
+        <head>
+            <title>Invoice</title>
+        </head>
+        <body>
+            ${content}
+        </body>
+        </html>
+    `);
+
+    win.document.close();
+    win.print();
 }
 
 // =========================
