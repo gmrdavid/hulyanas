@@ -965,7 +965,9 @@ app.get('/api/admin/recent-orders', async (req, res) => {
     try {
 
         const page = parseInt(req.query.page) || 1;
+
         const limit = 10;
+
         const offset = (page - 1) * limit;
 
         // TOTAL COUNT
@@ -976,12 +978,12 @@ app.get('/api/admin/recent-orders', async (req, res) => {
 
         const totalOrders = countRows[0].total;
 
-        // LOAD ORDERS
+        // GET ORDERS
         const [orders] = await db.query(`
             SELECT 
                 id,
                 order_number,
-                customer_name AS customer,
+                customer,
                 status,
                 total_amount,
                 created_at
@@ -990,24 +992,32 @@ app.get('/api/admin/recent-orders', async (req, res) => {
             LIMIT ? OFFSET ?
         `, [limit, offset]);
 
+        // FORMAT DATE
         const formattedOrders = orders.map(order => ({
+
             ...order,
+
             time_ago: new Date(order.created_at)
                 .toLocaleString()
+
         }));
 
         res.json({
+
             orders: formattedOrders,
+
             currentPage: page,
+
             totalPages: Math.ceil(totalOrders / limit)
+
         });
 
     } catch (error) {
 
-        console.error(error);
+        console.error('RECENT ORDERS ERROR:', error);
 
         res.status(500).json({
-            error: 'Failed to load recent orders'
+            error: error.message
         });
     }
 });
