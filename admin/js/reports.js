@@ -249,3 +249,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await loadAnalyticsData();
 });
+
+function showToast(message) {
+    const toast = document.createElement('div');
+
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #d4edda;
+        color: #155724;
+        padding: 12px 20px;
+        border-radius: 10px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        z-index: 9999;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        transform: translateX(120%);
+    `;
+
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    // animate in
+    setTimeout(() => {
+        toast.style.transform = 'translateX(0)';
+    }, 100);
+
+    // remove after 3 seconds
+    setTimeout(() => {
+        toast.style.transform = 'translateX(120%)';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
