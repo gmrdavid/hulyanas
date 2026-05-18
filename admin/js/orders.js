@@ -262,7 +262,8 @@ function openOrderModal(id) {
 
     const orderNumber = order.order_number || `ORD-${order.id}`;
 
-    document.getElementById('modalOrderId').textContent = order.order_number;
+    document.getElementById('modalOrderId').textContent = orderNumber;
+    document.getElementById('modalOrderNumber').textContent = orderNumber;
     document.getElementById('modalCustomerName').textContent = order.customer_name;
     document.getElementById('modalCustomerPhone').textContent = order.phone;
     document.getElementById('modalCustomerAddress').textContent = order.delivery_address;
