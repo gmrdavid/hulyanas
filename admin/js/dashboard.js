@@ -232,31 +232,27 @@ function renderRecentOrders(orders) {
 
 function filterOrdersByStatus(status) {
 
-    currentPage = 1;
-
-    if (!Array.isArray(allOrders)) {
-        return;
-    }
-
-    // SHOW ALL
+    if (!Array.isArray(allOrders)) return;
 
     if (!status || status.toLowerCase() === 'all') {
-
         renderRecentOrders(allOrders);
         return;
     }
 
-    // FILTER
-
-    const filtered = allOrders.filter(order => {
-
-        return (order.status || '')
-            .toString()
-            .trim()
-            .toLowerCase() === status.toLowerCase();
-    });
+    const filtered = allOrders.filter(order =>
+        (order.status || '')
+        .toLowerCase()
+        .trim() === status.toLowerCase()
+    );
 
     renderRecentOrders(filtered);
+
+    // 🔥 FIX UI
+    document.getElementById('pageInfo').textContent =
+        `Filtered results (${filtered.length})`;
+
+    document.getElementById('prevPageBtn').disabled = true;
+    document.getElementById('nextPageBtn').disabled = true;
 }
 
 
