@@ -5,7 +5,9 @@ let currentOrderId = null;
 let currentPage = 1;
 const ordersPerPage = 10;
 
+// =========================
 // LOAD ORDERS
+// =========================
 async function loadOrders() {
     try {
         const token = localStorage.getItem('token');
@@ -18,7 +20,6 @@ async function loadOrders() {
 
         const data = await response.json();
 
-        // ❗ FIX: prevent crash
         if (!Array.isArray(data)) {
             console.error("API ERROR:", data);
             orders = [];
@@ -37,14 +38,15 @@ async function loadOrders() {
     }
 }
 
+// =========================
 // RENDER TABLE
+// =========================
 function renderOrdersTable() {
 
     const tbody = document.getElementById('ordersList');
 
     const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
 
-    // safety fix: prevent empty page bug
     if (currentPage > totalPages) {
         currentPage = 1;
     }
@@ -115,6 +117,9 @@ function renderOrdersTable() {
     updatePaginationButtons();
 }
 
+// =========================
+// PAGINATION
+// =========================
 function updatePaginationButtons() {
 
     const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
@@ -129,60 +134,37 @@ function updatePaginationButtons() {
         currentPage >= totalPages || totalPages === 0;
 }
 
-function loadStats() {
+// =========================
+// FILTER SYSTEM (FIXED)
+// =========================
+function applyFilters() {
 
-    const today = new Date().toISOString().split('T')[0];
+    const status = document.getElementById('statusFilter')?.value;
+    const date = document.getElementById('dateFilter')?.value;
 
-    // Total orders (all non-cancelled)
-    const totalOrders = orders.filter(order =>
-        order.status !== 'cancelled'
-    ).length;
+    filteredOrders = [...orders];
 
-    // Delivered orders
-    const delivered = orders.filter(order =>
-        order.status === 'delivered'
-    ).length;
-
-    // Pending today
-    const pendingToday = orders.filter(order => {
-
-        const orderDate = new Date(order.created_at)
-            .toISOString()
-            .split('T')[0];
-
-        return (
-            order.status === 'pending' &&
-            orderDate === today
-        );
-
-    }).length;
-
-    // Revenue
-    const revenue = orders
-        .filter(order =>
-            order.status === 'delivered' ||
-            order.status === 'out_for_delivery' ||
-            order.status === 'preparing'
-        )
-        .reduce((sum, order) =>
-            sum + Number(order.total_amount || 0), 0
-        );
-
-    const stats = document.querySelectorAll('.stat-number');
-
-    if (stats.length >= 4) {
-        stats[0].textContent = totalOrders;
-        stats[1].textContent = delivered;
-        stats[2].textContent = pendingToday;
-
-        stats[3].textContent =
-            `₱${revenue.toLocaleString('en-PH', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            })}`;
+    if (status) {
+        filteredOrders = filteredOrders.filter(o => o.status === status);
     }
+
+    if (date) {
+        filteredOrders = filteredOrders.filter(order => {
+            const orderDate = new Date(order.created_at)
+                .toISOString()
+                .split('T')[0];
+
+            return orderDate === date;
+        });
+    }
+
+    currentPage = 1;
+    renderOrdersTable();
 }
 
+// =========================
+// ITEMS EXPAND SYSTEM
+// =========================
 function toggleItems(orderId) {
 
     const more = document.getElementById(`more-${orderId}`);
@@ -197,7 +179,7 @@ function toggleItems(orderId) {
         btn.textContent = "View less";
     } else {
         more.style.display = "none";
-        btn.textContent = btn.dataset.original || `View more`;
+        btn.textContent = `View more (${btn.dataset.count})`;
     }
 }
 
@@ -205,7 +187,6 @@ function renderItemsCell(order) {
 
     const items = Array.isArray(order.items) ? order.items : [];
 
-    // fallback for old string format
     if (!items.length && order.order_items) {
         return `<span style="font-size:0.85rem;color:#444;">${order.order_items}</span>`;
     }
@@ -220,26 +201,25 @@ function renderItemsCell(order) {
     const preview = items.slice(0, previewCount);
 
     return `
-        <div class="items-wrapper">
+        <div>
 
             <div>
                 ${preview.map(item => `
-                    <div class="item-line">
-                        • ${item.menu_name || item.name} x${item.quantity}
-                    </div>
+                    <div>• ${item.menu_name || item.name} x${item.quantity}</div>
                 `).join('')}
             </div>
 
             ${hasMore ? `
-                <div id="more-${order.id}" style="display:none; margin-top:4px;">
+                <div id="more-${order.id}" style="display:none;">
                     ${items.slice(previewCount).map(item => `
-                        <div class="item-line">
-                            • ${item.menu_name || item.name} x${item.quantity}
-                        </div>
+                        <div>• ${item.menu_name || item.name} x${item.quantity}</div>
                     `).join('')}
                 </div>
 
-                <button class="view-more-btn" onclick="toggleItems(${order.id})">
+                <button
+                    class="view-more-btn"
+                    data-count="${items.length - previewCount}"
+                    onclick="toggleItems(${order.id})">
                     View more (${items.length - previewCount})
                 </button>
             ` : ''}
@@ -248,7 +228,9 @@ function renderItemsCell(order) {
     `;
 }
 
-// VIEW ORDER MODAL
+// =========================
+// MODAL
+// =========================
 function openOrderModal(id) {
 
     const order = orders.find(o => o.id == id);
@@ -261,7 +243,6 @@ function openOrderModal(id) {
     document.getElementById('modalCustomerPhone').textContent = order.phone;
     document.getElementById('modalCustomerAddress').textContent = order.delivery_address;
     document.getElementById('modalPaymentMethod').textContent = order.payment_method;
-    document.getElementById('modalOrderNumber').textContent = order.order_number;
     document.getElementById('modalOrderDate').textContent = new Date(order.created_at).toLocaleString();
 
     document.getElementById('modalOrderStatus').innerHTML =
@@ -273,23 +254,19 @@ function openOrderModal(id) {
             maximumFractionDigits: 2
         })}`;
 
-    // ✅ FIX: SHOW ORDER ITEMS
     document.getElementById('modalOrderItems').innerHTML =
         (order.items || []).map(item => `
-            <div class="order-item-detail">
-                <div>
-                    ${item.menu_name} × ${item.quantity}
-                </div>
-                <div>
-                    ₱${Number(item.price_at_order).toFixed(2)}
-                </div>
+            <div>
+                ${item.menu_name} × ${item.quantity}
             </div>
         `).join('') || '<p>No items found</p>';
 
     document.getElementById('orderModal').style.display = 'block';
 }
 
+// =========================
 // CLOSE MODALS
+// =========================
 function closeOrderModal() {
     document.getElementById('orderModal').style.display = 'none';
 }
@@ -298,68 +275,28 @@ function closeEditStatusModal() {
     document.getElementById('editStatusModal').style.display = 'none';
 }
 
-// INIT
+// =========================
+// INIT (ALL EVENTS FIXED)
+// =========================
 document.addEventListener('DOMContentLoaded', () => {
 
     loadOrders();
 
-    const prevBtn = document.getElementById('prevPageBtn');
-    const nextBtn = document.getElementById('nextPageBtn');
-    const statusFilter = document.getElementById('statusFilter');
-    const dateFilter = document.getElementById('dateFilter');
-
-    // SAFE BINDING (prevents null crash)
-    if (prevBtn) {
-        prevBtn.addEventListener('click', () => {
-            if (currentPage > 1) {
-                currentPage--;
-                renderOrdersTable();
-            }
-        });
-    }
-
-    if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
-            const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
-
-            if (currentPage < totalPages) {
-                currentPage++;
-                renderOrdersTable();
-            }
-        });
-    }
-
-    if (statusFilter) {
-        statusFilter.addEventListener('change', (e) => {
-
-            const value = e.target.value;
-
-            filteredOrders = value
-                ? orders.filter(o => o.status === value)
-                : [...orders];
-
-            currentPage = 1;
+    document.getElementById('prevPageBtn')?.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
             renderOrdersTable();
-        });
-    }
+        }
+    });
 
-    if (dateFilter) {
-        dateFilter.addEventListener('change', (e) => {
-
-            const value = e.target.value;
-
-            filteredOrders = value
-                ? orders.filter(order => {
-                    const orderDate = new Date(order.created_at)
-                        .toISOString()
-                        .split('T')[0];
-
-                    return orderDate === value;
-                })
-                : [...orders];
-
-            currentPage = 1;
+    document.getElementById('nextPageBtn')?.addEventListener('click', () => {
+        const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
+        if (currentPage < totalPages) {
+            currentPage++;
             renderOrdersTable();
-        });
-    }
+        }
+    });
+
+    document.getElementById('statusFilter')?.addEventListener('change', applyFilters);
+    document.getElementById('dateFilter')?.addEventListener('change', applyFilters);
 });
