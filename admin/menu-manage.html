@@ -36,6 +36,43 @@
             </button>
         </div>
 
+        <div class="menu-controls">
+
+        <div class="filter-group">
+            <label>Filter Category:</label>
+
+            <select id="categoryFilter">
+                <option value="all">All Categories</option>
+                <option value="drinks">Drinks</option>
+                <option value="pizza">Pizza</option>
+                <option value="pasta">Pasta</option>
+                <option value="fries">Fries</option>
+                <option value="chips">Chips</option>
+                <option value="bfast">All Day Breakfast</option>
+                <option value="meal">Meals</option>
+            </select>
+        </div>
+
+        <div class="pagination-controls">
+
+            <button id="prevBtn" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Previous
+            </button>
+
+            <span id="pageInfo">
+                Page 1
+            </span>
+
+            <button id="nextBtn" class="btn btn-secondary">
+                Next
+                <i class="fas fa-arrow-right"></i>
+            </button>
+
+        </div>
+
+    </div>
+
         <div class="table-container">
             <table class="menu-table" id="menuTable">
                 <thead>
