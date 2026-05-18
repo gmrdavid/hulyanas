@@ -960,23 +960,58 @@ app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Admin recent orders
-app.get('/api/admin/recent-orders', authenticateToken, isAdmin, async (req, res) => {
+app.get('/api/admin/recent-orders', async (req, res) => {
+
     try {
-        const conn = await pool.getConnection();
-        const [rows] = await conn.execute(`
-            SELECT o.id, o.order_number, CONCAT(u.first_name, ' ', u.last_name) as customer,
-                   o.status, o.total_amount,
-                   CASE WHEN TIMESTAMPDIFF(MINUTE, o.created_at, NOW()) < 60 
-                        THEN CONCAT(TIMESTAMPDIFF(MINUTE, o.created_at, NOW()), ' min ago')
-                        ELSE CONCAT(TIMESTAMPDIFF(HOUR, o.created_at, NOW()), ' hr ago')
-                   END as time_ago
-            FROM orders o JOIN users u ON o.user_id = u.id 
-            ORDER BY o.created_at DESC LIMIT 10`);
-        if (conn) conn.release();
-        res.json(rows);
+
+        const page = parseInt(req.query.page) || 1;
+        const limit = 10;
+
+        const offset = (page - 1) * limit;
+
+        // TOTAL ORDERS
+        const [countResult] = await db.query(`
+            SELECT COUNT(*) AS total
+            FROM orders
+        `);
+
+        const totalOrders = countResult[0].total;
+
+        // PAGINATED ORDERS
+        const [orders] = await db.query(`
+            SELECT
+                id,
+                order_number,
+                customer,
+                status,
+                total_amount,
+                created_at
+            FROM orders
+            ORDER BY created_at DESC
+            LIMIT ? OFFSET ?
+        `, [limit, offset]);
+
+        // FORMAT TIME
+        const formattedOrders = orders.map(order => ({
+            ...order,
+            time_ago: new Date(order.created_at)
+                .toLocaleString()
+        }));
+
+        res.json({
+            orders: formattedOrders,
+            currentPage: page,
+            totalPages: Math.ceil(totalOrders / limit),
+            totalOrders
+        });
+
     } catch (error) {
-        console.error('🚨 Admin recent orders error:', error);
-        res.status(500).json({ error: error.message });
+
+        console.error(error);
+
+        res.status(500).json({
+            error: 'Failed to load recent orders'
+        });
     }
 });
 
