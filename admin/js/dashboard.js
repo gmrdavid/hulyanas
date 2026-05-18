@@ -213,7 +213,7 @@ function renderRecentOrders(orders) {
             </td>
 
             <td>
-                ${order.time_ago || 'N/A'}
+                ${formatDate(order.created_at)}
             </td>
 
         </tr>
@@ -282,7 +282,7 @@ async function loadActivityFeed(page = 1) {
 
                 <div class="activity-content">
                     <h4>${activity.message}</h4>
-                    <p>${activity.time}</p>
+                    <p>${formatDate(activity.created_at || activity.time)}</p>
                 </div>
 
             </div>
@@ -491,4 +491,34 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadActivityFeed(currentActivityPage + 1);
         }
     });
+    function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+
+    const date = new Date(dateString);
+
+    return date.toLocaleString('en-PH', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    });
+}
+function formatDateTime(value) {
+    if (!value) return 'N/A';
+
+    const date = new Date(value);
+
+    if (isNaN(date.getTime())) return 'Invalid Date';
+
+    return date.toLocaleString('en-PH', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    });
+}
 });
