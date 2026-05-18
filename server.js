@@ -245,17 +245,18 @@ app.post('/api/export/orders', authenticateToken, isAdmin, async (req, res) => {
             throw new Error("Database connection failed");
         }
 
-        const [orders] = await conn.query(`
+       const [orders] = await conn.query(`
             SELECT
-                order_number,
-                customer_name,
-                phone,
-                total_amount,
-                status,
-                payment_method,
-                created_at
-            FROM orders
-            ORDER BY created_at DESC
+                o.order_number,
+                CONCAT(u.first_name, ' ', u.last_name) AS customer_name,
+                o.phone,
+                o.total_amount,
+                o.status,
+                o.payment_method,
+                o.created_at
+            FROM orders o
+            LEFT JOIN users u ON o.user_id = u.id
+            ORDER BY o.created_at DESC
         `);
 
         const workbook = new ExcelJS.Workbook();
