@@ -10,12 +10,28 @@ let currentActivityPage = 1;
 let totalActivityPages = 1;
 
 // ===============================
-// UTILITY FUNCTIONS (Moved outside)
+// UTILITY FUNCTIONS
 // ===============================
 
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
-    const date = new Date(dateString);
+    
+    let date;
+    
+    // Handle MySQL datetime format (with T or space separator)
+    if (typeof dateString === 'string') {
+        // Replace space with T for ISO format compatibility
+        const normalizedString = dateString.replace(' ', 'T');
+        date = new Date(normalizedString);
+    } else {
+        date = new Date(dateString);
+    }
+    
+    // Validate date
+    if (isNaN(date.getTime())) {
+        return 'Invalid Date';
+    }
+    
     return date.toLocaleString('en-PH', {
         year: 'numeric',
         month: 'short',
@@ -24,6 +40,36 @@ function formatDate(dateString) {
         minute: '2-digit',
         hour12: true
     });
+}
+
+// Relative time (e.g., "2 hours ago", "Just now")
+function formatRelativeTime(dateString) {
+    if (!dateString) return 'N/A';
+    
+    let date;
+    if (typeof dateString === 'string') {
+        const normalizedString = dateString.replace(' ', 'T');
+        date = new Date(normalizedString);
+    } else {
+        date = new Date(dateString);
+    }
+    
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    
+    const now = new Date();
+    const diffMs = now - date;
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffSecs < 60) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    
+    // Fallback to formatted date for older entries
+    return formatDate(dateString);
 }
 
 function formatDateTime(value) {
@@ -276,7 +322,25 @@ function filterOrdersByStatus(status) {
 }
 
 // ===============================
-// LOAD ACTIVITY FEED
+// GET ACTIVITY ICON
+// ===============================
+
+function getActivityIcon(type) {
+    const icons = {
+        order: 'shopping-cart',
+        user: 'user-plus',
+        login: 'sign-in-alt',
+        logout: 'sign-out-alt',
+        register: 'user-plus',
+        signup: 'user-plus',
+        menu: 'utensils',
+        product: 'box'
+    };
+    return icons[type] || 'circle';
+}
+
+// ===============================
+// LOAD ACTIVITY FEED (FIXED)
 // ===============================
 
 async function loadActivityFeed(page = 1) {
@@ -292,6 +356,9 @@ async function loadActivityFeed(page = 1) {
         const data = await response.json();
         const activities = data.activities || [];
 
+        // Debug: Log raw activity data
+        console.log('📋 Raw activities:', activities);
+
         currentActivityPage = data.currentPage || 1;
         totalActivityPages = data.totalPages || 1;
 
@@ -306,17 +373,22 @@ async function loadActivityFeed(page = 1) {
                 </div>
             `;
         } else {
-            feed.innerHTML = activities.map(activity => `
-                <div class="activity-item">
-                    <div class="activity-icon ${activity.type}">
-                        <i class="fas fa-${getActivityIcon(activity.type)}"></i>
+            feed.innerHTML = activities.map(activity => {
+                // Try different date fields
+                const dateValue = activity.created_at || activity.time || activity.timestamp || activity.date;
+                
+                return `
+                    <div class="activity-item">
+                        <div class="activity-icon ${activity.type}">
+                            <i class="fas fa-${getActivityIcon(activity.type)}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <h4>${activity.message}</h4>
+                            <p class="activity-time">${formatRelativeTime(dateValue)}</p>
+                        </div>
                     </div>
-                    <div class="activity-content">
-                        <h4>${activity.message}</h4>
-                        <p>${formatDate(activity.created_at || activity.time)}</p>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         updateActivityPagination();
@@ -334,17 +406,6 @@ async function loadActivityFeed(page = 1) {
             `;
         }
     }
-}
-
-function getActivityIcon(type) {
-    const icons = {
-        order: 'shopping-cart',
-        user: 'user-plus',
-        login: 'sign-in-alt',
-        logout: 'sign-out-alt',
-        register: 'user-plus'
-    };
-    return icons[type] || 'circle';
 }
 
 function updateActivityPagination() {
@@ -386,6 +447,79 @@ if (logoutBtn) {
         }
     });
 }
+
+// ===============================
+// REFRESH DATA
+// ===============================
+
+async function refreshAllData() {
+    document.body.classList.add('loading');
+    try {
+        await Promise.all([
+            loadAdminStats(),
+            loadRecentOrders(currentPage),
+            loadActivityFeed(currentActivityPage)
+        ]);
+        showToast('Data refreshed successfully!', 'success');
+    } catch (error) {
+        showToast('Failed to refresh data', 'error');
+    } finally {
+        document.body.classList.remove('loading');
+    }
+}
+
+// Auto-refresh every 60 seconds
+setInterval(refreshAllData, 60000);
+
+// ===============================
+// PAGINATION HANDLERS
+// ===============================
+
+function setupPaginationHandlers() {
+    const prevBtn = document.getElementById('prevPageBtn');
+    const nextBtn = document.getElementById('nextPageBtn');
+    const prevActivityBtn = document.getElementById('prevActivityBtn');
+    const nextActivityBtn = document.getElementById('nextActivityBtn');
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) loadRecentOrders(currentPage - 1);
+        });
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            if (currentPage < totalPages) loadRecentOrders(currentPage + 1);
+        });
+    }
+
+    if (prevActivityBtn) {
+        prevActivityBtn.addEventListener('click', () => {
+            if (currentActivityPage > 1) {
+                loadActivityFeed(currentActivityPage - 1);
+            }
+        });
+    }
+
+    if (nextActivityBtn) {
+        nextActivityBtn.addEventListener('click', () => {
+            if (currentActivityPage < totalActivityPages) {
+                loadActivityFeed(currentActivityPage + 1);
+            }
+        });
+    }
+}
+
+// ===============================
+// KEYBOARD SHORTCUTS
+// ===============================
+
+document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        refreshAllData();
+    }
+});
 
 // ===============================
 // MAIN INITIALIZATION
@@ -446,76 +580,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // PAGINATION EVENTS - Using event delegation or safe checks
+    // SETUP PAGINATION
     setupPaginationHandlers();
-});
-
-function setupPaginationHandlers() {
-    const prevBtn = document.getElementById('prevPageBtn');
-    const nextBtn = document.getElementById('nextPageBtn');
-    const prevActivityBtn = document.getElementById('prevActivityBtn');
-    const nextActivityBtn = document.getElementById('nextActivityBtn');
-
-    if (prevBtn) {
-        prevBtn.addEventListener('click', () => {
-            if (currentPage > 1) loadRecentOrders(currentPage - 1);
-        });
-    }
-
-    if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
-            if (currentPage < totalPages) loadRecentOrders(currentPage + 1);
-        });
-    }
-
-    if (prevActivityBtn) {
-        prevActivityBtn.addEventListener('click', () => {
-            if (currentActivityPage > 1) {
-                loadActivityFeed(currentActivityPage - 1);
-            }
-        });
-    }
-
-    if (nextActivityBtn) {
-        nextActivityBtn.addEventListener('click', () => {
-            if (currentActivityPage < totalActivityPages) {
-                loadActivityFeed(currentActivityPage + 1);
-            }
-        });
-    }
-}
-
-// ===============================
-// REFRESH DATA (Bonus helper)
-// ===============================
-
-async function refreshAllData() {
-    document.body.classList.add('loading');
-    try {
-        await Promise.all([
-            loadAdminStats(),
-            loadRecentOrders(currentPage),
-            loadActivityFeed(currentActivityPage)
-        ]);
-        showToast('Data refreshed successfully!', 'success');
-    } catch (error) {
-        showToast('Failed to refresh data', 'error');
-    } finally {
-        document.body.classList.remove('loading');
-    }
-}
-
-// Auto-refresh every 60 seconds
-setInterval(refreshAllData, 60000);
-
-// ===============================
-// KEYBOARD SHORTCUTS
-// ===============================
-
-document.addEventListener('keydown', (e) => {
-    // Ctrl/Cmd + R to refresh
-    if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
-        e.preventDefault();
-        refreshAllData();
-    }
 });
