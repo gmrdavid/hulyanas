@@ -122,51 +122,54 @@ async function loadAdminStats() {
 // LOAD RECENT ORDERS
 // ===============================
 
-async function loadRecentOrders() {
+let currentPage = 1;
+let totalPages = 1;
+
+async function loadRecentOrders(page = 1) {
 
     try {
 
         const token = localStorage.getItem('token');
 
-        const response = await fetch('/api/admin/recent-orders', {
-            headers: {
-                Authorization: `Bearer ${token}`
+        const response = await fetch(
+            `/api/admin/recent-orders?page=${page}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
             }
-        });
+        );
 
         const data = await response.json();
 
-        console.log("RAW API RESPONSE:", data);
+        console.log(data);
 
-        let orders = [];
+        const orders = data.orders || [];
 
-        if (Array.isArray(data)) {
-            orders = data;
-        }
-        else if (Array.isArray(data?.orders)) {
-            orders = data.orders;
-        }
-        else if (Array.isArray(data?.data)) {
-            orders = data.data;
-        }
-        else if (Array.isArray(data?.result)) {
-            orders = data.result;
-        }
+        currentPage = data.currentPage;
+        totalPages = data.totalPages;
 
-        allOrders = orders;
+        renderRecentOrders(orders);
 
-        console.log("PARSED ORDERS:", allOrders);
+        // PAGE INFO
+        document.getElementById('pageInfo').textContent =
+            `Page ${currentPage} of ${totalPages}`;
 
-        renderRecentOrders(allOrders);
+        // BUTTON STATES
+        document.getElementById('prevPageBtn').disabled =
+            currentPage <= 1;
+
+        document.getElementById('nextPageBtn').disabled =
+            currentPage >= totalPages;
 
     } catch (error) {
 
-        console.error('Orders error:', error);
+        console.error(error);
 
         document.getElementById('recentOrders').innerHTML = `
             <tr>
                 <td colspan="5"
-                    style="text-align:center;padding:3rem;color:#666;">
+                    style="text-align:center;padding:3rem;">
                     Failed to load orders
                 </td>
             </tr>
@@ -174,14 +177,7 @@ async function loadRecentOrders() {
     }
 }
 
-
-// ===============================
-// RENDER RECENT ORDERS
-// ===============================
-
 function renderRecentOrders(orders) {
-
-    filteredOrders = orders;
 
     const tbody = document.getElementById('recentOrders');
 
@@ -190,28 +186,18 @@ function renderRecentOrders(orders) {
         tbody.innerHTML = `
             <tr>
                 <td colspan="5"
-                    style="text-align:center;padding:3rem;color:#999;">
+                    style="text-align:center;padding:3rem;">
                     No orders found
                 </td>
             </tr>
         `;
 
-        document.getElementById('pageInfo').textContent =
-            'Page 0';
-
         return;
     }
 
-    // PAGINATION
+    tbody.innerHTML = orders.map(order => `
 
-    const start = (currentPage - 1) * ordersPerPage;
-    const end = start + ordersPerPage;
-
-    const paginatedOrders = orders.slice(start, end);
-
-    tbody.innerHTML = paginatedOrders.map(order => `
-
-        <tr data-order-id="${order.id}">
+        <tr>
 
             <td>
                 <strong>
@@ -243,22 +229,6 @@ function renderRecentOrders(orders) {
         </tr>
 
     `).join('');
-
-    // PAGE INFO
-
-    const totalPages =
-        Math.ceil(orders.length / ordersPerPage);
-
-    document.getElementById('pageInfo').textContent =
-        `Page ${currentPage} of ${totalPages}`;
-
-    // BUTTON STATES
-
-    document.getElementById('prevPageBtn').disabled =
-        currentPage === 1;
-
-    document.getElementById('nextPageBtn').disabled =
-        currentPage === totalPages;
 }
 
 
