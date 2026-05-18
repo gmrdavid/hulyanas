@@ -316,3 +316,26 @@
             });
         }
     });
+
+    // PREVIOUS BUTTON
+    document.getElementById('prevPageBtn')
+    .addEventListener('click', () => {
+
+        if (currentPage > 1) {
+            currentPage--;
+            renderRecentOrders(filteredOrders);
+        }
+    });
+
+    // NEXT BUTTON
+    document.getElementById('nextPageBtn')
+    .addEventListener('click', () => {
+
+        const totalPages =
+            Math.ceil(filteredOrders.length / ordersPerPage);
+
+        if (currentPage < totalPages) {
+            currentPage++;
+            renderRecentOrders(filteredOrders);
+        }
+    });
