@@ -253,6 +253,7 @@ app.post('/api/export/orders', authenticateToken, isAdmin, async (req, res) => {
             o.total_amount,
             o.status,
             o.payment_method,
+            o.gcash_reference AS gcash_ref,
             o.created_at
         FROM orders o
         LEFT JOIN users u ON o.user_id = u.id
