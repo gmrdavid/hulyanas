@@ -415,7 +415,7 @@ async function loadActivityFeed(page = 1) {
                         </div>
                         <div class="activity-content">
                             <h4>${activity.message}</h4>
-                            <p class="activity-time">${formatRelativeTime(rawDate)}</p>
+                            <p class="activity-time">${formatDate(rawDate)}</p>
                         </div>
                     </div>
                 `;
