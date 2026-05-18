@@ -465,13 +465,6 @@
             flex-wrap: wrap;
         }
 
-        #pageInfo {
-            font-weight: 600;
-            color: #1a1a1a;
-            min-width: 100px;
-            text-align: center;
-        }
-
         .btn btn-secondary {
             padding: 0.8rem 1.5rem;
             border: none;
@@ -492,4 +485,11 @@
             background: #ccc;
             cursor: not-allowed;
             opacity: 0.7;
+        }
+
+         #pageInfo {
+            font-weight: 600;
+            color: #1a1a1a;
+            min-width: 100px;
+            text-align: center;
         }
