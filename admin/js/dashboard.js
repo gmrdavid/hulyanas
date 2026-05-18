@@ -226,20 +226,25 @@ function filterOrdersByStatus(status) {
 
     if (!Array.isArray(allOrders)) return;
 
-    if (!status || status.toLowerCase() === 'all') {
+    const normalizedStatus = (status || '').toLowerCase().trim();
+
+    if (!normalizedStatus || normalizedStatus === 'all') {
         renderRecentOrders(allOrders);
         return;
     }
 
-    const filtered = allOrders.filter(order =>
-        (order.status || '')
-        .toLowerCase()
-        .trim() === status.toLowerCase()
-    );
+    const filtered = allOrders.filter(order => {
+
+        const orderStatus = (order.status || '')
+            .toLowerCase()
+            .replace(/_/g, ' ')
+            .trim();
+
+        return orderStatus === normalizedStatus;
+    });
 
     renderRecentOrders(filtered);
 
-    // 🔥 FIX UI
     document.getElementById('pageInfo').textContent =
         `Filtered results (${filtered.length})`;
 
