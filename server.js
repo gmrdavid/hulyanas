@@ -1097,6 +1097,7 @@ app.get('/api/admin/recent-orders', async (req, res) => {
     }
 });
 
+// Admin orders (FIXED + WITH ITEMS)
 app.get('/api/admin/orders', authenticateToken, isAdmin, async (req, res) => {
     let conn;
 
@@ -1106,44 +1107,47 @@ app.get('/api/admin/orders', authenticateToken, isAdmin, async (req, res) => {
         // 1. Get all orders
         const [orders] = await conn.execute(`
             SELECT 
-                o.*,
-                CONCAT(u.first_name, ' ', u.last_name) AS customer_name,
-                u.phone
+                o.id,
+                o.order_number,
+                o.user_id,
+                o.total_amount,
+                o.status,
+                o.delivery_address,
+                o.phone,
+                o.notes,
+                o.payment_method,
+                o.created_at,
+                CONCAT(u.first_name, ' ', u.last_name) AS customer_name
             FROM orders o
             LEFT JOIN users u ON o.user_id = u.id
             ORDER BY o.created_at DESC
         `);
 
-        // 2. Get all order items + menu info
-        const [items] = await conn.execute(`
-            SELECT 
-                oi.order_id,
-                oi.quantity,
-                m.name AS item_name
-            FROM order_items oi
-            LEFT JOIN menu m ON oi.menu_id = m.id
-        `);
+        // 2. Attach items per order
+        for (let order of orders) {
+            const [items] = await conn.execute(`
+                SELECT 
+                    oi.quantity,
+                    oi.price_at_order,
+                    m.name AS menu_name
+                FROM order_items oi
+                JOIN menu_items m ON oi.menu_item_id = m.id
+                WHERE oi.order_id = ?
+            `, [order.id]);
 
-        // 3. Attach items to each order
-        const ordersWithItems = orders.map(order => {
-            const orderItems = items
-                .filter(i => i.order_id === order.id)
-                .map(i => ({
-                    name: i.item_name,
-                    quantity: i.quantity
-                }));
+            order.items = items;
+        }
 
-            return {
-                ...order,
-                items: orderItems
-            };
-        });
-
-        res.json(ordersWithItems);
+        res.json(orders || []);
 
     } catch (error) {
         console.error('🚨 Admin orders error:', error);
-        res.status(500).json({ error: error.message });
+
+        res.status(500).json({
+            error: error.message,
+            location: "GET /api/admin/orders"
+        });
+
     } finally {
         if (conn) conn.release();
     }
