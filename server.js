@@ -979,19 +979,22 @@ app.get('/api/admin/recent-orders', async (req, res) => {
         const totalOrders = countRows[0].total;
 
         // GET ORDERS
-        const [orders] = await pool.query(`
-            SELECT 
-                id,
-                order_number,
-                customer,
-                status,
-                total_amount,
-                created_at
-            FROM orders
-            ORDER BY created_at DESC
-            LIMIT ? OFFSET ?
-        `, [limit, offset]);
-
+        const [rows] = await db.query(
+        `SELECT 
+            o.id,
+            o.order_number,
+            o.total_amount,
+            o.status,
+            o.created_at,
+            u.first_name,
+            u.last_name,
+            o.payment_method
+        FROM orders o
+        JOIN users u ON o.user_id = u.id
+        ORDER BY o.created_at DESC
+        LIMIT ?`,
+        [limit]
+        );
         // FORMAT DATE
         const formattedOrders = orders.map(order => ({
 
