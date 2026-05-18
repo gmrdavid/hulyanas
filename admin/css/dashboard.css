@@ -338,12 +338,12 @@
         }
 
         .pagination-btn {
-            padding: 0.8rem 1.5rem;
+            padding: 0.5rem 1.2rem;
             border: none;
-            border-radius: 12px;
+            border-radius: 10px;
             background: #1a1a1a;
             color: #fff;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
             transition: 0.2s ease;
         }
