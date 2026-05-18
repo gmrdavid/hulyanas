@@ -95,21 +95,32 @@ function renderOrdersTable() {
 
             <td>${order.payment_method || ""}</td>
 
-            <td>
-                <div class="table-actions">
-                    <button onclick="openOrderModal(${order.id})" class="action-btn">
-                        <i class="fas fa-eye"></i>
-                    </button>
+        <td>
+            <div class="table-actions">
 
-                    <button onclick="openEditStatusModal(${order.id})" class="action-btn">
-                        <i class="fas fa-edit"></i>
-                    </button>
+                <button 
+                    onclick="openOrderModal(${order.id})"
+                    class="action-btn action-view"
+                    title="View Order">
+                    <i class="fas fa-eye"></i>
+                </button>
 
-                    <button onclick="deleteOrder(${order.id})" class="action-btn">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </td>
+                <button 
+                    onclick="openEditStatusModal(${order.id})"
+                    class="action-btn action-edit"
+                    title="Edit Status">
+                    <i class="fas fa-edit"></i>
+                </button>
+
+                <button 
+                    onclick="deleteOrder(${order.id})"
+                    class="action-btn action-delete"
+                    title="Delete Order">
+                    <i class="fas fa-trash"></i>
+                </button>
+
+            </div>
+        </td>
         </tr>
         `;
     }).join('');
