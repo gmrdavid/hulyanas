@@ -141,6 +141,7 @@ async function loadRecentOrders(page = 1) {
         console.log("API RESPONSE:", data);
 
         const orders = data.orders || [];
+        allOrders = orders;
 
         currentPage = data.currentPage || 1;
         totalPages = data.totalPages || 1;
