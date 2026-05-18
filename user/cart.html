@@ -535,277 +535,254 @@
         </div>
     </div>
 
-    <script>
-        // ✅ FIXED: Fully database-connected cart (no localStorage)
-        const API_BASE = 'https://hulyanas.onrender.com';
+<script>
+const API_BASE = 'https://hulyanas.onrender.com';
 
-        function getToken() { 
-            return localStorage.getItem('token'); 
-        }
+function getToken() { 
+    return localStorage.getItem('token'); 
+}
 
-        async function apiRequest(endpoint, options = {}) {
-            const token = getToken();
-            if (!token) { 
+async function apiRequest(endpoint, options = {}) {
+    const token = getToken();
+    if (!token) { 
+        window.location.href = 'login.html'; 
+        return; 
+    }
+
+    try {
+        const response = await fetch(`${API_BASE}${endpoint}`, {
+            ...options,
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) { 
+                localStorage.removeItem('token'); 
                 window.location.href = 'login.html'; 
                 return; 
             }
-            
-            try {
-                const response = await fetch(`${API_BASE}${endpoint}`, {
-                    ...options,
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (!response.ok) {
-                    if (response.status === 401) { 
-                        localStorage.removeItem('token'); 
-                        window.location.href = 'login.html'; 
-                        return; 
-                    }
-                    throw new Error(await response.text());
-                }
-                return await response.json();
-            } catch (error) {
-                console.error('API Error:', error);
-                throw error;
-            }
+            throw new Error(await response.text());
         }
 
-        let cart = [];
-
-        // ✅ FIXED: Load cart from your existing server /api/cart endpoint
-        async function loadCart() {
-            try {
-                const data = await apiRequest('/api/cart');
-
-                // FIX: always force array
-                cart = Array.isArray(data)
-                    ? data
-                    : (data.items || []);
-
-                console.log('Cart loaded:', cart);
-            } catch (err) {
-                console.error(err);
-                cart = [];
-            }
-        }
-
-        function renderCart() {
-            const cartItemsEl = document.getElementById('cartItems');
-            const cartTotalEl = document.getElementById('cartTotal');
-            const subtotalEl = document.getElementById('subtotal');
-            const totalEl = document.getElementById('total');
-            const checkoutBtn = document.getElementById('checkoutBtn');
-
-           if (cart.length === 0) {
-                cartItemsEl.innerHTML = `
-                <div class="cart-empty fade-in-up">
-                    <i class="fas fa-shopping-cart"></i>
-                    <h3>Your cart is empty</h3>
-                    <p>Add some delicious items from the menu to get started</p>
-                    <a href="menu.html" class="btn btn-primary" style="margin-top: 1.5rem;">Browse Menu</a>
-                </div>`;
-                
-                cartTotalEl.textContent = '₱0.00';
-                subtotalEl.textContent = '₱0.00';
-                totalEl.textContent = '₱0.00';
-                checkoutBtn.style.display = 'none';
-                return;
-            }
-            
-            let total = 0;
-            cartItemsEl.innerHTML = cart.map(item => {
-                const id = item.menu_item_id ?? item.id;   // ✅ FIXED ID
-                const price = Number(item.price) || 0;
-                const itemTotal = price * item.quantity;
-
-                total += itemTotal;
-                return `
-                     <div class="cart-item fade-in-up" data-menu-id="${id}">
-                        <img 
-                            src="${item.image_url || 'https://via.placeholder.com/80'}"
-                            alt="${item.name}"
-                            class="item-image"
-                        >
-
-                        <div class="item-details">
-                            <div class="item-name">${item.name}</div>
-                            <div class="item-price">₱${price.toFixed(2)}</div>
-
-                            <div class="quantity-controls">
-                                <button class="quantity-btn" onclick="updateQuantity(${id}, -1)">−</button>
-                                <span class="quantity">${item.quantity}</span>
-                                <button class="quantity-btn" onclick="updateQuantity(${id}, 1)">+</button>
-                            </div>
-                        </div>
-
-                        <a href="#" class="remove-item" onclick="removeItem(${id}); return false;">
-                            <i class="fas fa-times"></i>
-                        </a>
-                    </div>`;
-                }).join('');
-
-             const formatted = total.toFixed(2);
-
-            cartTotalEl.textContent = `₱${formatted}`;
-            subtotalEl.textContent = `₱${formatted}`;
-            totalEl.textContent = `₱${formatted}`;
-            checkoutBtn.style.display = 'block';
-        }
-
-        // ✅ FIXED: Global functions for onclick handlers
-        window.updateQuantity = async (menuItemId, change) => {
-            const item = cart.find(i => (i.menu_item_id ?? i.id) == menuItemId);
-            if (!item) return;
-
-            const newQty = item.quantity + change;
-
-            try {
-                if (newQty <= 0) {
-                    await apiRequest(`/api/cart/${menuItemId}`, { method: 'DELETE' });
-                } else {
-                    await apiRequest(`/api/cart/${menuItemId}`, {
-                        method: 'PUT',
-                        body: JSON.stringify({ quantity: newQty })
-                    });
-                }
-
-                await loadCart();
-                renderCart();
-            } catch (err) {
-                console.error(err);
-            }
-        };
-
-
-        window.removeItem = async (menuItemId) => {
-            try {
-                await apiRequest(`/api/cart/${menuItemId}`, { method: 'DELETE' });
-                await loadCart();
-                renderCart();
-            } catch (err) {
-                console.error(err);
-            }
-        };
-
-        // ✅ Checkout functionality (creates order from cart)
-        async function handleCheckout() {
-            try {
-                const deliveryAddress = document.getElementById('deliveryAddress').value;
-                const phone = document.getElementById('deliveryPhone').value;
-                const paymentMethod = document.getElementById('paymentMethod').value;
-                const gcashRef = document.getElementById('gcashRef').value;
-
-                if (!deliveryAddress || !phone) {
-                    alert('Please fill in all required fields');
-                    return;
-                }
-                if (paymentMethod === 'gcash' && !gcashRef) {
-                    alert('Please enter GCash reference number');
-                    return;
+        return await response.json();
+    } catch (error) {
+        console.error('API Error:', error);
+        throw error;
+    }
 }
 
-                const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+let cart = [];
 
-            const gcashRef = document.getElementById('gcashRef').value;
+async function loadCart() {
+    try {
+        const data = await apiRequest('/api/cart');
+        cart = Array.isArray(data) ? data : (data.items || []);
+    } catch (err) {
+        console.error(err);
+        cart = [];
+    }
+}
 
-            const response = await apiRequest('/api/orders', {
-                method: 'POST',
-                body: JSON.stringify({
-                    items: cart.map(item => ({
-                        id: item.menu_item_id || item.id,
-                        quantity: item.quantity,
-                        price: item.price
-                    })),
-                    total: total.toFixed(2),
-                    delivery_address: deliveryAddress,
-                    phone: phone,
-                    payment_method: paymentMethod,
+function renderCart() {
+    const cartItemsEl = document.getElementById('cartItems');
+    const cartTotalEl = document.getElementById('cartTotal');
+    const subtotalEl = document.getElementById('subtotal');
+    const totalEl = document.getElementById('total');
+    const checkoutBtn = document.getElementById('checkoutBtn');
 
-                    // ✅ NEW FIELDS
-                    gcash_reference: paymentMethod === 'gcash' ? gcashRef : null,
-                    payment_status: paymentMethod === 'gcash' ? 'pending_verification' : 'paid'
-                })
+    if (cart.length === 0) {
+        cartItemsEl.innerHTML = `
+            <div class="cart-empty fade-in-up">
+                <i class="fas fa-shopping-cart"></i>
+                <h3>Your cart is empty</h3>
+                <p>Add some delicious items from the menu to get started</p>
+                <a href="menu.html" class="btn btn-primary" style="margin-top: 1.5rem;">Browse Menu</a>
+            </div>`;
+
+        cartTotalEl.textContent = '₱0.00';
+        subtotalEl.textContent = '₱0.00';
+        totalEl.textContent = '₱0.00';
+        checkoutBtn.style.display = 'none';
+        return;
+    }
+
+    let total = 0;
+
+    cartItemsEl.innerHTML = cart.map(item => {
+        const id = item.menu_item_id ?? item.id;
+        const price = Number(item.price) || 0;
+        const itemTotal = price * item.quantity;
+
+        total += itemTotal;
+
+        return `
+            <div class="cart-item fade-in-up">
+                <img src="${item.image_url || 'https://via.placeholder.com/80'}" class="item-image">
+                <div class="item-details">
+                    <div class="item-name">${item.name}</div>
+                    <div class="item-price">₱${price.toFixed(2)}</div>
+
+                    <div class="quantity-controls">
+                        <button class="quantity-btn" onclick="updateQuantity(${id}, -1)">−</button>
+                        <span class="quantity">${item.quantity}</span>
+                        <button class="quantity-btn" onclick="updateQuantity(${id}, 1)">+</button>
+                    </div>
+                </div>
+
+                <a href="#" onclick="removeItem(${id}); return false;" class="remove-item">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>`;
+    }).join('');
+
+    const formatted = total.toFixed(2);
+    cartTotalEl.textContent = `₱${formatted}`;
+    subtotalEl.textContent = `₱${formatted}`;
+    totalEl.textContent = `₱${formatted}`;
+    checkoutBtn.style.display = 'block';
+}
+
+window.updateQuantity = async (menuItemId, change) => {
+    const item = cart.find(i => (i.menu_item_id ?? i.id) == menuItemId);
+    if (!item) return;
+
+    const newQty = item.quantity + change;
+
+    try {
+        if (newQty <= 0) {
+            await apiRequest(`/api/cart/${menuItemId}`, { method: 'DELETE' });
+        } else {
+            await apiRequest(`/api/cart/${menuItemId}`, {
+                method: 'PUT',
+                body: JSON.stringify({ quantity: newQty })
             });
-
-                if (response.success) {
-                    // Clear cart after successful order
-                    await apiRequest('/api/cart', { method: 'DELETE' });
-                    alert(`Order placed successfully! Order #${response.order_number}`);
-                    window.location.href = 'orders.html';
-                }
-            } catch (error) {
-                console.error('Checkout failed:', error);
-                alert('Checkout failed. Please try again.');
-            }
         }
 
-        // Modal handling
-        function initModal() {
-            const modal = document.getElementById('checkoutModal');
-            const checkoutBtn = document.getElementById('checkoutBtn');
-            const closeBtn = document.querySelector('.close');
-            const form = document.getElementById('checkoutForm');
+        await loadCart();
+        renderCart();
+    } catch (err) {
+        console.error(err);
+    }
+};
 
-            if (!modal || !checkoutBtn || !closeBtn || !form) {
-                console.error('Modal elements missing');
-                return;
-            }
+window.removeItem = async (menuItemId) => {
+    try {
+        await apiRequest(`/api/cart/${menuItemId}`, { method: 'DELETE' });
+        await loadCart();
+        renderCart();
+    } catch (err) {
+        console.error(err);
+    }
+};
 
-            checkoutBtn.onclick = () => {
-                modal.style.display = 'block';
-            };
+// ✅ CLEAN FIXED CHECKOUT (ONLY ONE VERSION)
+async function handleCheckout() {
+    try {
+        const deliveryAddress = document.getElementById('deliveryAddress').value;
+        const phone = document.getElementById('deliveryPhone').value;
+        const paymentMethod = document.getElementById('paymentMethod').value;
+        const gcashRef = document.getElementById('gcashRef').value;
 
-            closeBtn.onclick = () => {
-                modal.style.display = 'none';
-            };
-
-            window.onclick = (e) => {
-                if (e.target === modal) {
-                    modal.style.display = 'none';
-                }
-            };
-
-            form.onsubmit = async (e) => {
-                e.preventDefault();
-                await handleCheckout();
-            };
+        if (!deliveryAddress || !phone) {
+            alert('Please fill in all required fields');
+            return;
         }
 
-        // Logout
-        document.getElementById('logoutBtn').addEventListener('click', (e) => {
-            e.preventDefault();
-            localStorage.removeItem('token');
-            window.location.href = 'login.html';
+        if (paymentMethod === 'gcash' && !gcashRef.trim()) {
+            alert('Please enter GCash reference number');
+            return;
+        }
+
+        const total = cart.reduce(
+            (sum, item) => sum + (Number(item.price) * item.quantity),
+            0
+        );
+
+        const payload = {
+            items: cart.map(item => ({
+                id: item.menu_item_id || item.id,
+                quantity: item.quantity,
+                price: item.price
+            })),
+            total: total.toFixed(2),
+            delivery_address: deliveryAddress,
+            phone: phone,
+            payment_method: paymentMethod,
+            gcash_reference: paymentMethod === 'gcash' ? gcashRef : null,
+            payment_status: paymentMethod === 'gcash'
+                ? 'pending_verification'
+                : 'paid'
+        };
+
+        const response = await apiRequest('/api/orders', {
+            method: 'POST',
+            body: JSON.stringify(payload)
         });
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', async () => {
-            if (!getToken()) {
-                window.location.href = 'login.html';
-                return;
-            }
+        if (response.success) {
+            await apiRequest('/api/cart', { method: 'DELETE' });
+            alert(`Order placed successfully! Order #${response.order_number}`);
+            window.location.href = 'orders.html';
+        }
 
-            await loadCart();
-            renderCart();
+    } catch (error) {
+        console.error('Checkout failed:', error);
+        alert('Checkout failed. Please try again.');
+    }
+}
 
-            initModal();
-        });
+// Modal
+function initModal() {
+    const modal = document.getElementById('checkoutModal');
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    const closeBtn = document.querySelector('.close');
+    const form = document.getElementById('checkoutForm');
 
-        document.getElementById('paymentMethod').addEventListener('change', function () {
-            const gcashGroup = document.getElementById('gcashRefGroup');
+    checkoutBtn.onclick = () => modal.style.display = 'block';
+    closeBtn.onclick = () => modal.style.display = 'none';
 
-            if (this.value === 'gcash') {
-                gcashGroup.style.display = 'block';
-                document.getElementById('gcashRef').required = true;
-            } else {
-                gcashGroup.style.display = 'none';
-                document.getElementById('gcashRef').required = false;
-            }
-        });
-    </script>
+    window.onclick = (e) => {
+        if (e.target === modal) modal.style.display = 'none';
+    };
+
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        await handleCheckout();
+    };
+}
+
+// logout
+document.getElementById('logoutBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    localStorage.removeItem('token');
+    window.location.href = 'login.html';
+});
+
+document.addEventListener('DOMContentLoaded', async () => {
+    if (!getToken()) {
+        window.location.href = 'login.html';
+        return;
+    }
+
+    await loadCart();
+    renderCart();
+    initModal();
+});
+
+document.getElementById('paymentMethod').addEventListener('change', function () {
+    const gcashGroup = document.getElementById('gcashRefGroup');
+
+    if (this.value === 'gcash') {
+        gcashGroup.style.display = 'block';
+        document.getElementById('gcashRef').required = true;
+    } else {
+        gcashGroup.style.display = 'none';
+        document.getElementById('gcashRef').required = false;
+    }
+});
+</script>
 </body>
 </html>
