@@ -961,13 +961,9 @@ app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
 
 // Admin recent orders
 app.get('/api/admin/recent-orders', async (req, res) => {
-
     try {
-
         const page = parseInt(req.query.page) || 1;
-
         const limit = 10;
-
         const offset = (page - 1) * limit;
 
         // TOTAL COUNT
@@ -979,49 +975,38 @@ app.get('/api/admin/recent-orders', async (req, res) => {
         const totalOrders = countRows[0].total;
 
         // GET ORDERS
-        const [rows] = await db.query(
-        `SELECT 
-            o.id,
-            o.order_number,
-            o.total_amount,
-            o.status,
-            o.created_at,
-            u.first_name,
-            u.last_name,
-            o.payment_method
-        FROM orders o
-        JOIN users u ON o.user_id = u.id
-        ORDER BY o.created_at DESC
-        LIMIT ?`,
-        [limit]
-        );
-        // FORMAT DATE
-        const formattedOrders = orders.map(order => ({
+        const [rows] = await pool.query(`
+            SELECT 
+                o.id,
+                o.order_number,
+                o.total_amount,
+                o.status,
+                o.created_at,
+                u.first_name,
+                u.last_name,
+                o.payment_method
+            FROM orders o
+            JOIN users u ON o.user_id = u.id
+            ORDER BY o.created_at DESC
+            LIMIT ? OFFSET ?
+        `, [limit, offset]);
 
+        // FORMAT RESULTS
+        const formattedOrders = rows.map(order => ({
             ...order,
-
-            time_ago: new Date(order.created_at)
-                .toLocaleString()
-
+            customer_name: `${order.first_name} ${order.last_name}`,
+            time_ago: new Date(order.created_at).toLocaleString()
         }));
 
         res.json({
-
             orders: formattedOrders,
-
             currentPage: page,
-
             totalPages: Math.ceil(totalOrders / limit)
-
         });
 
     } catch (error) {
-
         console.error('RECENT ORDERS ERROR:', error);
-
-        res.status(500).json({
-            error: error.message
-        });
+        res.status(500).json({ error: error.message });
     }
 });
 
