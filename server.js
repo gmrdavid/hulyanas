@@ -241,7 +241,11 @@ app.post('/api/export/orders', authenticateToken, isAdmin, async (req, res) => {
 
         conn = await pool.getConnection();
 
-        const [orders] = await conn.execute(`
+        if (!conn) {
+            throw new Error("Database connection failed");
+        }
+
+        const [orders] = await conn.query(`
             SELECT
                 order_number,
                 customer_name,
@@ -255,25 +259,19 @@ app.post('/api/export/orders', authenticateToken, isAdmin, async (req, res) => {
         `);
 
         const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('Orders');
+        const sheet = workbook.addWorksheet('Orders');
 
-        worksheet.columns = [
-            { header: 'Order Number', key: 'order_number', width: 20 },
-            { header: 'Customer', key: 'customer_name', width: 25 },
-            { header: 'Phone', key: 'phone', width: 20 },
-            { header: 'Total', key: 'total_amount', width: 15 },
-            { header: 'Status', key: 'status', width: 20 },
-            { header: 'Payment', key: 'payment_method', width: 20 },
-            { header: 'Date', key: 'created_at', width: 25 }
+        sheet.columns = [
+            { header: 'Order #', key: 'order_number' },
+            { header: 'Customer', key: 'customer_name' },
+            { header: 'Phone', key: 'phone' },
+            { header: 'Total', key: 'total_amount' },
+            { header: 'Status', key: 'status' },
+            { header: 'Payment', key: 'payment_method' },
+            { header: 'Date', key: 'created_at' }
         ];
 
-        orders.forEach(o => {
-            worksheet.addRow({
-                ...o,
-                total_amount: Number(o.total_amount || 0),
-                created_at: new Date(o.created_at).toLocaleString()
-            });
-        });
+        orders.forEach(o => sheet.addRow(o));
 
         const buffer = await workbook.xlsx.writeBuffer();
 
@@ -287,13 +285,13 @@ app.post('/api/export/orders', authenticateToken, isAdmin, async (req, res) => {
             'attachment; filename=orders.xlsx'
         );
 
-        res.send(buffer);
+        return res.send(buffer);
 
     } catch (error) {
 
-        console.error('🚨 EXPORT ORDERS ERROR:', error);
+        console.error("EXPORT FAILED:", error);
 
-        res.status(500).json({
+        return res.status(500).json({
             error: error.message
         });
 
@@ -302,7 +300,6 @@ app.post('/api/export/orders', authenticateToken, isAdmin, async (req, res) => {
         if (conn) conn.release();
     }
 });
-
 // =========================
 // EXPORT SALES CSV
 // =========================
