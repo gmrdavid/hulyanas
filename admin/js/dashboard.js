@@ -43,33 +43,59 @@ function formatDate(dateString) {
 }
 
 // Relative time (e.g., "2 hours ago", "Just now")
-function formatRelativeTime(dateString) {
-    if (!dateString) return 'N/A';
-    
-    let date;
-    if (typeof dateString === 'string') {
-        const normalizedString = dateString.replace(' ', 'T');
-        date = new Date(normalizedString);
-    } else {
-        date = new Date(dateString);
+function formatRelativeTime(dateInput) {
+    if (!dateInput) return 'N/A';
+
+    // 🚫 Reject already formatted strings
+    if (typeof dateInput === 'string') {
+        const lower = dateInput.toLowerCase();
+
+        if (
+            lower.includes('ago') ||
+            lower.includes('just now') ||
+            lower.includes('yesterday')
+        ) {
+            return dateInput; // already human readable
+        }
     }
-    
-    if (isNaN(date.getTime())) return 'Invalid Date';
-    
+
+    let date;
+
+    // Normalize MySQL format: "2026-05-19 10:30:00"
+    if (typeof dateInput === 'string') {
+        const normalized = dateInput
+            .replace(' ', 'T')
+            .replace(/\.\d+/, ''); // remove milliseconds if any
+
+        date = new Date(normalized);
+    } else {
+        date = new Date(dateInput);
+    }
+
+    // ❌ HARD STOP if invalid
+    if (!date || isNaN(date.getTime())) {
+        console.warn('Invalid activity date:', dateInput);
+        return 'Unknown time';
+    }
+
     const now = new Date();
     const diffMs = now - date;
+
     const diffSecs = Math.floor(diffMs / 1000);
     const diffMins = Math.floor(diffSecs / 60);
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
-    
+
     if (diffSecs < 60) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    
-    // Fallback to formatted date for older entries
-    return formatDate(dateString);
+
+    return date.toLocaleString('en-PH', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit'
+    });
 }
 
 function formatDateTime(value) {
@@ -375,7 +401,12 @@ async function loadActivityFeed(page = 1) {
         } else {
             feed.innerHTML = activities.map(activity => {
                 // Try different date fields
-                const dateValue = activity.created_at || activity.time || activity.timestamp || activity.date;
+                const rawDate =
+                    activity.created_at ??
+                    activity.createdAt ??
+                    activity.timestamp ??
+                    activity.time ??
+                    activity.date;
                 
                 return `
                     <div class="activity-item">
@@ -384,7 +415,7 @@ async function loadActivityFeed(page = 1) {
                         </div>
                         <div class="activity-content">
                             <h4>${activity.message}</h4>
-                            <p class="activity-time">${formatRelativeTime(dateValue)}</p>
+                            <p class="activity-time">${formatRelativeTime(rawDate)}</p>
                         </div>
                     </div>
                 `;
