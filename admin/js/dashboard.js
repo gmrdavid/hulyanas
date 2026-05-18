@@ -121,55 +121,44 @@ async function loadAdminStats() {
 // LOAD RECENT ORDERS
 // ===============================
 
-async function loadRecentOrders() {
+async function loadRecentOrders(page = 1) {
 
     try {
 
         const token = localStorage.getItem('token');
 
-        const response = await fetch('/api/admin/recent-orders', {
-            headers: {
-                Authorization: `Bearer ${token}`
+        const response = await fetch(
+            `/api/admin/recent-orders?page=${page}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
             }
-        });
+        );
 
         const data = await response.json();
 
-        console.log("RAW API RESPONSE:", data);
-
-        let orders = [];
-
-        if (Array.isArray(data)) {
-            orders = data;
-        }
-        else if (Array.isArray(data?.orders)) {
-            orders = data.orders;
-        }
-        else if (Array.isArray(data?.data)) {
-            orders = data.data;
-        }
-        else if (Array.isArray(data?.result)) {
-            orders = data.result;
-        }
-
-        allOrders = orders;
-
-        console.log("PARSED ORDERS:", allOrders);
+        allOrders = data.orders || [];
 
         renderRecentOrders(allOrders);
+
+        // PAGE INFO
+        document.getElementById('pageInfo').textContent =
+            `Page ${data.currentPage} of ${data.totalPages}`;
+
+        // BUTTON STATES
+        document.getElementById('prevPageBtn').disabled =
+            data.currentPage === 1;
+
+        document.getElementById('nextPageBtn').disabled =
+            data.currentPage === data.totalPages;
+
+        // SAVE CURRENT PAGE
+        currentPage = data.currentPage;
 
     } catch (error) {
 
         console.error('Orders error:', error);
-
-        document.getElementById('recentOrders').innerHTML = `
-            <tr>
-                <td colspan="5"
-                    style="text-align:center;padding:3rem;color:#666;">
-                    Failed to load orders
-                </td>
-            </tr>
-        `;
     }
 }
 
