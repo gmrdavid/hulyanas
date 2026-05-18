@@ -131,6 +131,60 @@ function updatePaginationButtons() {
         currentPage >= totalPages || totalPages === 0;
 }
 
+function loadStats() {
+
+    const today = new Date().toISOString().split('T')[0];
+
+    // Total orders (all non-cancelled)
+    const totalOrders = orders.filter(order =>
+        order.status !== 'cancelled'
+    ).length;
+
+    // Delivered orders
+    const delivered = orders.filter(order =>
+        order.status === 'delivered'
+    ).length;
+
+    // Pending today
+    const pendingToday = orders.filter(order => {
+
+        const orderDate = new Date(order.created_at)
+            .toISOString()
+            .split('T')[0];
+
+        return (
+            order.status === 'pending' &&
+            orderDate === today
+        );
+
+    }).length;
+
+    // Revenue
+    const revenue = orders
+        .filter(order =>
+            order.status === 'delivered' ||
+            order.status === 'out_for_delivery' ||
+            order.status === 'preparing'
+        )
+        .reduce((sum, order) =>
+            sum + Number(order.total_amount || 0), 0
+        );
+
+    const stats = document.querySelectorAll('.stat-number');
+
+    if (stats.length >= 4) {
+        stats[0].textContent = totalOrders;
+        stats[1].textContent = delivered;
+        stats[2].textContent = pendingToday;
+
+        stats[3].textContent =
+            `₱${revenue.toLocaleString('en-PH', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            })}`;
+    }
+}
+
 // VIEW ORDER MODAL
 function openOrderModal(id) {
 
