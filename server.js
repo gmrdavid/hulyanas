@@ -871,7 +871,7 @@ app.get('/api/menu', async (req, res) => {
     }
 });
 
-app.get('/api/admin/menu', authenticateToken, async (req, res) => {
+app.get('/api/admin/menu', authenticateToken, isAdmin, async (req, res) => {
 
     try {
 
@@ -896,7 +896,6 @@ app.get('/api/admin/menu', authenticateToken, async (req, res) => {
         let countParams = [];
 
         // CATEGORY FILTER
-
         if (category !== 'all') {
 
             query += ` WHERE category = ? `;
@@ -907,7 +906,6 @@ app.get('/api/admin/menu', authenticateToken, async (req, res) => {
         }
 
         // PAGINATION
-
         query += `
             ORDER BY id DESC
             LIMIT ? OFFSET ?
@@ -917,15 +915,13 @@ app.get('/api/admin/menu', authenticateToken, async (req, res) => {
         queryParams.push(offset);
 
         // GET MENU ITEMS
-
-        const [menuRows] = await pool.execute(
+        const [menuRows] = await pool.query(
             query,
             queryParams
         );
 
         // GET TOTAL COUNT
-
-        const [countRows] = await pool.execute(
+        const [countRows] = await pool.query(
             countQuery,
             countParams
         );
