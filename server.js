@@ -1050,28 +1050,50 @@ app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
         const limit = 10;
         const offset = (page - 1) * limit;
 
+        // COUNT
         const [countRows] = await pool.query(`
-            SELECT COUNT(*) AS total FROM activity_logs
+            SELECT COUNT(*) AS total FROM activity_log
         `);
 
         const total = countRows[0].total;
 
+        // DATA
         const [rows] = await pool.query(`
-            SELECT *
-            FROM activity_logs
+            SELECT 
+                id,
+                user_id,
+                type,
+                action,
+                details,
+                ip_address,
+                created_at
+            FROM activity_log
             ORDER BY created_at DESC
             LIMIT ? OFFSET ?
         `, [limit, offset]);
 
+        // FORMAT FOR FRONTEND
+        const formatted = rows.map(a => ({
+            id: a.id,
+            type: a.type,
+            message: a.action,   // frontend expects "message"
+            details: a.details,
+            time: new Date(a.created_at).toLocaleString()
+        }));
+
         res.json({
-            activities: rows,
+            activities: formatted,
             currentPage: page,
             totalPages: Math.ceil(total / limit)
         });
 
     } catch (error) {
-        console.error('Activity error:', error);
-        res.status(500).json({ error: error.message });
+
+        console.error('🚨 ACTIVITY ERROR:', error);
+
+        res.status(500).json({
+            error: error.message
+        });
     }
 });
 
