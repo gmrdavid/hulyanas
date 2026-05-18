@@ -253,7 +253,7 @@ app.post('/api/export/orders', authenticateToken, isAdmin, async (req, res) => {
             o.total_amount,
             o.status,
             o.payment_method,
-            o.gcash_reference AS gcash_ref,
+            o.gcash_reference,
             o.created_at
         FROM orders o
         LEFT JOIN users u ON o.user_id = u.id
@@ -270,7 +270,7 @@ app.post('/api/export/orders', authenticateToken, isAdmin, async (req, res) => {
             { header: 'Total', key: 'total_amount' },
             { header: 'Status', key: 'status' },
             { header: 'Payment', key: 'payment_method' },
-            { header: 'GCash Ref', key: 'gcash_ref' },
+            { header: 'GCash Ref', key: 'gcash_reference' },
             { header: 'Date', key: 'created_at' }
         ];
 
