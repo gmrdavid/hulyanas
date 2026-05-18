@@ -1328,7 +1328,7 @@ app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
             type: a.type,
             message: a.action,   // frontend expects "message"
             details: a.details,
-            time: new Date(a.created_at).toLocaleString()
+            time: a.created_at
         }));
 
         res.json({
