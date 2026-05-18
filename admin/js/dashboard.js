@@ -6,7 +6,8 @@ let allOrders = [];
 
 let currentPage = 1;
 let totalPages = 1;
-
+let currentActivityPage = 1;
+let totalActivityPages = 1;
 
 // ===============================
 // ANIMATE COUNTERS
@@ -263,40 +264,36 @@ function filterOrdersByStatus(status) {
 // LOAD ACTIVITY FEED
 // ===============================
 
-async function loadActivityFeed() {
+async function loadActivityFeed(page = 1) {
 
     try {
 
         const token = localStorage.getItem('token');
 
-        const response = await fetch('/api/admin/activity', {
-            headers: {
-                Authorization: `Bearer ${token}`
+        const response = await fetch(
+            `/api/admin/activity?page=${page}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
             }
-        });
+        );
 
-        const activities = await response.json();
+        const data = await response.json();
 
-        const feed =
-            document.getElementById('activityFeed');
+        const activities = data.activities || [];
 
-        if (activities.length === 0) {
+        currentActivityPage = data.currentPage || 1;
+        totalActivityPages = data.totalPages || 1;
 
-            feed.innerHTML = `
-                <div style="
-                    text-align:center;
-                    padding:2rem;
-                    color:#999;
-                ">
-                    No recent activity
-                </div>
-            `;
+        const feed = document.getElementById('activityFeed');
 
+        if (!activities.length) {
+            feed.innerHTML = `<div style="text-align:center;padding:2rem;color:#999;">No recent activity</div>`;
             return;
         }
 
         feed.innerHTML = activities.map(activity => `
-
             <div class="activity-item">
 
                 <div class="activity-icon ${activity.type}">
@@ -315,22 +312,26 @@ async function loadActivityFeed() {
                 </div>
 
             </div>
-
         `).join('');
 
-        console.log('✅ Activity loaded:',
-            activities.length);
+        // update pagination UI
+        document.getElementById('activityPageInfo').textContent =
+            `Page ${currentActivityPage} of ${totalActivityPages}`;
+
+        document.getElementById('prevActivityBtn').disabled =
+            currentActivityPage === 1;
+
+        document.getElementById('nextActivityBtn').disabled =
+            currentActivityPage === totalActivityPages;
+
+        console.log('✅ Activity loaded:', activities.length);
 
     } catch (error) {
 
         console.error('Activity error:', error);
 
         document.getElementById('activityFeed').innerHTML = `
-            <div style="
-                text-align:center;
-                padding:2rem;
-                color:#666;
-            ">
+            <div style="text-align:center;padding:2rem;color:#666;">
                 Failed to load activity feed
             </div>
         `;
@@ -500,6 +501,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (currentPage < totalPages) {
 
             loadRecentOrders(currentPage + 1);
+        }
+    });
+
+    document.getElementById('prevActivityBtn')
+    .addEventListener('click', () => {
+        if (currentActivityPage > 1) {
+            loadActivityFeed(currentActivityPage - 1);
+        }
+    });
+
+    document.getElementById('nextActivityBtn')
+    .addEventListener('click', () => {
+        if (currentActivityPage < totalActivityPages) {
+            loadActivityFeed(currentActivityPage + 1);
         }
     });
 });

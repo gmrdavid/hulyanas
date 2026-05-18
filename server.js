@@ -1043,20 +1043,34 @@ app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
 
 // Admin activity
 app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
+
     try {
-        const conn = await pool.getConnection();
-        const [rows] = await conn.execute(`SELECT type, action as message, created_at FROM activity_log ORDER BY created_at DESC LIMIT 10`);
-        if (conn) conn.release();
 
-        const formatted = rows.map(row => ({
-            type: row.type || 'system',
-            message: row.message,
-            time: formatTimeAgo(row.created_at)
-        }));
+        const page = parseInt(req.query.page) || 1;
+        const limit = 10;
+        const offset = (page - 1) * limit;
 
-        res.json(formatted);
+        const [countRows] = await pool.query(`
+            SELECT COUNT(*) AS total FROM activity_logs
+        `);
+
+        const total = countRows[0].total;
+
+        const [rows] = await pool.query(`
+            SELECT *
+            FROM activity_logs
+            ORDER BY created_at DESC
+            LIMIT ? OFFSET ?
+        `, [limit, offset]);
+
+        res.json({
+            activities: rows,
+            currentPage: page,
+            totalPages: Math.ceil(total / limit)
+        });
+
     } catch (error) {
-        console.error('🚨 Admin activity error:', error);
+        console.error('Activity error:', error);
         res.status(500).json({ error: error.message });
     }
 });
