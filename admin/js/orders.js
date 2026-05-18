@@ -4,31 +4,43 @@ let currentOrderId = null;
 
 // Pagination
 let currentPage = 1;
+let totalPages = 1;
 const ordersPerPage = 10;
 
 // Load Orders from Database
-async function loadOrders() {
+async function loadOrders(page = 1) {
+
     try {
+
         const token = localStorage.getItem('token');
 
-        const response = await fetch('/api/admin/orders', {
-            headers: {
-                Authorization: `Bearer ${token}`
+        const response = await fetch(
+            `/api/admin/orders?page=${page}&limit=${ordersPerPage}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
             }
-        });
+        );
 
-        orders = await response.json();
+        const data = await response.json();
 
+        orders = data.orders || [];
         filteredOrders = [...orders];
 
-        currentPage = 1;
+        currentPage = data.currentPage || 1;
+        totalPages = data.totalPages || 1;
 
         renderOrdersTable();
         loadStats();
+        updatePaginationButtons();
 
     } catch (error) {
+
         console.error('Error loading orders:', error);
+
     }
+
 }
 
 // Render Orders Table
@@ -36,21 +48,18 @@ function renderOrdersTable() {
 
     const tbody = document.getElementById('ordersList');
 
-    const startIndex = (currentPage - 1) * ordersPerPage;
-    const endIndex = startIndex + ordersPerPage;
-
-    const paginatedOrders = filteredOrders.slice(startIndex, endIndex);
-
-    tbody.innerHTML = paginatedOrders.map(order => {
+    tbody.innerHTML = filteredOrders.map(order => {
 
         const date = new Date(order.created_at).toLocaleString();
 
         return `
             <tr>
+
                 <td>${order.order_number}</td>
 
                 <td>
                     <div class="customer-info">
+
                         <div class="order-avatar">
                             ${order.customer_name.charAt(0)}
                         </div>
@@ -64,6 +73,7 @@ function renderOrdersTable() {
                                 ${order.phone}
                             </div>
                         </div>
+
                     </div>
                 </td>
 
@@ -91,78 +101,77 @@ function renderOrdersTable() {
                 </td>
 
                 <td>
+
                     <div class="table-actions">
 
-                        <button class="action-btn action-view"
+                        <button
+                            class="action-btn action-view"
                             onclick="openOrderModal(${order.id})"
-                            title="View">
-
+                            title="View"
+                        >
                             <i class="fas fa-eye"></i>
                         </button>
 
-                        <button class="action-btn action-edit"
+                        <button
+                            class="action-btn action-edit"
                             onclick="openEditStatusModal(${order.id})"
-                            title="Edit Status">
-
+                            title="Edit Status"
+                        >
                             <i class="fas fa-edit"></i>
                         </button>
 
-                        <button class="action-btn action-delete"
+                        <button
+                            class="action-btn action-delete"
                             onclick="deleteOrder(${order.id})"
-                            title="Delete">
-
+                            title="Delete"
+                        >
                             <i class="fas fa-trash"></i>
                         </button>
 
                     </div>
+
                 </td>
+
             </tr>
         `;
 
     }).join('');
 
-    updatePaginationButtons();
 }
 
 // Update Pagination Buttons
 function updatePaginationButtons() {
 
-    const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
-
     document.getElementById('pageInfo').textContent =
-        `Page ${currentPage} of ${totalPages || 1}`;
+        `Page ${currentPage} of ${totalPages}`;
 
     document.getElementById('prevPageBtn').disabled =
         currentPage === 1;
 
     document.getElementById('nextPageBtn').disabled =
-        currentPage === totalPages || totalPages === 0;
+        currentPage === totalPages;
+
 }
 
-// Previous Button
-document.getElementById('prevPageBtn').addEventListener('click', () => {
+// Previous Page
+document.getElementById('prevPageBtn')
+.addEventListener('click', () => {
 
     if (currentPage > 1) {
 
-        currentPage--;
-
-        renderOrdersTable();
+        loadOrders(currentPage - 1);
 
     }
 
 });
 
-// Next Button
-document.getElementById('nextPageBtn').addEventListener('click', () => {
-
-    const totalPages =
-        Math.ceil(filteredOrders.length / ordersPerPage);
+// Next Page
+document.getElementById('nextPageBtn')
+.addEventListener('click', () => {
 
     if (currentPage < totalPages) {
 
-        currentPage++;
-
-        renderOrdersTable();
+        loadOrders(currentPage + 1);
 
     }
 
@@ -215,7 +224,9 @@ function loadStats() {
     const stats = document.querySelectorAll('.stat-number');
 
     stats[0].textContent = totalOrders;
+
     stats[1].textContent = delivered;
+
     stats[2].textContent = pendingToday;
 
     stats[3].textContent =
@@ -223,6 +234,7 @@ function loadStats() {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         })}`;
+
 }
 
 // Open View Modal
@@ -256,9 +268,11 @@ function openOrderModal(id) {
         new Date(order.created_at).toLocaleString();
 
     document.getElementById('modalOrderStatus').innerHTML =
-        `<span class="order-status status-${order.status}">
+        `
+        <span class="order-status status-${order.status}">
             ${order.status}
-        </span>`;
+        </span>
+        `;
 
     document.getElementById('modalOrderTotal').textContent =
         `₱${parseFloat(order.total_amount || 0).toLocaleString('en-PH', {
@@ -268,14 +282,18 @@ function openOrderModal(id) {
 
     document.getElementById('modalOrderItems').innerHTML = `
         <div class="order-item-detail">
+
             <div>
                 <strong>Order Notes:</strong>
                 ${order.notes || 'No notes'}
             </div>
+
         </div>
     `;
 
-    document.getElementById('orderModal').style.display = 'block';
+    document.getElementById('orderModal').style.display =
+        'block';
+
 }
 
 // Open Edit Status Modal
@@ -295,15 +313,22 @@ function openEditStatusModal(id) {
 
     document.getElementById('editStatusModal').style.display =
         'block';
+
 }
 
 // Close Modals
 function closeOrderModal() {
-    document.getElementById('orderModal').style.display = 'none';
+
+    document.getElementById('orderModal').style.display =
+        'none';
+
 }
 
 function closeEditStatusModal() {
-    document.getElementById('editStatusModal').style.display = 'none';
+
+    document.getElementById('editStatusModal').style.display =
+        'none';
+
 }
 
 // Save Status Change
@@ -338,7 +363,7 @@ async function saveStatusChange() {
 
             alert('Status updated successfully!');
 
-            loadOrders();
+            loadOrders(currentPage);
 
             closeEditStatusModal();
 
@@ -360,7 +385,9 @@ async function saveStatusChange() {
 
 // Print Invoice
 function printInvoice() {
+
     window.print();
+
 }
 
 // Delete Order
@@ -391,7 +418,7 @@ async function deleteOrder(id) {
 
             alert('Order deleted successfully!');
 
-            loadOrders();
+            loadOrders(currentPage);
 
         } else {
 
@@ -426,8 +453,6 @@ document.getElementById('statusFilter')
 
     }
 
-    currentPage = 1;
-
     renderOrdersTable();
 
 });
@@ -456,8 +481,6 @@ document.getElementById('dateFilter')
         });
 
     }
-
-    currentPage = 1;
 
     renderOrdersTable();
 
