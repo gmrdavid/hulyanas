@@ -503,95 +503,108 @@
         </div>
     </div>
 
-    <!-- Checkout Modal -->
-    <div id="checkoutModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>Checkout</h2>
-            <form id="checkoutForm">
-                <div class="form-group">
-                    <label>Delivery Address *</label>
-                    <textarea id="deliveryAddress" rows="3" placeholder="Enter your full delivery address" required></textarea>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Phone Number *</label>
-                        <input type="tel" id="deliveryPhone" placeholder="+63 900 000 0000" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Payment Method</label>
-                        <select id="paymentMethod">
-                            <option value="cash">Cash on Delivery</option>
-                            <option value="gcash">Gcash</option>
-                        </select>
-                        <div id="gcashInfo" style="display:none; margin-top:10px; padding:12px; border:1px solid #e0e0e0; border-radius:10px; background:#fafafa;">
-                            <p style="margin:0; font-weight:600; color:#1a1a1a;">
-                                Send payment to:
-                            </p>
-                            <p style="margin:5px 0 0;">
-                                <strong>Name:</strong> Hulyanas Hill<br>
-                                <strong>GCash Number:</strong> 09616334094
-                            </p>
-                        </div>
-                        <div class="form-group" id="gcashRefGroup" style="display:none;">
-                            <label>GCash Reference Number *</label>
-                            <input 
-                                type="text" 
-                                id="gcashRef" 
-                                placeholder="0000 000 000000"
+<!-- Checkout Modal -->
+<div id="checkoutModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Checkout</h2>
 
-                                pattern="[0-9\\s-]{8,20}"
-                                title="Enter valid GCash reference number (13 digits)"
-                            >
-                        </div>
+        <form id="checkoutForm">
+
+            <div class="form-group">
+                <label>Delivery Address *</label>
+                <textarea id="deliveryAddress" rows="3" placeholder="Enter your full delivery address" required></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Phone Number *</label>
+                    <input type="tel" id="deliveryPhone" placeholder="+63 900 000 0000" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Payment Method</label>
+                    <select id="paymentMethod">
+                        <option value="cash">Cash on Delivery</option>
+                        <option value="gcash">Gcash</option>
+                    </select>
+
+                    <!-- GCASH INFO -->
+                    <div id="gcashInfo" style="display:none; margin-top:10px; padding:12px; border:1px solid #e0e0e0; border-radius:10px; background:#fafafa;">
+                        <p style="margin:0; font-weight:600;">
+                            GCash Payment Details
+                        </p>
+
+                        <p style="margin:8px 0 0; font-size:0.95rem;">
+                            <strong>Account Name:</strong> Hulyanas Hill<br>
+                            <strong>GCash Number:</strong> 09616334094
+                        </p>
+
+                        <p style="margin:10px 0 0; font-size:0.85rem; color:#666;">
+                            Send exact amount then enter reference number below.
+                        </p>
+                    </div>
+
+                    <!-- GCASH REFERENCE INPUT -->
+                    <div class="form-group" id="gcashRefGroup" style="display:none; margin-top:10px;">
+                        <label>GCash Reference Number *</label>
+                        <input 
+                            type="text" 
+                            id="gcashRef"
+                            placeholder="1234 5678 9012"
+                            pattern="[0-9\\s-]{8,20}"
+                        >
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary">Place Order</button>
-            </form>
-        </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                Place Order
+            </button>
+
+        </form>
     </div>
+</div>
 
 <script>
 const API_BASE = 'https://hulyanas.onrender.com';
 
-function getToken() { 
-    return localStorage.getItem('token'); 
+function getToken() {
+    return localStorage.getItem('token');
 }
 
 async function apiRequest(endpoint, options = {}) {
     const token = getToken();
-    if (!token) { 
-        window.location.href = 'login.html'; 
-        return; 
+    if (!token) {
+        window.location.href = 'login.html';
+        return;
     }
 
-    try {
-        const response = await fetch(`${API_BASE}${endpoint}`, {
-            ...options,
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            if (response.status === 401) { 
-                localStorage.removeItem('token'); 
-                window.location.href = 'login.html'; 
-                return; 
-            }
-            throw new Error(await response.text());
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+        ...options,
+        headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
         }
+    });
 
-        return await response.json();
-    } catch (error) {
-        console.error('API Error:', error);
-        throw error;
+    if (!response.ok) {
+        if (response.status === 401) {
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+            return;
+        }
+        throw new Error(await response.text());
     }
+
+    return await response.json();
 }
 
 let cart = [];
 
+// =========================
+// LOAD CART
+// =========================
 async function loadCart() {
     try {
         const data = await apiRequest('/api/cart');
@@ -602,6 +615,9 @@ async function loadCart() {
     }
 }
 
+// =========================
+// RENDER CART
+// =========================
 function renderCart() {
     const cartItemsEl = document.getElementById('cartItems');
     const cartTotalEl = document.getElementById('cartTotal');
@@ -635,66 +651,37 @@ function renderCart() {
         total += itemTotal;
 
         return `
-            <div class="cart-item fade-in-up">
-                <img src="${item.image_url || 'https://via.placeholder.com/80'}" class="item-image">
-                <div class="item-details">
-                    <div class="item-name">${item.name}</div>
-                    <div class="item-price">₱${price.toFixed(2)}</div>
+        <div class="cart-item fade-in-up">
+            <img src="${item.image_url || 'https://via.placeholder.com/80'}" class="item-image">
 
-                    <div class="quantity-controls">
-                        <button class="quantity-btn" onclick="updateQuantity(${id}, -1)">−</button>
-                        <span class="quantity">${item.quantity}</span>
-                        <button class="quantity-btn" onclick="updateQuantity(${id}, 1)">+</button>
-                    </div>
+            <div class="item-details">
+                <div class="item-name">${item.name}</div>
+                <div class="item-price">₱${price.toFixed(2)}</div>
+
+                <div class="quantity-controls">
+                    <button class="quantity-btn" onclick="updateQuantity(${id}, -1)">−</button>
+                    <span class="quantity">${item.quantity}</span>
+                    <button class="quantity-btn" onclick="updateQuantity(${id}, 1)">+</button>
                 </div>
+            </div>
 
-                <a href="#" onclick="removeItem(${id}); return false;" class="remove-item">
-                    <i class="fas fa-times"></i>
-                </a>
-            </div>`;
+            <a href="#" class="remove-item" onclick="removeItem(${id}); return false;">
+                <i class="fas fa-times"></i>
+            </a>
+        </div>`;
     }).join('');
 
     const formatted = total.toFixed(2);
+
     cartTotalEl.textContent = `₱${formatted}`;
     subtotalEl.textContent = `₱${formatted}`;
     totalEl.textContent = `₱${formatted}`;
     checkoutBtn.style.display = 'block';
 }
 
-window.updateQuantity = async (menuItemId, change) => {
-    const item = cart.find(i => (i.menu_item_id ?? i.id) == menuItemId);
-    if (!item) return;
-
-    const newQty = item.quantity + change;
-
-    try {
-        if (newQty <= 0) {
-            await apiRequest(`/api/cart/${menuItemId}`, { method: 'DELETE' });
-        } else {
-            await apiRequest(`/api/cart/${menuItemId}`, {
-                method: 'PUT',
-                body: JSON.stringify({ quantity: newQty })
-            });
-        }
-
-        await loadCart();
-        renderCart();
-    } catch (err) {
-        console.error(err);
-    }
-};
-
-window.removeItem = async (menuItemId) => {
-    try {
-        await apiRequest(`/api/cart/${menuItemId}`, { method: 'DELETE' });
-        await loadCart();
-        renderCart();
-    } catch (err) {
-        console.error(err);
-    }
-};
-
-// ✅ CLEAN FIXED CHECKOUT (ONLY ONE VERSION)
+// =========================
+// CHECKOUT (FIXED - SINGLE VERSION ONLY)
+// =========================
 async function handleCheckout() {
     try {
         const deliveryAddress = document.getElementById('deliveryAddress').value;
@@ -717,29 +704,27 @@ async function handleCheckout() {
             0
         );
 
-        const payload = {
-            items: cart.map(item => ({
-                id: item.menu_item_id || item.id,
-                quantity: item.quantity,
-                price: item.price
-            })),
-            total: total.toFixed(2),
-            delivery_address: deliveryAddress,
-            phone: phone,
-            payment_method: paymentMethod,
-            gcash_reference: paymentMethod === 'gcash' ? gcashRef : null,
-            payment_status: paymentMethod === 'gcash'
-                ? 'pending_verification'
-                : 'paid'
-        };
-
         const response = await apiRequest('/api/orders', {
             method: 'POST',
-            body: JSON.stringify(payload)
+            body: JSON.stringify({
+                items: cart.map(item => ({
+                    id: item.menu_item_id || item.id,
+                    quantity: item.quantity,
+                    price: item.price
+                })),
+                total: total.toFixed(2),
+                delivery_address: deliveryAddress,
+                phone: phone,
+                payment_method: paymentMethod,
+
+                // NOTE: backend currently does NOT store this
+                gcash_reference: paymentMethod === 'gcash' ? gcashRef : null
+            })
         });
 
         if (response.success) {
             await apiRequest('/api/cart', { method: 'DELETE' });
+
             alert(`Order placed successfully! Order #${response.order_number}`);
             window.location.href = 'orders.html';
         }
@@ -788,6 +773,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     initModal();
 });
 
+// =========================
+// PAYMENT METHOD TOGGLE
+// =========================
 document.getElementById('paymentMethod').addEventListener('change', function () {
     const gcashGroup = document.getElementById('gcashRefGroup');
     const gcashInfo = document.getElementById('gcashInfo');
