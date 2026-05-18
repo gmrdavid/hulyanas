@@ -1465,18 +1465,29 @@ app.get('/api/analytics', authenticateToken, isAdmin, async (req, res) => {
         // =========================
         // FILTERS
         // =========================
-        let whereClause = `WHERE LOWER(o.status) != 'cancelled' and LOWER(o.status) != 'pending'`;
+        let whereClause = `WHERE 1=1`;
         const params = [];
 
+        // Exclude cancelled ONLY when all status selected
+        if (status === 'all') {
+            whereClause += ` AND LOWER(o.status) != 'cancelled'`;
+        }
+
+        // Date filter
         if (days !== 'all') {
             whereClause += ` AND o.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)`;
             params.push(Number(days));
         }
 
+        // Status filter
         if (status !== 'all') {
             whereClause += ` AND LOWER(o.status) = LOWER(?)`;
-            params.push(status);
-        }
+           params.push(
+                status
+                    .trim()
+                    .toLowerCase()
+                    .replace(/ /g, '_')
+                    )}
 
         // =========================
         // TOTAL ORDERS
