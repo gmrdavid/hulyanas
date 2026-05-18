@@ -21,7 +21,7 @@ async function loadOrders() {
         const data = await response.json();
 
         if (!Array.isArray(data)) {
-            console.error("API ERROR:", data);
+            console.error("API ERROR:", data);          
             orders = [];
         } else {
             orders = data;
@@ -93,7 +93,21 @@ function renderOrdersTable() {
                 </span>
             </td>
 
-            <td>${order.payment_method || ""}</td>
+            <td>
+                ${order.payment_method || ""}
+            </td>
+
+            <td>
+                ${
+                    order.payment_method === "gcash"
+                        ? (order.gcash_reference
+                            ? `<span style="font-weight:600; color:#1a1a1a;">
+                                    ${order.gcash_reference}
+                            </span>`
+                            : `<span style="color:#999;">No reference</span>`)
+                        : `<span style="color:#ccc;">—</span>`
+                }
+            </td>
 
         <td>
             <div class="table-actions">
@@ -267,7 +281,10 @@ function openOrderModal(id) {
     document.getElementById('modalCustomerName').textContent = order.customer_name;
     document.getElementById('modalCustomerPhone').textContent = order.phone;
     document.getElementById('modalCustomerAddress').textContent = order.delivery_address;
-    document.getElementById('modalPaymentMethod').textContent = order.payment_method;
+    document.getElementById('modalPaymentMethod').innerHTML =
+    order.payment_method === "gcash"
+        ? `GCash <br><small>Ref: ${order.gcash_reference || "N/A"}</small>`
+        : order.payment_method;
 
     document.getElementById('modalOrderDate').textContent =
         new Date(order.created_at).toLocaleString();
