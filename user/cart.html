@@ -503,6 +503,8 @@
         </div>
     </div>
 
+    
+
 <!-- Checkout Modal -->
 <div id="checkoutModal" class="modal">
     <div class="modal-content">
@@ -598,6 +600,24 @@ async function apiRequest(endpoint, options = {}) {
     }
 
     return await response.json();
+}
+
+async function removeItem(id) {
+    try {
+        await apiRequest(`/api/cart/${id}`, {
+            method: 'DELETE'
+        });
+
+        // remove locally
+        cart = cart.filter(item =>
+            (item.menu_item_id ?? item.id) != id
+        );
+
+        renderCart();
+    } catch (err) {
+        console.error('Remove item failed:', err);
+        alert('Failed to remove item');
+    }
 }
 
 let cart = [];
