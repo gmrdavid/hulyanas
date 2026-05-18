@@ -201,7 +201,7 @@ function renderRecentOrders(orders) {
             </td>
 
             <td>
-                ${order.customer || 'Unknown'}
+                ${order.customer_name || 'Unknown'}
             </td>
 
             <td>
