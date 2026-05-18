@@ -300,3 +300,56 @@ function closeEditStatusModal() {
 
 // INIT
 document.addEventListener('DOMContentLoaded', loadOrders);
+
+document.getElementById('prevPageBtn').addEventListener('click', () => {
+
+    if (currentPage > 1) {
+        currentPage--;
+        renderOrdersTable();
+    }
+});
+
+document.getElementById('nextPageBtn').addEventListener('click', () => {
+
+    const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
+
+    if (currentPage < totalPages) {
+        currentPage++;
+        renderOrdersTable();
+    }
+});
+
+document.getElementById('statusFilter').addEventListener('change', (e) => {
+
+    const value = e.target.value;
+
+    if (!value) {
+        filteredOrders = [...orders];
+    } else {
+        filteredOrders = orders.filter(o => o.status === value);
+    }
+
+    currentPage = 1; // IMPORTANT RESET
+    renderOrdersTable();
+});
+
+document.getElementById('dateFilter').addEventListener('change', (e) => {
+
+    const value = e.target.value;
+
+    if (!value) {
+        filteredOrders = [...orders];
+    } else {
+        filteredOrders = orders.filter(order => {
+
+            const orderDate = new Date(order.created_at)
+                .toISOString()
+                .split('T')[0];
+
+            return orderDate === value;
+        });
+    }
+
+    currentPage = 1; // IMPORTANT RESET
+    renderOrdersTable();
+});
