@@ -871,32 +871,69 @@ app.get('/api/menu', async (req, res) => {
     }
 });
 
-app.get('/api/admin/menu', authenticateToken, isAdmin, async (req, res) => {
+app.get('/api/admin/menu', authenticateToken, async (req, res) => {
+
     try {
-        const conn = await pool.getConnection();
 
-        const [rows] = await conn.execute(`
-            SELECT 
-                id,
-                name,
-                description,
-                price,
-                category,
-                image_url,
-                is_available
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 3;
+
+        const offset = (page - 1) * limit;
+
+        const category = req.query.category || 'all';
+
+        let query = `
+            SELECT *
             FROM menu_items
-            ORDER BY created_at DESC
-        `);
+        `;
 
-        if (conn) conn.release();
+        let countQuery = `
+            SELECT COUNT(*) AS total
+            FROM menu_items
+        `;
 
-        res.json(rows);
+        let params = [];
+        let countParams = [];
+
+        if (category !== 'all') {
+
+            query += ` WHERE category = ? `;
+            countQuery += ` WHERE category = ? `;
+
+            params.push(category);
+            countParams.push(category);
+        }
+
+        query += `
+            ORDER BY id DESC
+            LIMIT ?
+            OFFSET ?
+        `;
+
+        params.push(limit, offset);
+
+        const [rows] = await pool.execute(query, params);
+
+        const [countRows] = await pool.execute(
+            countQuery,
+            countParams
+        );
+
+        const totalItems = countRows[0].total;
+
+        res.json({
+            items: rows,
+            currentPage: page,
+            totalPages: Math.ceil(totalItems / limit),
+            totalItems
+        });
 
     } catch (error) {
-        console.error('🚨 Admin menu error:', error);
+
+        console.error('Menu fetch error:', error);
 
         res.status(500).json({
-            error: error.message
+            error: 'Server error'
         });
     }
 });

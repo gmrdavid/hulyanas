@@ -1,22 +1,60 @@
 let currentEditId = null;
 let menuItems = [];
 
+let currentPage = 1;
+let totalPages = 1;
+let selectedCategory = 'all';
+
 // Load menu items from database
-async function loadMenuItems() {
+async function loadMenuItems(page = 1) {
+
     try {
-        const response = await fetch('/api/admin/menu', {
-            headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`
+
+        const response = await fetch(
+            `/api/admin/menu?page=${page}&limit=3&category=${selectedCategory}`,
+            {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem('token')}`
+                }
             }
-        });
-        if (!response.ok) throw new Error('Failed to fetch menu items');
-        menuItems = await response.json();
-        console.log(`📋 Loaded ${menuItems.length} menu items`);
+        );
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch menu items');
+        }
+
+        const data = await response.json();
+
+        menuItems = data.items || [];
+
+        currentPage = data.currentPage || 1;
+        totalPages = data.totalPages || 1;
+
         renderMenuTable(menuItems);
-        attachTableListeners(); // Re-attach after render
+
+        attachTableListeners();
+
+        document.getElementById('pageInfo').textContent =
+            `Page ${currentPage} of ${totalPages}`;
+
+        document.getElementById('prevBtn').disabled =
+            currentPage === 1;
+
+        document.getElementById('nextBtn').disabled =
+            currentPage === totalPages;
+
     } catch (error) {
+
         console.error('Error loading menu items:', error);
-        document.getElementById('menuItems').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:#666;">Failed to load menu items. Please refresh the page.</td></tr>';
+
+        document.getElementById('menuItems').innerHTML = `
+            <tr>
+                <td colspan="6"
+                    style="text-align:center;padding:2rem;color:#666;">
+                    Failed to load menu items.
+                </td>
+            </tr>
+        `;
     }
 }
 
@@ -295,4 +333,40 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load initial data
     loadMenuItems();
+
+    // CATEGORY FILTER
+
+document.getElementById('categoryFilter')
+.addEventListener('change', function(e) {
+
+    selectedCategory = e.target.value;
+
+    currentPage = 1;
+
+    loadMenuItems(currentPage);
+});
+
+
+// PREVIOUS BUTTON
+
+document.getElementById('prevBtn')
+.addEventListener('click', function() {
+
+    if (currentPage > 1) {
+
+        loadMenuItems(currentPage - 1);
+    }
+});
+
+
+// NEXT BUTTON
+
+document.getElementById('nextBtn')
+.addEventListener('click', function() {
+
+    if (currentPage < totalPages) {
+
+        loadMenuItems(currentPage + 1);
+    }
+});
 });
