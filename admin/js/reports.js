@@ -72,11 +72,6 @@
             if (revenueChart) revenueChart.destroy();
             if (productsChart) productsChart.destroy();
             if (customersChart) customersChart.destroy();
-
-            salesChart = null;
-            revenueChart = null;
-            productsChart = null;
-            customersChart = null;
         }
 
         // Initialize charts with REAL database data
