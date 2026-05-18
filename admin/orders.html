@@ -108,61 +108,180 @@
     </div>
 
     <!-- Order Details Modal -->
-    <div id="orderModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeOrderModal()">&times;</span>
-            <h2>Order Details <span id="modalOrderId"></span></h2>
-            <div class="order-details-grid">
-                <div class="detail-section">
-                    <h3>Customer Information</h3>
-                    <div class="detail-row">
-                        <span class="detail-label">Name:</span>
-                        <span class="detail-value" id="modalCustomerName"></span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Phone:</span>
-                        <span class="detail-value" id="modalCustomerPhone"></span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Address:</span>
-                        <span class="detail-value" id="modalCustomerAddress"></span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Payment:</span>
-                        <span class="detail-value" id="modalPaymentMethod"></span>
-                    </div>
+   <!-- PREMIUM INVOICE MODAL -->
+<div id="orderModal" class="modal">
+    <div class="invoice-modal">
+
+        <!-- HEADER -->
+        <div class="invoice-header-top">
+
+            <div class="invoice-brand">
+                <div class="invoice-logo">
+                    <i class="fas fa-receipt"></i>
                 </div>
-                <div class="detail-section">
-                    <h3>Order Summary</h3>
-                    <div class="detail-row">
-                        <span class="detail-label">Order ID:</span>
-                        <span class="detail-value" id="modalOrderNumber"></span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Date:</span>
-                        <span class="detail-value" id="modalOrderDate"></span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Status:</span>
-                        <span class="detail-value" id="modalOrderStatus"></span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="detail-label">Total:</span>
-                        <span class="detail-value" id="modalOrderTotal"></span>
-                    </div>
+
+                <div>
+                    <h1>Hulyanas Hill</h1>
+                    <p>Premium Dining Experience</p>
                 </div>
             </div>
-            <div class="detail-section">
-                <h3>Order Items</h3>
-                <div class="items-list" id="modalOrderItems"></div>
-            </div>
-            <div class="modal-actions">
-                <button onclick="printInvoice()" class="btn btn-primary">
-                    <i class="fas fa-print"></i> Print Invoice
-                </button>
-            </div>
+
+            <button class="invoice-close" onclick="closeOrderModal()">
+                <i class="fas fa-times"></i>
+            </button>
+
         </div>
+
+        <!-- INVOICE HEADER -->
+        <div class="invoice-header-main">
+
+            <div>
+                <span class="invoice-label">INVOICE</span>
+                <h2 id="modalOrderId">#ORD-0001</h2>
+            </div>
+
+            <div id="modalOrderStatus" class="invoice-status status-delivered">
+                Delivered
+            </div>
+
+        </div>
+
+        <!-- CUSTOMER + SUMMARY -->
+        <div class="invoice-grid">
+
+            <!-- CUSTOMER -->
+            <div class="invoice-card">
+
+                <div class="card-title">
+                    <i class="fas fa-user"></i>
+                    <span>Customer Information</span>
+                </div>
+
+                <div class="invoice-row">
+                    <span>Name</span>
+                    <strong id="modalCustomerName">Juan Dela Cruz</strong>
+                </div>
+
+                <div class="invoice-row">
+                    <span>Phone</span>
+                    <strong id="modalCustomerPhone">+63 912 345 6789</strong>
+                </div>
+
+                <div class="invoice-row">
+                    <span>Address</span>
+                    <strong id="modalCustomerAddress">Silago, Southern Leyte</strong>
+                </div>
+
+                <div class="invoice-row">
+                    <span>Payment</span>
+                    <strong id="modalPaymentMethod">Cash on Delivery</strong>
+                </div>
+
+            </div>
+
+            <!-- ORDER SUMMARY -->
+            <div class="invoice-card">
+
+                <div class="card-title">
+                    <i class="fas fa-file-invoice"></i>
+                    <span>Order Summary</span>
+                </div>
+
+                <div class="invoice-row">
+                    <span>Order ID</span>
+                    <strong id="modalOrderNumber">#10231</strong>
+                </div>
+
+                <div class="invoice-row">
+                    <span>Date</span>
+                    <strong id="modalOrderDate">May 18, 2026</strong>
+                </div>
+
+                <div class="invoice-row">
+                    <span>Status</span>
+                    <strong>Completed</strong>
+                </div>
+
+                <div class="invoice-row">
+                    <span>Total</span>
+                    <strong id="modalOrderTotal">₱1,250.00</strong>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ITEMS -->
+        <div class="invoice-items-card">
+
+            <div class="invoice-items-header">
+                <h3>Order Items</h3>
+            </div>
+
+            <div class="items-list" id="modalOrderItems">
+
+                <!-- SAMPLE ITEM -->
+
+                <div class="invoice-item">
+
+                    <div class="item-left">
+
+                        <div class="item-icon">
+                            <i class="fas fa-burger"></i>
+                        </div>
+
+                        <div>
+                            <h4>Cheese Burger Deluxe</h4>
+                            <p>2 × ₱180.00</p>
+                        </div>
+
+                    </div>
+
+                    <div class="item-price">
+                        ₱360.00
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- TOTAL SECTION -->
+        <div class="invoice-total-box">
+
+            <div class="total-row">
+                <span>Subtotal</span>
+                <strong>₱1,150.00</strong>
+            </div>
+
+            <div class="total-row">
+                <span>Delivery Fee</span>
+                <strong>₱100.00</strong>
+            </div>
+
+            <div class="total-row grand-total">
+                <span>Total</span>
+                <strong id="invoiceGrandTotal">₱1,250.00</strong>
+            </div>
+
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="invoice-actions">
+
+            <button onclick="downloadInvoice()" class="action-btn action-edit">
+                <i class="fas fa-download"></i>
+            </button>
+
+            <button onclick="printInvoice()" class="action-btn action-view">
+                <i class="fas fa-print"></i>
+            </button>
+
+        </div>
+
     </div>
+</div>
 
     <!-- Edit Status Modal -->
     <div id="editStatusModal" class="modal">
