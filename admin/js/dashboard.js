@@ -509,19 +509,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     // PREVIOUS BUTTON
 
     document.getElementById('prevPageBtn')
-        .addEventListener('click', () => {
+    .addEventListener('click', () => {
 
-            if (currentPage > 1) {
+        if (currentPage > 1) {
 
-                loadRecentOrders(currentPage - 1);
-            }
-        });
+            currentPage--;
+
+            renderRecentOrders(filteredOrders);
+        }
+    });
 
     // NEXT BUTTON
 
-  document.getElementById('nextPageBtn')
+    document.getElementById('nextPageBtn')
     .addEventListener('click', () => {
 
-        loadRecentOrders(currentPage + 1);
+        const totalPages =
+            Math.ceil(filteredOrders.length / ordersPerPage);
+
+        if (currentPage < totalPages) {
+
+            currentPage++;
+
+            renderRecentOrders(filteredOrders);
+        }
     });
 });
