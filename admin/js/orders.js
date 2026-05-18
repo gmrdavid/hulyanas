@@ -52,66 +52,86 @@ function renderOrdersTable() {
         const date = new Date(order.created_at).toLocaleString();
 
         return `
-            <tr>
-                <td>${order.order_number}</td>
+    <tr>
+        <td>${order.order_number}</td>
 
-                <td>
-                    <div class="customer-info">
-                        <div class="order-avatar">
-                            ${order.customer_name?.charAt(0) || "U"}
-                        </div>
-
-                        <div>
-                            <div class="customer-name">
-                                ${order.customer_name || "Unknown"}
-                            </div>
-
-                            <div class="customer-email">
-                                ${order.phone || ""}
-                            </div>
-                        </div>
+        <td>
+            <div class="customer-info">
+                <div class="order-avatar">
+                    ${order.customer_name.charAt(0)}
+                </div>
+                <div>
+                    <div class="customer-name">
+                        ${order.customer_name}
                     </div>
-                </td>
-
-                <td>${date}</td>
-
-                <td>
-                    <span class="order-total">
-                        ₱${Number(order.total_amount || 0).toLocaleString('en-PH', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                        })}
-                    </span>
-                </td>
-
-                <td>
-                    <span class="order-status status-${order.status}">
-                        ${order.status}
-                    </span>
-                </td>
-
-                <td>${order.payment_method}</td>
-
-                <td>
-                    <div class="table-actions">
-                        <button class="action-btn action-view"
-                            onclick="openOrderModal(${order.id})">
-                            <i class="fas fa-eye"></i>
-                        </button>
-
-                        <button class="action-btn action-edit"
-                            onclick="openEditStatusModal(${order.id})">
-                            <i class="fas fa-edit"></i>
-                        </button>
-
-                        <button class="action-btn action-delete"
-                            onclick="deleteOrder(${order.id})">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                    <div class="customer-email">
+                        ${order.phone}
                     </div>
-                </td>
-            </tr>
-        `;
+                </div>
+            </div>
+        </td>
+
+        <!-- ✅ NEW ITEMS COLUMN -->
+        <td>
+            <div style="max-width: 220px; font-size: 0.85rem; color: #444;">
+                ${
+                    order.items && Array.isArray(order.items)
+                        ? order.items.slice(0, 2).map(item =>
+                            `<div>• ${item.name} x${item.quantity}</div>`
+                        ).join('') + (order.items.length > 2 ? `<div>...</div>` : '')
+                        : order.order_items
+                            ? order.order_items
+                            : 'No items'
+                }
+            </div>
+        </td>
+
+        <td>${date}</td>
+
+        <td>
+            <span class="order-total">
+                ₱${parseFloat(order.total_amount || 0).toLocaleString('en-PH', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                })}
+            </span>
+        </td>
+
+        <td>
+            <span class="order-status status-${order.status}">
+                ${order.status}
+            </span>
+        </td>
+
+        <td>
+            <span class="order-status">
+                ${order.payment_method}
+            </span>
+        </td>
+
+        <td>
+            <div class="table-actions">
+                <button class="action-btn action-view"
+                    onclick="openOrderModal(${order.id})"
+                    title="View">
+                    <i class="fas fa-eye"></i>
+                </button>
+
+                <button class="action-btn action-edit"
+                    onclick="openEditStatusModal(${order.id})"
+                    title="Edit Status">
+                    <i class="fas fa-edit"></i>
+                </button>
+
+                <button class="action-btn action-delete"
+                    onclick="deleteOrder(${order.id})"
+                    title="Delete">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </td>
+    </tr>
+    `;
     }).join('');
 
     updatePaginationButtons();
