@@ -99,13 +99,15 @@ function renderOrdersTable() {
 
             <td>
                 <div class="table-actions">
-                    <button class="action-btn action-view" onclick="openOrderModal(${order.id})">
+                    <button onclick="openOrderModal(${order.id})" class="action-btn">
                         <i class="fas fa-eye"></i>
                     </button>
-                    <button class="action-btn action-edit" onclick="openEditStatusModal(${order.id})">
+
+                    <button onclick="openEditStatusModal(${order.id})" class="action-btn">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="action-btn action-delete" onclick="deleteOrder(${order.id})">
+
+                    <button onclick="deleteOrder(${order.id})" class="action-btn">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -135,7 +137,7 @@ function updatePaginationButtons() {
 }
 
 // =========================
-// FILTER SYSTEM (FIXED)
+// FILTER SYSTEM
 // =========================
 function applyFilters() {
 
@@ -163,7 +165,46 @@ function applyFilters() {
 }
 
 // =========================
-// ITEMS EXPAND SYSTEM
+// LOAD STATS (FIXED ERROR)
+// =========================
+function loadStats() {
+
+    const today = new Date().toISOString().split('T')[0];
+
+    const totalOrders = orders.filter(o => o.status !== 'cancelled').length;
+
+    const delivered = orders.filter(o => o.status === 'delivered').length;
+
+    const pendingToday = orders.filter(o => {
+        const orderDate = new Date(o.created_at).toISOString().split('T')[0];
+        return o.status === 'pending' && orderDate === today;
+    }).length;
+
+    const revenue = orders
+        .filter(o =>
+            o.status === 'delivered' ||
+            o.status === 'out_for_delivery' ||
+            o.status === 'preparing'
+        )
+        .reduce((sum, o) => sum + Number(o.total_amount || 0), 0);
+
+    const stats = document.querySelectorAll('.stat-number');
+
+    if (stats.length >= 4) {
+        stats[0].textContent = totalOrders;
+        stats[1].textContent = delivered;
+        stats[2].textContent = pendingToday;
+
+        stats[3].textContent =
+            `₱${revenue.toLocaleString('en-PH', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            })}`;
+    }
+}
+
+// =========================
+// ITEMS EXPAND
 // =========================
 function toggleItems(orderId) {
 
@@ -179,7 +220,7 @@ function toggleItems(orderId) {
         btn.textContent = "View less";
     } else {
         more.style.display = "none";
-        btn.textContent = `View more (${btn.dataset.count})`;
+        btn.textContent = btn.dataset.original || "View more";
     }
 }
 
@@ -188,42 +229,29 @@ function renderItemsCell(order) {
     const items = Array.isArray(order.items) ? order.items : [];
 
     if (!items.length && order.order_items) {
-        return `<span style="font-size:0.85rem;color:#444;">${order.order_items}</span>`;
+        return `<span>${order.order_items}</span>`;
     }
 
     if (!items.length) {
-        return `<span style="color:#999;">No items</span>`;
+        return `<span>No items</span>`;
     }
 
-    const previewCount = 2;
-    const hasMore = items.length > previewCount;
-
-    const preview = items.slice(0, previewCount);
+    const preview = items.slice(0, 2);
+    const hasMore = items.length > 2;
 
     return `
         <div>
-
-            <div>
-                ${preview.map(item => `
-                    <div>• ${item.menu_name || item.name} x${item.quantity}</div>
-                `).join('')}
-            </div>
+            ${preview.map(i => `<div>• ${i.menu_name || i.name} x${i.quantity}</div>`).join('')}
 
             ${hasMore ? `
                 <div id="more-${order.id}" style="display:none;">
-                    ${items.slice(previewCount).map(item => `
-                        <div>• ${item.menu_name || item.name} x${item.quantity}</div>
-                    `).join('')}
+                    ${items.slice(2).map(i => `<div>• ${i.menu_name || i.name} x${i.quantity}</div>`).join('')}
                 </div>
 
-                <button
-                    class="view-more-btn"
-                    data-count="${items.length - previewCount}"
-                    onclick="toggleItems(${order.id})">
-                    View more (${items.length - previewCount})
+                <button class="view-more-btn" onclick="toggleItems(${order.id})">
+                    View more (${items.length - 2})
                 </button>
             ` : ''}
-
         </div>
     `;
 }
@@ -235,31 +263,6 @@ function openOrderModal(id) {
 
     const order = orders.find(o => o.id == id);
     if (!order) return;
-
-    currentOrderId = id;
-
-    document.getElementById('modalOrderId').textContent = order.order_number;
-    document.getElementById('modalCustomerName').textContent = order.customer_name;
-    document.getElementById('modalCustomerPhone').textContent = order.phone;
-    document.getElementById('modalCustomerAddress').textContent = order.delivery_address;
-    document.getElementById('modalPaymentMethod').textContent = order.payment_method;
-    document.getElementById('modalOrderDate').textContent = new Date(order.created_at).toLocaleString();
-
-    document.getElementById('modalOrderStatus').innerHTML =
-        `<span class="order-status status-${order.status}">${order.status}</span>`;
-
-    document.getElementById('modalOrderTotal').textContent =
-        `₱${Number(order.total_amount || 0).toLocaleString('en-PH', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-        })}`;
-
-    document.getElementById('modalOrderItems').innerHTML =
-        (order.items || []).map(item => `
-            <div>
-                ${item.menu_name} × ${item.quantity}
-            </div>
-        `).join('') || '<p>No items found</p>';
 
     document.getElementById('orderModal').style.display = 'block';
 }
@@ -276,7 +279,7 @@ function closeEditStatusModal() {
 }
 
 // =========================
-// INIT (ALL EVENTS FIXED)
+// INIT
 // =========================
 document.addEventListener('DOMContentLoaded', () => {
 
