@@ -269,6 +269,7 @@ app.post('/api/export/orders', authenticateToken, isAdmin, async (req, res) => {
             { header: 'Total', key: 'total_amount' },
             { header: 'Status', key: 'status' },
             { header: 'Payment', key: 'payment_method' },
+            { header: 'GCash Ref', key: 'gcash_ref' },
             { header: 'Date', key: 'created_at' }
         ];
 
