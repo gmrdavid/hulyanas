@@ -77,7 +77,7 @@ function animateCounters(data) {
                 maximumFractionDigits: 2
             })}`;
 
-    }, 20);
+    }, 20);}
 
 
 // ===============================
