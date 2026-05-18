@@ -326,3 +326,38 @@
         .loading { 
             opacity: 0.6; pointer-events: none; 
         }
+
+        .pagination-controls{
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            gap:1rem;
+            margin-top:2rem;
+        }
+
+        .pagination-btn{
+            padding:0.8rem 1.5rem;
+            border:none;
+            background:#1a1a1a;
+            color:#fff;
+            border-radius:12px;
+            cursor:pointer;
+            font-weight:600;
+            transition:0.2s ease;
+        }
+
+        .pagination-btn:hover{
+            background:#000;
+            transform:translateY(-2px);
+        }
+
+        .pagination-btn:disabled{
+            background:#ccc;
+            cursor:not-allowed;
+            transform:none;
+        }
+
+        #pageInfo{
+            font-weight:600;
+            color:#444;
+        }
