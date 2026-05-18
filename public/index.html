@@ -5,655 +5,829 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hulyanas Hill - Authentic Cuisine</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* UNIFORM ADMIN PANEL THEME - BLACK/WHITE MINIMAL */
-        * {
+        /* BASE SYSTEM */
+        :root {
+            --black: #000000;
+            --white: #ffffff;
+            --gray-50: #fafafa;
+            --gray-100: #f5f5f5;
+            --gray-200: #e5e5e5;
+            --gray-300: #d4d4d4;
+            --gray-400: #a3a3a3;
+            --gray-500: #737373;
+            --gray-600: #525252;
+            --gray-700: #404040;
+            --gray-800: #262626;
+            --gray-900: #171717;
+            --gray-950: #0a0a0a;
+            
+            --space-xs: 0.5rem;
+            --space-sm: 1rem;
+            --space-md: 1.5rem;
+            --space-lg: 2rem;
+            --space-xl: 3rem;
+            --space-2xl: 4rem;
+            --space-3xl: 6rem;
+            --space-4xl: 8rem;
+            
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            --radius-2xl: 32px;
+            
+            --transition-fast: 150ms ease;
+            --transition-base: 250ms ease;
+            --transition-slow: 400ms ease;
+        }
+
+        *, *::before, *::after {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #fafafa;
-            color: #1a1a1a;
+            background: var(--white);
+            color: var(--gray-900);
             line-height: 1.6;
             overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1280px;
             margin: 0 auto;
-            padding: 0 2rem;
+            padding: 0 var(--space-lg);
         }
 
-        /* NAVBAR - EXACT ADMIN MATCH */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        /* TYPOGRAPHY SCALE */
+        .text-display {
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 800;
+            line-height: 1.05;
+            letter-spacing: -0.03em;
+        }
+
+        .text-h1 {
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 700;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+        }
+
+        .text-h2 {
+            font-size: clamp(1.5rem, 3vw, 2.25rem);
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: -0.01em;
+        }
+
+        .text-h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .text-body {
+            font-size: 1rem;
+            line-height: 1.7;
+            color: var(--gray-600);
+        }
+
+        .text-small {
+            font-size: 0.875rem;
+            color: var(--gray-500);
+        }
+
+        /* NAVIGATION */
         .navbar {
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(20px);
-            border-bottom: 2px solid #1a1a1a;
             position: fixed;
             top: 0;
-            width: 100%;
+            left: 0;
+            right: 0;
             z-index: 1000;
-            padding: 1rem 0;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid var(--gray-200);
+            transition: var(--transition-base);
         }
 
-        .nav-container {
-            max-width: 1400px;
-            margin: 0 auto;
+        .navbar.scrolled {
+            box-shadow: 0 1px 0 var(--gray-200), 0 4px 20px rgba(0, 0, 0, 0.04);
+        }
+
+        .nav-inner {
             display: flex;
+            align-items: center;
             justify-content: space-between;
-            align-items: center;
-            padding: 0 2rem;
+            height: 72px;
         }
 
-        .nav-logo {
+        .nav-brand {
             display: flex;
             align-items: center;
-            font-size: 1.5rem;
+            gap: var(--space-sm);
+            font-size: 1.125rem;
             font-weight: 700;
-            color: #1a1a1a;
-            gap: 0.75rem;
-            text-decoration: none;
+            color: var(--black);
+            letter-spacing: -0.01em;
         }
 
-        .nav-logo i {
-            color: #000;
-            font-size: 1.8rem;
+        .nav-brand svg {
+            width: 28px;
+            height: 28px;
         }
 
-        .nav-menu {
-            display: flex;
-            list-style: none;
-            gap: 1.5rem;
-            align-items: center;
-        }
-
-        .nav-menu a {
-            text-decoration: none;
-            color: #4a4a4a;
-            font-weight: 500;
+        .nav-links {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            border-radius: 12px;
-            transition: all 0.2s ease;
-            font-size: 0.95rem;
-            position: relative;
+            gap: var(--space-xs);
         }
 
-        .nav-menu a:hover,
-        .nav-menu a.active {
-            background: #1a1a1a;
-            color: #fff;
-        }
-
-        .btn-login {
-            background: #1a1a1a !important;
-            color: #fff !important;
-            padding: 0.75rem 2rem !important;
-            border-radius: 12px;
-            font-weight: 600;
-        }
-
-        .btn-login:hover {
-            background: #000 !important;
-            transform: translateY(-1px);
-        }
-
-        /* HERO SECTION - ADMIN STYLE */
-        .hero {
-            min-height: 100vh;
-            position: relative;
+        .nav-link {
             display: flex;
-            flex-direction: column;
             align-items: center;
-            justify-content: center;
-            background: 
-                linear-gradient(rgba(26, 26, 26, 0.85), rgba(26, 26, 26, 0.85)),
-                url('images/main.png') center/cover;
-            margin-top: 140px;
-            padding: 4rem 2rem;
-        }
-
-        .hero-content {
-            max-width: 900px;
-            text-align: center;
-            color: #fff;
-        }
-
-        .hero-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.75rem;
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            padding: 0.75rem 2rem;
-            border-radius: 50px;
-            border: 1px solid rgba(255,255,255,0.2);
+            gap: 6px;
+            padding: 10px 14px;
             font-size: 0.9rem;
-            font-weight: 600;
-            letter-spacing: 1px;
-            margin-bottom: 2rem;
+            font-weight: 500;
+            color: var(--gray-600);
+            border-radius: var(--radius-md);
+            transition: var(--transition-fast);
         }
 
-        .hero-badge span {
-            height: 1px;
-            background: rgba(255,255,255,0.3);
-            flex: 1;
+        .nav-link:hover {
+            color: var(--black);
+            background: var(--gray-100);
         }
 
-        .hero-title {
-            font-size: clamp(3.5rem, 8vw, 6rem);
-            font-weight: 700;
-            line-height: 0.9;
-            margin-bottom: 1.5rem;
-            background: linear-gradient(135deg, #fff 0%, #f0f0f0 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .nav-link.active {
+            color: var(--black);
+            background: var(--gray-100);
         }
 
-        .hero-subtitle {
-            font-size: 1.4rem;
-            opacity: 0.95;
-            margin-bottom: 3rem;
-            max-width: 700px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .hero-buttons {
-            display: flex;
-            gap: 1.5rem;
-            justify-content: center;
-            flex-wrap: wrap;
+        .nav-link i {
+            font-size: 0.8rem;
         }
 
         .btn {
             display: inline-flex;
             align-items: center;
-            gap: 0.75rem;
-            padding: 1.25rem 2.5rem;
-            border-radius: 16px;
+            justify-content: center;
+            gap: var(--space-sm);
+            padding: 12px 24px;
+            font-size: 0.9375rem;
             font-weight: 600;
-            font-size: 1rem;
-            text-decoration: none;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 2px solid transparent;
-            position: relative;
-            overflow: hidden;
+            border-radius: var(--radius-md);
+            border: none;
+            cursor: pointer;
+            transition: var(--transition-fast);
         }
 
         .btn-primary {
-            background: #fff;
-            color: #1a1a1a;
-            box-shadow: 0 10px 30px rgba(255,255,255,0.3);
+            background: var(--black);
+            color: var(--white);
         }
 
         .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 20px 40px rgba(255,255,255,0.4);
-            background: #f8f8f8;
+            background: var(--gray-900);
+            transform: translateY(-1px);
         }
 
-        .btn-secondary {
-            background: rgba(255,255,255,0.15);
-            color: #fff;
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255,255,255,0.3);
+        .btn-ghost {
+            background: transparent;
+            color: var(--black);
+            border: 1px solid var(--gray-300);
         }
 
-        .btn-secondary:hover {
-            background: rgba(255,255,255,0.25);
-            transform: translateY(-3px);
+        .btn-ghost:hover {
+            background: var(--gray-100);
+            border-color: var(--gray-400);
         }
 
-        /* STATS CARDS - ADMIN STYLE */
-        .page-stats {
+        .btn-sm {
+            padding: 8px 16px;
+            font-size: 0.8125rem;
+        }
+
+        /* HERO */
+        .hero {
+            position: relative;
+            min-height: 100vh;
             display: flex;
-            gap: 2rem;
-            margin: 4rem 0;
+            align-items: center;
+            margin-top: 72px;
+            overflow: hidden;
+        }
+
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+        }
+
+        .hero-bg::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, var(--gray-950) 0%, var(--gray-900) 50%, var(--black) 100%);
+            opacity: 0.97;
+            z-index: 1;
+        }
+
+        .hero-bg::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url('images/main.png') center/cover;
+            z-index: 0;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            padding: var(--space-3xl) 0;
+        }
+
+        .hero-label {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 100px;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--gray-300);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: var(--space-lg);
+        }
+
+        .hero-title {
+            color: var(--white);
+            margin-bottom: var(--space-md);
+        }
+
+        .hero-description {
+            font-size: 1.25rem;
+            color: var(--gray-400);
+            max-width: 560px;
+            margin-bottom: var(--space-xl);
+            line-height: 1.7;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: var(--space-md);
             flex-wrap: wrap;
         }
 
-        .stat-card {
-            background: #fff;
-            border: 1px solid #e5e5e5;
-            padding: 2rem 2.5rem;
-            border-radius: 20px;
+        .hero-scroll {
+            position: absolute;
+            bottom: var(--space-xl);
+            left: 50%;
+            transform: translateX(-50%);
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 1.5rem;
-            flex: 1;
-            min-width: 280px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
+            gap: var(--space-sm);
+            color: var(--gray-500);
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
         }
 
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.12);
+        .hero-scroll-line {
+            width: 1px;
+            height: 40px;
+            background: linear-gradient(to bottom, var(--gray-600), transparent);
+            animation: scrollPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes scrollPulse {
+            0%, 100% { opacity: 0.3; transform: scaleY(0.8); }
+            50% { opacity: 1; transform: scaleY(1); }
+        }
+
+        /* STATS */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-md);
+            padding: var(--space-3xl) 0;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            padding: var(--space-lg);
+            background: var(--gray-50);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--gray-200);
+            transition: var(--transition-base);
+        }
+
+        .stat:hover {
+            background: var(--white);
+            border-color: var(--gray-300);
+            transform: translateY(-2px);
         }
 
         .stat-icon {
-            font-size: 2.5rem;
-            color: #1a1a1a;
-            opacity: 0.8;
-            width: 64px;
-            height: 64px;
-            border-radius: 16px;
+            width: 56px;
+            height: 56px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #f0f0f0;
+            background: var(--white);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--gray-200);
+            color: var(--black);
+            font-size: 1.25rem;
         }
 
-        .stat-info h3 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #000;
-            margin-bottom: 0.5rem;
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--black);
+            letter-spacing: -0.02em;
+            line-height: 1;
         }
 
-        .stat-info p {
-            color: #666;
-            font-size: 1rem;
-            font-weight: 500;
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--gray-500);
+            margin-top: 4px;
         }
 
-        /* SECTIONS */
+        /* SECTION STYLING */
         .section {
-            padding: 6rem 0;
-            background: #fff;
+            padding: var(--space-4xl) 0;
         }
 
         .section-alt {
-            background: #fafafa;
+            background: var(--gray-50);
         }
 
         .section-header {
+            max-width: 640px;
+            margin: 0 auto var(--space-3xl);
             text-align: center;
-            margin-bottom: 4rem;
         }
 
-        .section-title {
-            font-size: 3rem;
-            font-weight: 700;
-            color: #1a1a1a;
-            margin-bottom: 1rem;
+        .section-header p {
+            margin-top: var(--space-sm);
         }
 
-        /* FEATURED MENU - ADMIN TABLE STYLE */
+        /* MENU */
         .menu-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-            gap: 2rem;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-lg);
         }
 
         .menu-card {
-            background: #fff;
-            border: 1px solid #e5e5e5;
-            border-radius: 20px;
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-xl);
             overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
+            transition: var(--transition-base);
         }
 
         .menu-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 30px 60px rgba(0,0,0,0.12);
+            border-color: var(--gray-300);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
         }
 
-        .menu-image {
-            height: 280px;
+        .menu-img {
+            aspect-ratio: 4/3;
             overflow: hidden;
-            position: relative;
+            background: var(--gray-100);
         }
 
-        .menu-image img {
+        .menu-img img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.4s ease;
+            transition: var(--transition-slow);
         }
 
-        .menu-card:hover .menu-image img {
+        .menu-card:hover .menu-img img {
             transform: scale(1.05);
         }
 
-        .menu-content {
-            padding: 2.5rem;
+        .menu-body {
+            padding: var(--space-lg);
         }
 
-        .menu-title {
-            font-size: 1.5rem;
+        .menu-name {
+            font-size: 1.125rem;
             font-weight: 700;
-            color: #1a1a1a;
-            margin-bottom: 0.75rem;
+            color: var(--black);
+            margin-bottom: var(--space-xs);
         }
 
-        .menu-description {
-            color: #666;
-            line-height: 1.7;
-            margin-bottom: 1.5rem;
+        .menu-desc {
+            font-size: 0.875rem;
+            color: var(--gray-500);
+            line-height: 1.6;
+            margin-bottom: var(--space-md);
+        }
+
+        .menu-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
         .menu-price {
-            font-size: 1.75rem;
+            font-size: 1.375rem;
             font-weight: 800;
-            color: #1a1a1a;
-            margin-bottom: 1rem;
+            color: var(--black);
         }
 
-        /* TESTIMONIALS - ADMIN CARD STYLE */
-        .testimonials-grid {
+        /* ABOUT */
+        .about-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 2rem;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-3xl);
+            align-items: center;
         }
 
-        .testimonial-card {
-            background: #fff;
-            border: 1px solid #e5e5e5;
-            padding: 2.5rem;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
-            height: 100%;
+        .about-content h2 {
+            margin-bottom: var(--space-md);
         }
 
-        .testimonial-card:hover {
-            transform: translateY(-8px);
-            box-shadow: 0 30px 60px rgba(0,0,0,0.12);
+        .about-content p {
+            margin-bottom: var(--space-md);
         }
 
-        .testimonial-header {
+        .about-features {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-md);
+            margin-top: var(--space-lg);
+        }
+
+        .about-feature {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
+            gap: var(--space-sm);
+            padding: var(--space-md);
+            background: var(--gray-50);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--gray-200);
         }
 
-        .stars {
-            display: flex;
-            gap: 0.25rem;
-            color: #fbbf24;
+        .about-feature i {
+            width: 20px;
+            color: var(--black);
         }
 
-        .stars i {
-            font-size: 1.1rem;
+        .about-image {
+            border-radius: var(--radius-xl);
+            overflow: hidden;
         }
 
-        .reviewer {
-            font-weight: 700;
-            font-size: 1.1rem;
-            color: #1a1a1a;
+        .about-image img {
+            width: 100%;
+            height: 520px;
+            object-fit: cover;
         }
 
-        .testimonial-text {
-            font-size: 1.1rem;
-            line-height: 1.7;
-            color: #666;
-            margin-bottom: 1.5rem;
-        }
-
-        .review-date {
-            color: #999;
-            font-size: 0.9rem;
-        }
-
-        /* LOCATIONS - ADMIN CARD STYLE */
+        /* LOCATIONS */
         .locations-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-            gap: 3rem;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-lg);
         }
 
         .location-card {
-            background: #fff;
-            border: 1px solid #e5e5e5;
-            border-radius: 20px;
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-xl);
             overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-            transition: all 0.3s ease;
             display: grid;
             grid-template-columns: 1fr 1fr;
+            transition: var(--transition-base);
         }
 
         .location-card:hover {
-            transform: translateY(-12px);
-            box-shadow: 0 40px 80px rgba(0,0,0,0.15);
+            border-color: var(--gray-300);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
         }
 
         .location-map {
-            height: 320px;
-            position: relative;
-            overflow: hidden;
+            height: 100%;
+            min-height: 340px;
         }
 
         .location-map iframe {
             width: 100%;
             height: 100%;
             border: 0;
-            border-radius: 0 20px 20px 0;
         }
 
         .location-info {
-            padding: 3rem;
+            padding: var(--space-xl);
             display: flex;
             flex-direction: column;
+            justify-content: center;
         }
 
-        .location-title {
-            font-size: 2rem;
+        .location-name {
+            font-size: 1.5rem;
             font-weight: 700;
-            color: #1a1a1a;
-            margin-bottom: 1rem;
+            color: var(--black);
+            margin-bottom: var(--space-sm);
         }
 
         .location-address {
-            color: #666;
-            margin-bottom: 2rem;
+            font-size: 0.9375rem;
+            color: var(--gray-500);
+            margin-bottom: var(--space-lg);
             line-height: 1.6;
         }
 
-        .location-details {
-            margin-bottom: 2rem;
-        }
-
-        .detail-item {
+        .location-hours {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 1rem;
-            color: #666;
+            gap: var(--space-sm);
+            padding: var(--space-sm) var(--space-md);
+            background: var(--gray-50);
+            border-radius: var(--radius-sm);
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            margin-bottom: var(--space-sm);
         }
 
-        .detail-item i {
-            color: #1a1a1a;
-            width: 20px;
+        .location-hours i {
+            width: 16px;
+            color: var(--gray-500);
         }
 
-        /* ABOUT SECTION */
-        .about-content {
+        /* CONTACT */
+        .contact-section {
+            background: var(--black);
+            color: var(--white);
+        }
+
+        .contact-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            align-items: center;
-            max-width: 1200px;
-            margin: 0 auto;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-md);
         }
 
-        .about-text h2 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #1a1a1a;
-            margin-bottom: 2rem;
+        .contact-card {
+            padding: var(--space-xl);
+            background: rgba(255, 255, 255, 0.04);
+                        border-radius: var(--radius-lg);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: var(--transition-base);
         }
 
-        .about-text p {
-            font-size: 1.15rem;
-            color: #666;
-            line-height: 1.8;
-            margin-bottom: 2rem;
+        .contact-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
         }
 
-        .about-image img {
-            width: 100%;
-            height: 500px;
-            object-fit: cover;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-        }
-
-        /* CONTACT SECTION */
-        .contact {
-            background: #1a1a1a;
-            color: #fff;
-            padding: 8rem 0;
-        }
-
-        .contact-content {
-            max-width: 700px;
-            margin: 0 auto;
-            text-align: center;
-        }
-
-        .contact h2 {
-            font-size: 3rem;
-            font-weight: 700;
-            margin-bottom: 2rem;
-            color: #fff;
-        }
-
-        .contact-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 1.5rem;
-            margin-bottom: 2.5rem;
-            padding: 2rem;
-            background: rgba(255,255,255,0.05);
-            border-radius: 16px;
-            backdrop-filter: blur(10px);
-        }
-
-        .contact-item i {
+        .contact-card i {
             font-size: 1.5rem;
-            width: 30px;
-            margin-top: 0.25rem;
-            color: #fff;
-            opacity: 0.8;
+            color: var(--gray-400);
+            margin-bottom: var(--space-md);
         }
 
-        /* FOOTER - ADMIN STYLE */
+        .contact-card h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--white);
+            margin-bottom: var(--space-xs);
+        }
+
+        .contact-card p {
+            font-size: 0.9375rem;
+            color: var(--gray-400);
+            line-height: 1.6;
+        }
+
+        /* FOOTER */
         .footer {
-            background: #1a1a1a;
-            color: #ccc;
-            padding: 4rem 0 2rem;
-            border-top: 4px solid #000;
+            background: var(--gray-950);
+            color: var(--gray-400);
+            padding: var(--space-3xl) 0 var(--space-lg);
+            border-top: 1px solid var(--gray-800);
         }
 
-        .footer-content {
+        .footer-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 3rem;
-            margin-bottom: 3rem;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: var(--space-3xl);
+            padding-bottom: var(--space-3xl);
+            border-bottom: 1px solid var(--gray-800);
         }
 
-        .footer-logo {
+        .footer-brand {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            font-size: 1.75rem;
+            gap: var(--space-sm);
+            font-size: 1.25rem;
             font-weight: 700;
-            color: #fff;
-            margin-bottom: 1rem;
+            color: var(--white);
+            margin-bottom: var(--space-md);
         }
 
-        .footer-section h3 {
-            color: #fff;
-            margin-bottom: 1.5rem;
-            font-size: 1.2rem;
-            font-weight: 600;
+        .footer-brand svg {
+            width: 24px;
+            height: 24px;
         }
 
-        .footer-section a {
-            color: #ccc;
-            text-decoration: none;
-            display: block;
-            margin-bottom: 0.75rem;
-            transition: all 0.2s ease;
+        .footer-tagline {
+            font-size: 0.9375rem;
+            line-height: 1.7;
+            max-width: 300px;
         }
 
-        .footer-section a:hover {
-            color: #fff;
-        }
-
-        .social-links {
+        .footer-social {
             display: flex;
-            gap: 1rem;
+            gap: var(--space-sm);
+            margin-top: var(--space-lg);
         }
 
-        .social-links a {
+        .footer-social a {
+            width: 44px;
+            height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 50px;
-            height: 50px;
-            background: #333;
-            border-radius: 12px;
-            color: #fff;
-            transition: all 0.2s ease;
+            background: var(--gray-900);
+            border: 1px solid var(--gray-800);
+            border-radius: var(--radius-md);
+            color: var(--gray-400);
+            transition: var(--transition-fast);
         }
 
-        .social-links a:hover {
-            background: #000;
+        .footer-social a:hover {
+            background: var(--gray-800);
+            border-color: var(--gray-700);
+            color: var(--white);
             transform: translateY(-2px);
         }
 
+        .footer-col h4 {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--gray-300);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-bottom: var(--space-md);
+        }
+
+        .footer-col ul {
+            list-style: none;
+        }
+
+        .footer-col li {
+            margin-bottom: var(--space-sm);
+        }
+
+        .footer-col a {
+            font-size: 0.9375rem;
+            color: var(--gray-500);
+            transition: var(--transition-fast);
+        }
+
+        .footer-col a:hover {
+            color: var(--white);
+        }
+
         .footer-bottom {
-            text-align: center;
-            padding-top: 2rem;
-            border-top: 1px solid #333;
-            color: #999;
-            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: var(--space-lg);
+            font-size: 0.8125rem;
+            color: var(--gray-600);
+        }
+
+        .footer-legal {
+            display: flex;
+            gap: var(--space-lg);
+        }
+
+        .footer-legal a:hover {
+            color: var(--gray-400);
+        }
+
+        /* MOBILE NAV */
+        .mobile-toggle {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .mobile-toggle span {
+            width: 22px;
+            height: 2px;
+            background: var(--black);
+            border-radius: 2px;
+            transition: var(--transition-fast);
         }
 
         /* RESPONSIVE */
-        @media (max-width: 768px) {
-            .container {
-                padding: 0 1.5rem;
+        @media (max-width: 1024px) {
+            .menu-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
 
-            .nav-container {
-                padding: 0 1.5rem;
+            .footer-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: var(--space-xl);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 var(--space-md);
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .mobile-toggle {
+                display: flex;
             }
 
             .hero {
-                margin-top: 120px;
-                padding: 2rem 1rem;
+                min-height: calc(100vh - 72px);
             }
 
-            .hero-buttons {
-                flex-direction: column;
-                align-items: center;
+            .hero-description {
+                font-size: 1.0625rem;
             }
 
-            .page-stats {
+            .hero-actions {
                 flex-direction: column;
+            }
+
+            .hero-actions .btn {
+                width: 100%;
+            }
+
+            .hero-scroll {
+                display: none;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+                gap: var(--space-sm);
+                padding: var(--space-xl) 0;
+            }
+
+            .stat {
+                padding: var(--space-md);
+            }
+
+            .stat-value {
+                font-size: 1.75rem;
+            }
+
+            .section {
+                padding: var(--space-3xl) 0;
             }
 
             .menu-grid,
-            .testimonials-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .locations-grid,
-            .about-content {
+            .about-grid,
+            .locations-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -661,294 +835,315 @@
                 grid-template-columns: 1fr;
             }
 
-            .section {
-                padding: 4rem 0;
+            .location-map {
+                min-height: 240px;
+            }
+
+            .contact-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-grid {
+                grid-template-columns: 1fr;
+                gap: var(--space-lg);
+            }
+
+            .footer-bottom {
+                flex-direction: column;
+                gap: var(--space-md);
+                text-align: center;
+            }
+
+            .footer-legal {
+                justify-content: center;
             }
         }
 
         /* ANIMATIONS */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .fade-in {
+        .animate-on-scroll {
             opacity: 0;
-            transform: translateY(30px);
-            animation: fadeInUp 0.8s ease forwards;
+            transform: translateY(24px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
         }
 
-        .fade-in:nth-child(2) { animation-delay: 0.2s; }
-        .fade-in:nth-child(3) { animation-delay: 0.4s; }
+        .animate-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .animate-on-scroll:nth-child(2) { transition-delay: 0.1s; }
+        .animate-on-scroll:nth-child(3) { transition-delay: 0.2s; }
+
+        /* FOCUS STATES */
+        .btn:focus-visible,
+        .nav-link:focus-visible,
+        a:focus-visible {
+            outline: 2px solid var(--black);
+            outline-offset: 2px;
+        }
+
+        /* SELECTION */
+        ::selection {
+            background: var(--black);
+            color: var(--white);
+        }
     </style>
 </head>
 <body>
-    <!-- Navigation - EXACT ADMIN MATCH -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <a href="#home" class="nav-logo">
-                <i class="fas fa-utensils"></i>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="container nav-inner">
+            <a href="#home" class="nav-brand">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/>
+                    <path d="M7 2v20"/>
+                    <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>
+                </svg>
                 <span>Hulyanas Hill</span>
             </a>
-            <ul class="nav-menu">
-                <li><a href="#home" class="active"><i class="fas fa-home"></i> Home</a></li>
-                <li><a href="#menu"><i class="fas fa-utensils"></i> Menu</a></li>
-                <li><a href="#testimonials"><i class="fas fa-star"></i> Reviews</a></li>
-                <li><a href="#about"><i class="fas fa-info-circle"></i> About</a></li>
-                <li><a href="#locations"><i class="fas fa-map-marker-alt"></i> Locations</a></li>
-                <li><a href="#contact"><i class="fas fa-phone"></i> Contact</a></li>
-                <li><a href="user/login.html" class="btn-login"><i class="fas fa-sign-in-alt"></i> Login</a></li>
-            </ul>
+            <div class="nav-links">
+                <a href="#home" class="nav-link active">Home</a>
+                <a href="#menu" class="nav-link">Menu</a>
+                <a href="#about" class="nav-link">About</a>
+                <a href="#locations" class="nav-link">Locations</a>
+                <a href="#contact" class="nav-link">Contact</a>
+                <a href="user/login.html" class="btn btn-primary btn-sm">Login</a>
+            </div>
+            <button class="mobile-toggle" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
         </div>
     </nav>
 
-    <!-- Hero Section -->
-    <section id="home" class="hero">
-        <div class="hero-content">
-            <div class="hero-badge">
-                <span></span>
+    <!-- Hero -->
+    <section class="hero" id="home">
+        <div class="hero-bg"></div>
+        <div class="container hero-content">
+            <span class="hero-label">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                    <path d="M2 12l10 5 10-5"/>
+                </svg>
                 Authentic Hill Cuisine
-                <span></span>
-            </div>
-            <h1 class="hero-title">Hulyanas Hill</h1>
-            <p class="hero-subtitle">
+            </span>
+            <h1 class="text-display hero-title">Hulyanas Hill</h1>
+            <p class="hero-description">
                 Experience the authentic flavors of Southern Leyte's hill cuisine, 
                 crafted with family recipes passed down through generations.
             </p>
-            <div class="hero-buttons">
+            <div class="hero-actions">
                 <a href="user/login.html" class="btn btn-primary">
                     <i class="fas fa-shopping-cart"></i>
                     Order Online
                 </a>
-                <a href="#menu" class="btn btn-secondary">
+                <a href="#menu" class="btn btn-ghost">
                     <i class="fas fa-utensils"></i>
                     View Menu
                 </a>
             </div>
         </div>
+        <div class="hero-scroll">
+            <span>Scroll</span>
+            <div class="hero-scroll-line"></div>
+        </div>
     </section>
 
-    <!-- Stats Cards -->
-    <div class="page-stats container fade-in">
-        <div class="stat-card">
-            <div class="stat-icon">
-                <i class="fas fa-utensils"></i>
+    <!-- Stats -->
+    <section class="container">
+        <div class="stats animate-on-scroll">
+            <div class="stat">
+                <div class="stat-icon">
+                    <i class="fas fa-utensils"></i>
+                </div>
+                <div>
+                    <div class="stat-value">50+</div>
+                    <div class="stat-label">Menu Items</div>
+                </div>
             </div>
-            <div class="stat-info">
-                <h3>50+</h3>
-                <p>Menu Items</p>
+            <div class="stat">
+                <div class="stat-icon">
+                    <i class="fas fa-map-marker-alt"></i>
+                </div>
+                <div>
+                    <div class="stat-value">2</div>
+                    <div class="stat-label">Locations</div>
+                </div>
+            </div>
+            <div class="stat">
+                <div class="stat-icon">
+                    <i class="fas fa-star"></i>
+                </div>
+                <div>
+                    <div class="stat-value">4.9</div>
+                    <div class="stat-label">Average Rating</div>
+                </div>
             </div>
         </div>
-        <div class="stat-card">
-            <div class="stat-icon">
-                <i class="fas fa-map-marker-alt"></i>
-            </div>
-            <div class="stat-info">
-                <h3>2</h3>
-                <p>Locations</p>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">
-                <i class="fas fa-star"></i>
-            </div>
-            <div class="stat-info">
-                <h3>4.9</h3>
-                <p>Average Rating</p>
-            </div>
-        </div>
-    </div>
+    </section>
 
     <!-- Featured Menu -->
     <section id="menu" class="section">
         <div class="container">
-            <div class="section-header fade-in">
-                <h2 class="section-title">Featured Dishes</h2>
+            <div class="section-header animate-on-scroll">
+                <h2 class="text-h1">Featured Dishes</h2>
+                <p class="text-body">Discover our signature dishes made with fresh, locally-sourced ingredients</p>
             </div>
             <div class="menu-grid">
-                <div class="menu-card fade-in">
-                    <div class="menu-image">
+                <article class="menu-card animate-on-scroll">
+                    <div class="menu-img">
                         <img src="images/creamy carb.png" alt="Creamy Ham Carbonara" loading="lazy">
                     </div>
-                    <div class="menu-content">
-                        <h3>Creamy Ham Carbonara</h3>
-                        <p>Pasta cooked al dente with sliced ham top with creamy Hulyanas white sauce.</p>
-                        <div class="menu-price">₱120</div>
+                    <div class="menu-body">
+                        <h3 class="menu-name">Creamy Ham Carbonara</h3>
+                        <p class="menu-desc">Pasta cooked al dente with sliced ham topped with creamy Hulyanas white sauce.</p>
+                        <div class="menu-footer">
+                            <span class="menu-price">₱120</span>
+                        </div>
                     </div>
-                </div>
-                <div class="menu-card fade-in">
-                    <div class="menu-image">
+                </article>
+                <article class="menu-card animate-on-scroll">
+                    <div class="menu-img">
                         <img src="images/buffalo.png" alt="Spicy Buffalo Chicken Wings" loading="lazy">
                     </div>
-                    <div class="menu-content">
-                        <h3>Spicy Buffalo Chicken Wings</h3>
-                        <p> Tender chicken wings coated in a spicy buffalo sauce and served with ranch dressing.</p>
-                        <div class="menu-price">₱280</div>
+                    <div class="menu-body">
+                        <h3 class="menu-name">Spicy Buffalo Chicken Wings</h3>
+                        <p class="menu-desc">Tender chicken wings coated in a spicy buffalo sauce and served with ranch dressing.</p>
+                        <div class="menu-footer">
+                            <span class="menu-price">₱280</span>
+                        </div>
                     </div>
-                </div>
-                <div class="menu-card fade-in">
-                    <div class="menu-image">
+                </article>
+                <article class="menu-card animate-on-scroll">
+                    <div class="menu-img">
                         <img src="images/meat over.png" alt="Meat Overload Pizza" loading="lazy">
                     </div>
-                    <div class="menu-content">
-                        <h3>Meat Overload Pizza</h3>
-                        <p>A hearty pizza loaded with various meats and a rich tomato sauce.</p>
-                        <div class="menu-price">₱240</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Testimonials -->
-    <section id="testimonials" class="section section-alt">
-        <div class="container">
-            <div class="section-header fade-in">
-                <h2 class="section-title">Customer Reviews</h2>
-            </div>
-            <div class="testimonials-grid">
-                <div class="testimonial-card fade-in">
-                    <div class="testimonial-header">
-                        <div class="stars">
-                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    <div class="menu-body">
+                        <h3 class="menu-name">Meat Overload Pizza</h3>
+                        <p class="menu-desc">A hearty pizza loaded with various meats and a rich tomato sauce.</p>
+                        <div class="menu-footer">
+                            <span class="menu-price">₱240</span>
                         </div>
-                        <span class="reviewer">Maria Santos</span>
                     </div>
-                    <p class="testimonial-text">"Best authentic hill cuisine! Family recipes taste just like home. Silago branch has amazing views."</p>
-                    <div class="review-date">2 days ago</div>
-                </div>
-                <div class="testimonial-card fade-in">
-                    <div class="testimonial-header">
-                        <div class="stars">
-                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                        </div>
-                        <span class="reviewer">Juan Cruz</span>
-                    </div>
-                    <p class="testimonial-text">"Consistently delicious! Both branches maintain high quality. Staff are very friendly and accommodating."</p>
-                    <div class="review-date">1 week ago</div>
-                </div>
-                <div class="testimonial-card fade-in">
-                    <div class="testimonial-header">
-                        <div class="stars">
-                            <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
-                        </div>
-                        <span class="reviewer">Lorna Garcia</span>
-                    </div>
-                    <p class="testimonial-text">"Hinunangan branch is so convenient! Generous portions and fresh ingredients every time."</p>
-                    <div class="review-date">3 days ago</div>
-                </div>
+                </article>
             </div>
         </div>
     </section>
 
     <!-- About -->
-    <section id="about" class="section">
+    <section id="about" class="section section-alt">
         <div class="container">
-            <div class="about-content fade-in">
-                <div>
-                    <h2>About Hulyanas Hill</h2>
-                    <p>Nestled in the beautiful hills of Southern Leyte, Hulyanas Hill brings authentic home-style cooking using fresh local ingredients. Our family recipes have been perfected over generations.</p>
-                    <div style="margin-top: 2rem;">
-                        <div class="detail-item" style="justify-content: flex-start; margin-bottom: 1rem;">
-                            <i class="fas fa-clock" style="color: #1a1a1a; width: 20px;"></i>
-                            <span>Open Daily: 8:00AM - 6:00PM</span>
+            <div class="about-grid">
+                <div class="about-content animate-on-scroll">
+                    <h2 class="text-h1">Our Story</h2>
+                    <p class="text-body">
+                        Nestled in the beautiful hills of Southern Leyte, Hulyanas Hill brings authentic home-style cooking using fresh local ingredients. Our family recipes have been perfected over generations.
+                    </p>
+                    <p class="text-body">
+                        Every dish tells a story of our heritage, prepared with love and served with pride at two convenient locations in Silago and Hinunangan.
+                    </p>
+                    <div class="about-features">
+                        <div class="about-feature">
+                            <i class="fas fa-clock"></i>
+                            <span>Open Daily: 8:00 AM – 6:00 PM</span>
                         </div>
-                        <div class="detail-item" style="justify-content: flex-start;">
-                            <i class="fas fa-phone" style="color: #1a1a1a; width: 20px;"></i>
+                        <div class="about-feature">
+                            <i class="fas fa-phone"></i>
                             <span>+63 961 633 4094</span>
                         </div>
                     </div>
                 </div>
-                <div class="about-image fade-in">
-                    <img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800" alt="Hulyanas Hill Restaurant" loading="lazy">
+                <div class="about-image animate-on-scroll">
+                    <img src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800" alt="Hulyanas Hill Restaurant interior" loading="lazy">
                 </div>
             </div>
         </div>
     </section>
 
-   <!-- Locations -->
-<section id="locations" class="section section-alt">
-    <div class="container">
-        <div class="section-header fade-in">
-            <h2 class="section-title">Our Locations</h2>
-        </div>
-        <div class="locations-grid">
-            <div class="location-card fade-in">
-                <div class="location-map">
-                    <iframe 
-                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3973.614!2d125.14396627924037!3d10.540989644694552!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTDCsDMyJzI3LjQiTiAxMjXCsDA4JzM2LjIiRQ!5e0!3m2!1sen!2sus!4v1700000000000!5m2!1sen!2sus"
-                        allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
-                    </iframe>
-                </div>
-                <div class="location-info">
-                    <h3 class="location-title">Silago Branch</h3>
-                    <p class="location-address">Hulyanas Hill, Silago, 6607 Southern Leyte</p>
-                    <div class="location-details">
-                        <div class="detail-item">
+    <!-- Locations -->
+    <section id="locations" class="section">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <h2 class="text-h1">Visit Us</h2>
+                <p class="text-body">Find us at either of our two convenient locations in Southern Leyte</p>
+            </div>
+            <div class="locations-grid">
+                <div class="location-card animate-on-scroll">
+                    <div class="location-map">
+                        <iframe 
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3973.614!2d125.14396627924037!3d10.540989644694552!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTDCsDMyJzI3LjQiTiAxMjXCsDA4JzM2LjIiRQ!5e0!3m2!1sen!2sus!4v1700000000000!5m2!1sen!2sus"
+                            allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
+                        </iframe>
+                    </div>
+                    <div class="location-info">
+                        <h3 class="location-name">Silago Branch</h3>
+                        <p class="location-address">Hulyanas Hill, Silago, 6607 Southern Leyte</p>
+                        <div class="location-hours">
                             <i class="fas fa-clock"></i>
-                            <span>8:00AM - 6:00PM Daily</span>
+                            <span>8:00 AM – 6:00 PM Daily</span>
                         </div>
-                        <div class="detail-item">
+                        <div class="location-hours">
                             <i class="fas fa-phone"></i>
                             <span>+63 961 633 4094</span>
                         </div>
+                        <a href="https://maps.google.com/?q=10.540989644694552,125.14396627924037" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" style="margin-top: var(--space-md);">
+                            <i class="fas fa-directions"></i>
+                            Get Directions
+                        </a>
                     </div>
-                    <a href="https://maps.google.com/?q=10.540989644694552,125.14396627924037" target="_blank" class="btn btn-primary">
-                        <i class="fas fa-directions"></i> Get Directions
-                    </a>
                 </div>
-            </div>
-            <div class="location-card fade-in">
-                <div class="location-map">
-                    <iframe 
-                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3973.614!2d125.19830753938896!3d10.39780927596985!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTDCsMjMnNDguOSJOIDEyNSDCsDExJzUzLjAiRQ!5e0!3m2!1sen!2sus!4v1700000000000!5m2!1sen!2sus"
-                        allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
-                    </iframe>
-                </div>
-                <div class="location-info">
-                    <h3 class="location-title">Hinunangan Branch</h3>
-                    <p class="location-address">Hononganan Commercial, Hinunangan, 6608 Southern Leyte</p>
-                    <div class="location-details">
-                        <div class="detail-item">
+                <div class="location-card animate-on-scroll">
+                    <div class="location-map">
+                        <iframe 
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3973.614!2d125.19830753938896!3d10.39780927596985!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTDCsDIzJzQ4LjkiTiAxMjVCsDExJzUzLjAiRQ!5e0!3m2!1sen!2sus!4v1700000000000!5m2!1sen!2sus"
+                            allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade">
+                        </iframe>
+                    </div>
+                    <div class="location-info">
+                        <h3 class="location-name">Hinunangan Branch</h3>
+                        <p class="location-address">Hononganan Commercial, Hinunangan,                            6608 Southern Leyte</p>
+                        <div class="location-hours">
                             <i class="fas fa-clock"></i>
-                            <span>8:00AM - 6:00PM Daily</span>
+                            <span>8:00 AM – 6:00 PM Daily</span>
                         </div>
-                        <div class="detail-item">
+                        <div class="location-hours">
                             <i class="fas fa-phone"></i>
                             <span>+63 961 633 4094</span>
                         </div>
+                        <a href="https://maps.google.com/?q=10.39780927596985,125.19830753938896" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" style="margin-top: var(--space-md);">
+                            <i class="fas fa-directions"></i>
+                            Get Directions
+                        </a>
                     </div>
-                    <a href="https://maps.google.com/?q=10.39780927596985,125.19830753938896" target="_blank" class="btn btn-primary">
-                        <i class="fas fa-directions"></i> Get Directions
-                    </a>
                 </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
 
     <!-- Contact -->
-    <section id="contact" class="contact">
+    <section id="contact" class="section contact-section">
         <div class="container">
-            <div class="contact-content fade-in">
-                <h2>Get In Touch</h2>
-                <div class="contact-item">
+            <div class="section-header animate-on-scroll" style="color: var(--white);">
+                <h2 class="text-h1" style="color: var(--white);">Get In Touch</h2>
+                <p class="text-body" style="color: var(--gray-400);">Have questions? We'd love to hear from you</p>
+            </div>
+            <div class="contact-grid">
+                <div class="contact-card animate-on-scroll">
                     <i class="fas fa-phone"></i>
-                    <p><strong>Call Us:</strong><br>+63 961 633 4094</p>
+                    <h3>Call Us</h3>
+                    <p>+63 961 633 4094</p>
                 </div>
-                <div class="contact-item">
+                <div class="contact-card animate-on-scroll">
                     <i class="fas fa-envelope"></i>
-                    <p><strong>Email:</strong><br>info@hulyanashill.com</p>
+                    <h3>Email</h3>
+                    <p>info@hulyanashill.com</p>
                 </div>
-                <div class="contact-item">
+                <div class="contact-card animate-on-scroll">
                     <i class="fas fa-clock"></i>
-                    <p><strong>Hours:</strong><br>8:00AM - 6:00PM Daily</p>
+                    <h3>Hours</h3>
+                    <p>8:00 AM – 6:00 PM Daily</p>
                 </div>
             </div>
         </div>
@@ -957,50 +1152,147 @@
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <div class="footer-content">
+            <div class="footer-grid">
                 <div>
-                    <div class="footer-logo">
-                        <i class="fas fa-utensils"></i>
+                    <div class="footer-brand">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/>
+                            <path d="M7 2v20"/>
+                            <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>
+                        </svg>
                         <span>Hulyanas Hill</span>
                     </div>
-                    <p style="color: #ccc; margin-top: 1rem;">Authentic Southern Leyte hill cuisine. Two locations serving fresh, traditional flavors.</p>
-                </div>
-                <div>
-                    <h3>Quick Links</h3>
-                    <a href="#home">Home</a>
-                    <a href="#menu">Menu</a>
-                    <a href="#testimonials">Reviews</a>
-                    <a href="#locations">Locations</a>
-                </div>
-                <div>
-                    <h3>Follow Us</h3>
-                    <div class="social-links">
-                        <a href="https://www.facebook.com/hulyanashill/" target="_blank"><i class="fab fa-facebook-f"></i></a>
-                        <a href="https://www.instagram.com/hulyanas_hill/" target="_blank"><i class="fab fa-instagram"></i></a>
-                        <a href="https://www.threads.com/@hulyanas_hill" target="_blank"><i class="fab fa-twitter"></i></a>
+                    <p class="footer-tagline">Authentic Southern Leyte hill cuisine. Two locations serving fresh, traditional flavors since day one.</p>
+                    <div class="footer-social">
+                        <a href="https://www.facebook.com/hulyanashill/" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="https://www.instagram.com/hulyanas_hill/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="https://www.threads.com/@hulyanas_hill" target="_blank" rel="noopener noreferrer" aria-label="Threads">
+                            <i class="fab fathreads"></i>
+                        </a>
                     </div>
+                </div>
+                <div class="footer-col">
+                    <h4>Navigation</h4>
+                    <ul>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#menu">Menu</a></li>
+                        <li><a href="#about">About</a></li>
+                        <li><a href="#locations">Locations</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Services</h4>
+                    <ul>
+                        <li><a href="user/login.html">Order Online</a></li>
+                        <li><a href="#contact">Contact Us</a></li>
+                        <li><a href="#locations">Find a Location</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Terms of Service</a></li>
+                        <li><a href="#">Cookie Policy</a></li>
+                    </ul>
                 </div>
             </div>
             <div class="footer-bottom">
-                <p>&copy; 2024 Hulyanas Hill. All rights reserved. | Silago & Hinunangan Branches</p>
+                <p>© 2024 Hulyanas Hill. All rights reserved.</p>
+                <div class="footer-legal">
+                    <a href="#">Privacy</a>
+                    <a href="#">Terms</a>
+                    <a href="#">Cookies</a>
+                </div>
             </div>
         </div>
     </footer>
 
     <script>
         // Navbar scroll effect
+        const navbar = document.getElementById('navbar');
+        let lastScroll = 0;
+
         window.addEventListener('scroll', () => {
-            const navbar = document.querySelector('.navbar');
-            if (window.scrollY > 100) {
-                navbar.style.boxShadow = '0 4px 20px rgba(0,0,0,0.1)';
+            const currentScroll = window.pageYOffset;
+            
+            if (currentScroll > 50) {
+                navbar.classList.add('scrolled');
             } else {
-                navbar.style.boxShadow = 'none';
+                navbar.classList.remove('scrolled');
             }
+            
+            lastScroll = currentScroll;
         });
 
-        // Smooth scrolling
+        // Active navigation link
+        const sections = document.querySelectorAll('section[id]');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 100;
+                const sectionHeight = section.clientHeight;
+                
+                if (window.pageYOffset >= sectionTop && window.pageYOffset < sectionTop + sectionHeight) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.classList.add('active');
+                }
+            });
+        });
+
+        // Scroll animations
+        const animateElements = document.querySelectorAll('.animate-on-scroll');
+
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        animateElements.forEach(el => observer.observe(el));
+
+        // Mobile menu toggle
+        const mobileToggle = document.querySelector('.mobile-toggle');
+        const navLinksContainer = document.querySelector('.nav-links');
+
+        if (mobileToggle) {
+            mobileToggle.addEventListener('click', () => {
+                navLinksContainer.classList.toggle('active');
+                mobileToggle.classList.toggle('active');
+            });
+
+            // Close mobile menu when clicking a link
+            navLinksContainer.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => {
+                    navLinksContainer.classList.remove('active');
+                    mobileToggle.classList.remove('active');
+                });
+            });
+        }
+
+        // Smooth scroll for anchor links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
+            anchor.addEventListener('click', function(e) {
                 e.preventDefault();
                 const target = document.querySelector(this.getAttribute('href'));
                 if (target) {
@@ -1011,56 +1303,6 @@
                 }
             });
         });
-
-        // Navbar active state
-        window.addEventListener('scroll', () => {
-            const sections = document.querySelectorAll('section[id]');
-            let current = '';
-            sections.forEach(section => {
-                const sectionTop = section.offsetTop;
-                const sectionHeight = section.clientHeight;
-                if (scrollY >= (sectionTop - 200)) {
-                    current = section.getAttribute('id');
-                }
-            });
-            document.querySelectorAll('.nav-menu a').forEach(a => {
-                a.classList.remove('active');
-                if (a.getAttribute('href') === `#${current}`) {
-                    a.classList.add('active');
-                }
-            });
-        });
-
-        // Intersection Observer for animations
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.animationPlayState = 'running';
-                }
-            });
-        });
-
-        document.querySelectorAll('.fade-in').forEach(el => {
-            observer.observe(el);
-        });
-
-        // Lazy load images
-        if ('IntersectionObserver' in window) {
-            const imageObserver = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const img = entry.target;
-                        img.src = img.dataset.src || img.src;
-                        img.classList.remove('lazy');
-                        imageObserver.unobserve(img);
-                    }
-                });
-            });
-
-            document.querySelectorAll('img[loading="lazy"]').forEach(img => {
-                imageObserver.observe(img);
-            });
-        }
     </script>
 </body>
 </html>
