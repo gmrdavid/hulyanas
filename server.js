@@ -1238,7 +1238,7 @@ app.get('/api/admin/orders', authenticateToken, isAdmin, async (req, res) => {
                 o.phone,
                 o.notes,
                 o.payment_method,
-                o.gcash_reference AS gcash_ref,
+                o.gcash_reference,
                 o.created_at,
                 CONCAT(u.first_name, ' ', u.last_name) AS customer_name
             FROM orders o
