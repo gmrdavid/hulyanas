@@ -92,78 +92,151 @@ function initCharts(data) {
     // -------------------------
     // ORDER TRENDS
     // -------------------------
-    const orderTrends = data.order_trends || [];
+  const orderTrends = data.order_trends || [];
 
-    salesChart = new Chart(document.getElementById('salesChart'), {
-        type: 'line',
-        data: {
-            labels: orderTrends.map(i => i.day_name || ''),
-            datasets: [{
-                label: 'Orders',
-                data: orderTrends.map(i => i.order_count || 0),
-                borderColor: '#1a1a1a',
-                backgroundColor: 'rgba(26,26,26,0.1)',
-                borderWidth: 3,
-                fill: true,
-                tension: 0.4
-            }]
+salesChart = new Chart(document.getElementById('salesChart'), {
+    type: 'line',
+    data: {
+        labels: orderTrends.map(i =>
+            (i.day_name || '').substring(0, 3)
+        ),
+        datasets: [{
+            label: 'Orders',
+            data: orderTrends.map(i => Number(i.order_count) || 0),
+            borderColor: '#1a1a1a',
+            backgroundColor: 'rgba(26,26,26,0.08)',
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 4,
+            pointHoverRadius: 6
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                labels: {
+                    color: '#333'
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    precision: 0
+                }
+            }
         }
-    });
+    }
+});
 
     // =========================
     // REVENUE BY STATUS
     // =========================
-    const revenueByStatus = data.revenue_by_status || [];
+   const revenueByStatus = data.revenue_by_status || [];
 
-    revenueChart = new Chart(document.getElementById('revenueChart'), {
-        type: 'doughnut',
-        data: {
-            labels: revenueByStatus.map(i => i.status || ''),
-            datasets: [{
-                data: revenueByStatus.map(i => i.total_amount || 0),
-                backgroundColor: ['#1a1a1a', '#28a745', '#007bff', '#ffc107', '#dc3545']
-            }]
+revenueChart = new Chart(document.getElementById('revenueChart'), {
+    type: 'doughnut',
+    data: {
+        labels: revenueByStatus.map(i =>
+            (i.status || 'Unknown')
+                .replace('_', ' ')
+                .toUpperCase()
+        ),
+        datasets: [{
+            data: revenueByStatus.map(i =>
+                Number(i.total_amount) || 0
+            ),
+            backgroundColor: [
+                '#1a1a1a',
+                '#28a745',
+                '#007bff',
+                '#ffc107',
+                '#dc3545'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
         }
-    });
-
+    }
+});
     // =========================
     // TOP PRODUCTS
     // =========================
-    const topProducts = data.top_products || [];
+const topProducts = data.top_products || [];
 
-    productsChart = new Chart(document.getElementById('productsChart'), {
-        type: 'bar',
-        data: {
-            labels: topProducts.map(i => {
-                const name = i.name || i.product_name || 'Unknown';
-                return name.length > 15 ? name.slice(0, 15) + '...' : name;
-            }),
-            datasets: [{
-                label: 'Units Sold',
-                data: topProducts.map(i => i.quantity_sold || i.quantity || 0),
-                backgroundColor: '#1a1a1a'
-            }]
+productsChart = new Chart(document.getElementById('productsChart'), {
+    type: 'bar',
+    data: {
+        labels: topProducts.map(i => {
+            const name = i.name || i.product_name || 'Unknown';
+            return name.length > 12 ? name.slice(0, 12) + '...' : name;
+        }),
+        datasets: [{
+            label: 'Units Sold',
+            data: topProducts.map(i =>
+                Number(i.quantity) ||
+                Number(i.quantity_sold) ||
+                0
+            ),
+            backgroundColor: '#1a1a1a'
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    precision: 0
+                }
+            }
         }
-    });
+    }
+});
 
     // =========================
     // CUSTOMER ORDERS
     // =========================
-    const customerOrders = data.customer_orders || [];
+const customerOrders = data.customer_orders || [];
 
-    customersChart = new Chart(document.getElementById('customersChart'), {
-        type: 'line',
-        data: {
-            labels: customerOrders.map(i => (i.username || 'user').slice(0, 8)),
-            datasets: [{
-                label: 'Orders',
-                data: customerOrders.map(i => i.order_count || 0),
-                borderColor: '#28a745',
-                backgroundColor: 'rgba(40,167,69,0.1)',
-                fill: true
-            }]
+customersChart = new Chart(document.getElementById('customersChart'), {
+    type: 'line',
+    data: {
+        labels: customerOrders.map(i =>
+            (i.username || 'user').substring(0, 6)
+        ),
+        datasets: [{
+            label: 'Orders',
+            data: customerOrders.map(i =>
+                Number(i.order_count) || 0
+            ),
+            borderColor: '#28a745',
+            backgroundColor: 'rgba(40,167,69,0.1)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 4
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    precision: 0
+                }
+            }
         }
-    });
+    }
+});
 
     // =========================
     // 🔥 FIXED DASHBOARD STATS (THIS WAS MISSING!)
