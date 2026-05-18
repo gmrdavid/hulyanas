@@ -117,6 +117,20 @@ function renderOrdersTable() {
     updatePaginationButtons();
 }
 
+function updatePaginationButtons() {
+
+    const totalPages = Math.ceil(filteredOrders.length / ordersPerPage);
+
+    document.getElementById('pageInfo').textContent =
+        `Page ${currentPage} of ${totalPages || 1}`;
+
+    document.getElementById('prevPageBtn').disabled =
+        currentPage === 1;
+
+    document.getElementById('nextPageBtn').disabled =
+        currentPage >= totalPages || totalPages === 0;
+}
+
 // VIEW ORDER MODAL
 function openOrderModal(id) {
 
