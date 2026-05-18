@@ -92,7 +92,7 @@ function initCharts(data) {
     // -------------------------
     // ORDER TRENDS
     // -------------------------
-  const orderTrends = data.order_trends || [];
+ const orderTrends = data.order_trends || [];
 
 salesChart = new Chart(document.getElementById('salesChart'), {
     type: 'line',
@@ -135,7 +135,7 @@ salesChart = new Chart(document.getElementById('salesChart'), {
     // =========================
     // REVENUE BY STATUS
     // =========================
-   const revenueByStatus = data.revenue_by_status || [];
+const revenueByStatus = data.revenue_by_status || [];
 
 revenueChart = new Chart(document.getElementById('revenueChart'), {
     type: 'doughnut',
@@ -167,7 +167,7 @@ revenueChart = new Chart(document.getElementById('revenueChart'), {
         }
     }
 });
-    // =========================
+    // ==========================
     // TOP PRODUCTS
     // =========================
 const topProducts = data.top_products || [];
