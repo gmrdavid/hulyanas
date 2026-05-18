@@ -3,234 +3,275 @@
 // ===============================
 
 let allOrders = [];
-
 let selectedStatus = 'all';
-
 let currentPage = 1;
 let totalPages = 1;
 let currentActivityPage = 1;
 let totalActivityPages = 1;
 
 // ===============================
+// UTILITY FUNCTIONS (Moved outside)
+// ===============================
+
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleString('en-PH', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    });
+}
+
+function formatDateTime(value) {
+    if (!value) return 'N/A';
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return 'Invalid Date';
+    return date.toLocaleString('en-PH', {
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    });
+}
+
+// ===============================
+// TOAST NOTIFICATION
+// ===============================
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    
+    const colors = {
+        success: { bg: '#d4edda', color: '#155724' },
+        error: { bg: '#f8d7da', color: '#721c24' },
+        info: { bg: '#d1ecf1', color: '#0c5460' }
+    };
+    
+    const c = colors[type] || colors.success;
+    
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${c.bg};
+        color: ${c.color};
+        padding: 1rem 2rem;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        z-index: 3000;
+        transform: translateX(400px);
+        transition: all 0.3s ease;
+        font-weight: 500;
+        margin-top: 60px;
+    `;
+
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    requestAnimationFrame(() => {
+        toast.style.transform = 'translateX(0)';
+    });
+
+    setTimeout(() => {
+        toast.style.transform = 'translateX(400px)';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// ===============================
 // ANIMATE COUNTERS
 // ===============================
 
 function animateCounters(data) {
-
     const menuEl = document.getElementById('menuCount');
     const orderEl = document.getElementById('orderCount');
     const revenueEl = document.getElementById('revenueCount');
     const userEl = document.getElementById('userCount');
 
-    [menuEl, orderEl, userEl].forEach((el, i) => {
+    // Handle missing elements safely
+    if (!menuEl || !orderEl || !userEl) {
+        console.warn('Counter elements not found');
+        return;
+    }
 
-        const targets = [
-            data.menuItems,
-            data.totalOrders,
-            data.totalUsers
-        ];
+    const counters = [
+        { el: menuEl, target: data.menuItems },
+        { el: orderEl, target: data.totalOrders },
+        { el: userEl, target: data.totalUsers }
+    ];
 
+    counters.forEach(({ el, target }) => {
         let current = 0;
-        const target = targets[i];
         const increment = target / 50;
 
         const timer = setInterval(() => {
-
             current += increment;
-
             if (current >= target) {
                 el.textContent = Math.floor(target).toLocaleString();
                 clearInterval(timer);
-                return;
+            } else {
+                el.textContent = Math.floor(current).toLocaleString();
             }
-
-            el.textContent = Math.floor(current).toLocaleString();
-
         }, 20);
     });
 
     // Revenue animation
+    if (revenueEl) {
+        let currentRev = 0;
+        const targetRev = Number(data.revenue) || 0;
+        const revIncrement = targetRev / 50;
 
-    let currentRev = 0;
-    const targetRev = Number(data.revenue) || 0;
-    const revIncrement = targetRev / 50;
-
-    const revTimer = setInterval(() => {
-
-        currentRev += revIncrement;
-
-        if (currentRev >= targetRev) {
-
-            revenueEl.textContent =
-                `₱${targetRev.toLocaleString('en-PH', {
+        const revTimer = setInterval(() => {
+            currentRev += revIncrement;
+            if (currentRev >= targetRev) {
+                revenueEl.textContent = `₱${targetRev.toLocaleString('en-PH', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2
                 })}`;
-
-            clearInterval(revTimer);
-            return;
-        }
-
-        revenueEl.textContent =
-            `₱${currentRev.toLocaleString('en-PH', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            })}`;
-
-    }, 20);}
-
+                clearInterval(revTimer);
+            } else {
+                revenueEl.textContent = `₱${currentRev.toLocaleString('en-PH', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                })}`;
+            }
+        }, 20);
+    }
+}
 
 // ===============================
 // LOAD ADMIN STATS
 // ===============================
 
 async function loadAdminStats() {
-
     try {
-
         const token = localStorage.getItem('token');
-
+        
         const response = await fetch('/api/admin/stats', {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
+            headers: { Authorization: `Bearer ${token}` }
         });
+
+        if (!response.ok) throw new Error('Failed to load stats');
 
         const data = await response.json();
 
-        document.getElementById('menuCount')
-            .setAttribute('data-target', data.menuItems);
-
-        document.getElementById('orderCount')
-            .setAttribute('data-target', data.totalOrders);
-
-        document.getElementById('revenueCount')
-            .setAttribute('data-target', data.revenue);
-
-        document.getElementById('userCount')
-            .setAttribute('data-target', data.totalUsers);
+        ['menuCount', 'orderCount', 'revenueCount', 'userCount'].forEach((id, index) => {
+            const el = document.getElementById(id);
+            if (el) {
+                const values = [data.menuItems, data.totalOrders, data.revenue, data.totalUsers];
+                el.setAttribute('data-target', values[index]);
+            }
+        });
 
         animateCounters(data);
-
         console.log('✅ Stats loaded:', data);
 
     } catch (error) {
-
-        console.error('Stats error:', error);
+        console.error('❌ Stats error:', error);
+        showToast('Failed to load statistics', 'error');
     }
 }
-
 
 // ===============================
 // LOAD RECENT ORDERS
 // ===============================
 
 async function loadRecentOrders(page = 1) {
-
     try {
-
         const token = localStorage.getItem('token');
 
         const response = await fetch(
             `/api/admin/recent-orders?page=${page}&status=${selectedStatus}`,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            }
+            { headers: { Authorization: `Bearer ${token}` } }
         );
+
+        if (!response.ok) throw new Error('Failed to load orders');
 
         const data = await response.json();
 
         console.log("API RESPONSE:", data);
 
         const orders = data.orders || [];
-
-        allOrders = orders; // always overwrite current page data
-
+        allOrders = orders;
         currentPage = data.currentPage || 1;
         totalPages = data.totalPages || 1;
 
         renderRecentOrders(orders);
-
-        document.getElementById('pageInfo').textContent =
-            `Page ${currentPage} of ${totalPages}`;
-
-        document.getElementById('prevPageBtn').disabled =
-            currentPage === 1;
-
-        document.getElementById('nextPageBtn').disabled =
-            currentPage === totalPages;
+        updateOrderPagination();
 
     } catch (error) {
-        console.error(error);
+        console.error('❌ Orders error:', error);
+        showToast('Failed to load orders', 'error');
+        
+        // Show error state in table
+        const tbody = document.getElementById('recentOrders');
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align:center;padding:3rem;color:#dc3545;">
+                        Failed to load orders. Please refresh.
+                    </td>
+                </tr>
+            `;
+        }
     }
 }
 
-function renderRecentOrders(orders) {
+function updateOrderPagination() {
+    const pageInfo = document.getElementById('pageInfo');
+    const prevBtn = document.getElementById('prevPageBtn');
+    const nextBtn = document.getElementById('nextPageBtn');
 
+    if (pageInfo) {
+        pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+    }
+    if (prevBtn) prevBtn.disabled = currentPage === 1;
+    if (nextBtn) nextBtn.disabled = currentPage === totalPages;
+}
+
+function renderRecentOrders(orders) {
     const tbody = document.getElementById('recentOrders');
 
-    if (!orders.length) {
+    if (!tbody) return;
 
+    if (!orders.length) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="5"
-                    style="text-align:center;padding:3rem;">
+                <td colspan="5" style="text-align:center;padding:3rem;">
                     No orders found
                 </td>
             </tr>
         `;
-
         return;
     }
 
     tbody.innerHTML = orders.map(order => `
-
         <tr>
-
-            <td>
-                <strong>
-                    #${order.order_number || 'N/A'}
-                </strong>
-            </td>
-
-            <td>
-                ${order.customer_name || 'Unknown'}
-            </td>
-
+            <td><strong>#${order.order_number || 'N/A'}</strong></td>
+            <td>${order.customer_name || 'Unknown'}</td>
             <td>
                 <span class="order-status status-${order.status}">
-                    ${(order.status || 'unknown')
-                        .replace(/_/g, ' ')}
+                    ${(order.status || 'unknown').replace(/_/g, ' ')}
                 </span>
             </td>
-
-            <td>
-                <strong>
-                    ₱${Number(order.total_amount || 0).toFixed(2)}
-                </strong>
-            </td>
-
-            <td>
-                ${formatDate(order.created_at)}
-            </td>
-
+            <td><strong>₱${Number(order.total_amount || 0).toFixed(2)}</strong></td>
+            <td>${formatDate(order.created_at)}</td>
         </tr>
-
     `).join('');
 }
-
 
 // ===============================
 // FILTER BY STATUS
 // ===============================
 
 function filterOrdersByStatus(status) {
-
-    selectedStatus = status; // 🔥 IMPORTANT: store selected filter
-
-    // reset to page 1 when filtering
+    selectedStatus = status;
     loadRecentOrders(1);
 }
 
@@ -239,22 +280,16 @@ function filterOrdersByStatus(status) {
 // ===============================
 
 async function loadActivityFeed(page = 1) {
-
     try {
-
         const token = localStorage.getItem('token');
 
-        const response = await fetch(
-            `/api/admin/activity?page=${page}`,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            }
-        );
+        const response = await fetch(`/api/admin/activity?page=${page}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to load activity');
 
         const data = await response.json();
-
         const activities = data.activities || [];
 
         currentActivityPage = data.currentPage || 1;
@@ -262,152 +297,111 @@ async function loadActivityFeed(page = 1) {
 
         const feed = document.getElementById('activityFeed');
 
+        if (!feed) return;
+
         if (!activities.length) {
-            feed.innerHTML = `<div style="text-align:center;padding:2rem;color:#999;">No recent activity</div>`;
-            return;
+            feed.innerHTML = `
+                <div style="text-align:center;padding:2rem;color:#999;">
+                    No recent activity
+                </div>
+            `;
+        } else {
+            feed.innerHTML = activities.map(activity => `
+                <div class="activity-item">
+                    <div class="activity-icon ${activity.type}">
+                        <i class="fas fa-${getActivityIcon(activity.type)}"></i>
+                    </div>
+                    <div class="activity-content">
+                        <h4>${activity.message}</h4>
+                        <p>${formatDate(activity.created_at || activity.time)}</p>
+                    </div>
+                </div>
+            `).join('');
         }
 
-        feed.innerHTML = activities.map(activity => `
-            <div class="activity-item">
-
-                <div class="activity-icon ${activity.type}">
-                    <i class="fas fa-${
-                        activity.type === 'order'
-                        ? 'shopping-cart'
-                        : activity.type === 'user'
-                        ? 'user-plus'
-                        : activity.type
-                    }"></i>
-                </div>
-
-                <div class="activity-content">
-                    <h4>${activity.message}</h4>
-                    <p>${formatDate(activity.created_at || activity.time)}</p>
-                </div>
-
-            </div>
-        `).join('');
-
-        // update pagination UI
-        document.getElementById('activityPageInfo').textContent =
-            `Page ${currentActivityPage} of ${totalActivityPages}`;
-
-        document.getElementById('prevActivityBtn').disabled =
-            currentActivityPage === 1;
-
-        document.getElementById('nextActivityBtn').disabled =
-            currentActivityPage === totalActivityPages;
-
+        updateActivityPagination();
         console.log('✅ Activity loaded:', activities.length);
 
     } catch (error) {
-
-        console.error('Activity error:', error);
-
-        document.getElementById('activityFeed').innerHTML = `
-            <div style="text-align:center;padding:2rem;color:#666;">
-                Failed to load activity feed
-            </div>
-        `;
+        console.error('❌ Activity error:', error);
+        
+        const feed = document.getElementById('activityFeed');
+        if (feed) {
+            feed.innerHTML = `
+                <div style="text-align:center;padding:2rem;color:#dc3545;">
+                    Failed to load activity feed
+                </div>
+            `;
+        }
     }
 }
 
-
-// ===============================
-// TOAST NOTIFICATION
-// ===============================
-
-function showToast(message) {
-
-    const toast = document.createElement('div');
-
-    toast.style.cssText = `
-        position:fixed;
-        top:20px;
-        right:20px;
-        background:#d4edda;
-        color:#155724;
-        padding:1rem 2rem;
-        border-radius:12px;
-        box-shadow:0 10px 30px rgba(0,0,0,0.1);
-        z-index:3000;
-        transform:translateX(400px);
-        transition:all 0.3s ease;
-        font-weight:500;
-    `;
-
-    toast.textContent = message;
-
-    document.body.appendChild(toast);
-
-    setTimeout(() => {
-        toast.style.transform = 'translateX(0)';
-    }, 100);
-
-    setTimeout(() => {
-        toast.remove();
-    }, 3000);
+function getActivityIcon(type) {
+    const icons = {
+        order: 'shopping-cart',
+        user: 'user-plus',
+        login: 'sign-in-alt',
+        logout: 'sign-out-alt',
+        register: 'user-plus'
+    };
+    return icons[type] || 'circle';
 }
 
+function updateActivityPagination() {
+    const pageInfo = document.getElementById('activityPageInfo');
+    const prevBtn = document.getElementById('prevActivityBtn');
+    const nextBtn = document.getElementById('nextActivityBtn');
+
+    if (pageInfo) {
+        pageInfo.textContent = `Page ${currentActivityPage} of ${totalActivityPages}`;
+    }
+    if (prevBtn) prevBtn.disabled = currentActivityPage === 1;
+    if (nextBtn) nextBtn.disabled = currentActivityPage === totalActivityPages;
+}
 
 // ===============================
 // NAVBAR SCROLL EFFECT
 // ===============================
 
 window.addEventListener('scroll', () => {
-
-    const navbar =
-        document.querySelector('.navbar');
-
-    navbar.style.background =
-        window.scrollY > 50
-        ? 'rgba(255,255,255,1)'
-        : 'rgba(255,255,255,0.98)';
+    const navbar = document.querySelector('.navbar');
+    if (navbar) {
+        navbar.style.background = window.scrollY > 50
+            ? 'rgba(255,255,255,1)'
+            : 'rgba(255,255,255,0.98)';
+    }
 });
-
 
 // ===============================
 // LOGOUT HANDLER
 // ===============================
 
-document.getElementById('logoutBtn')
-.addEventListener('click', (e) => {
-
-    e.preventDefault();
-
-    if (confirm('Are you sure you want to logout?')) {
-
-        localStorage.removeItem('token');
-
-        window.location.href = '/index.html';
-    }
-});
-
+const logoutBtn = document.getElementById('logoutBtn');
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (confirm('Are you sure you want to logout?')) {
+            localStorage.removeItem('token');
+            window.location.href = '/index.html';
+        }
+    });
+}
 
 // ===============================
 // MAIN INITIALIZATION
 // ===============================
 
 document.addEventListener('DOMContentLoaded', async () => {
-
     console.log('🔥 Loading Hulyanas Admin Dashboard...');
 
     // AUTO LOGIN
-
     if (!localStorage.getItem('token')) {
-
         try {
-
             console.log('🔑 Attempting auto-login...');
 
             const loginRes = await fetch('/api/login', {
-
                 method: 'POST',
-
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     username: 'admin',
                     password: 'password'
@@ -416,109 +410,112 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const loginData = await loginRes.json();
 
-            localStorage.setItem(
-                'token',
-                loginData.token
-            );
-
-            console.log('✅ Auto-login successful');
+            if (loginData.token) {
+                localStorage.setItem('token', loginData.token);
+                console.log('✅ Auto-login successful');
+                showToast('Welcome back, Admin!', 'success');
+            }
 
         } catch (e) {
-
             console.log('ℹ️ No auto-login available');
         }
     }
 
     // LOAD DASHBOARD DATA
-
     document.body.classList.add('loading');
 
-    await Promise.all([
-        loadAdminStats(),
-        loadRecentOrders(),
-        loadActivityFeed()
-    ]);
-
-    document.body.classList.remove('loading');
-
-    console.log('✅ Dashboard fully loaded! ✨');
+    try {
+        await Promise.all([
+            loadAdminStats(),
+            loadRecentOrders(),
+            loadActivityFeed()
+        ]);
+        console.log('✅ Dashboard fully loaded! ✨');
+    } catch (error) {
+        console.error('Dashboard load failed:', error);
+        showToast('Some data failed to load', 'error');
+    } finally {
+        document.body.classList.remove('loading');
+    }
 
     // FILTER EVENT
-
-    const filter =
-        document.getElementById('statusFilter');
-
+    const filter = document.getElementById('statusFilter');
     if (filter) {
-
         filter.addEventListener('change', (e) => {
-
             filterOrdersByStatus(e.target.value);
         });
     }
 
-    // PREVIOUS BUTTON
+    // PAGINATION EVENTS - Using event delegation or safe checks
+    setupPaginationHandlers();
+});
 
-        document.getElementById('prevPageBtn')
-        .addEventListener('click', () => {
+function setupPaginationHandlers() {
+    const prevBtn = document.getElementById('prevPageBtn');
+    const nextBtn = document.getElementById('nextPageBtn');
+    const prevActivityBtn = document.getElementById('prevActivityBtn');
+    const nextActivityBtn = document.getElementById('nextActivityBtn');
 
-            if (currentPage > 1) {
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) loadRecentOrders(currentPage - 1);
+        });
+    }
 
-                loadRecentOrders(currentPage - 1);
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            if (currentPage < totalPages) loadRecentOrders(currentPage + 1);
+        });
+    }
+
+    if (prevActivityBtn) {
+        prevActivityBtn.addEventListener('click', () => {
+            if (currentActivityPage > 1) {
+                loadActivityFeed(currentActivityPage - 1);
             }
         });
+    }
 
-    // NEXT BUTTON
-
-   document.getElementById('nextPageBtn')
-    .addEventListener('click', () => {
-
-        if (currentPage < totalPages) {
-
-            loadRecentOrders(currentPage + 1);
-        }
-    });
-
-    document.getElementById('prevActivityBtn')
-    .addEventListener('click', () => {
-        if (currentActivityPage > 1) {
-            loadActivityFeed(currentActivityPage - 1);
-        }
-    });
-
-    document.getElementById('nextActivityBtn')
-    .addEventListener('click', () => {
-        if (currentActivityPage < totalActivityPages) {
-            loadActivityFeed(currentActivityPage + 1);
-        }
-    });
-    function formatDate(dateString) {
-    if (!dateString) return 'N/A';
-
-    const date = new Date(dateString);
-
-    return date.toLocaleString('en-PH', {
-        year: 'numeric',
-        month: 'short',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-    });
+    if (nextActivityBtn) {
+        nextActivityBtn.addEventListener('click', () => {
+            if (currentActivityPage < totalActivityPages) {
+                loadActivityFeed(currentActivityPage + 1);
+            }
+        });
+    }
 }
-function formatDateTime(value) {
-    if (!value) return 'N/A';
 
-    const date = new Date(value);
+// ===============================
+// REFRESH DATA (Bonus helper)
+// ===============================
 
-    if (isNaN(date.getTime())) return 'Invalid Date';
-
-    return date.toLocaleString('en-PH', {
-        year: 'numeric',
-        month: 'short',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-    });
+async function refreshAllData() {
+    document.body.classList.add('loading');
+    try {
+        await Promise.all([
+            loadAdminStats(),
+            loadRecentOrders(currentPage),
+            loadActivityFeed(currentActivityPage)
+        ]);
+        showToast('Data refreshed successfully!', 'success');
+    } catch (error) {
+        showToast('Failed to refresh data', 'error');
+    } finally {
+        document.body.classList.remove('loading');
+    }
 }
+
+// Auto-refresh every 60 seconds
+setInterval(refreshAllData, 60000);
+
+// ===============================
+// KEYBOARD SHORTCUTS
+// ===============================
+
+document.addEventListener('keydown', (e) => {
+    // Ctrl/Cmd + R to refresh
+    if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+        e.preventDefault();
+        refreshAllData();
+    }
 });
