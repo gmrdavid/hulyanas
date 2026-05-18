@@ -142,25 +142,23 @@ async function loadRecentOrders(page = 1) {
 
         const data = await response.json();
 
-        console.log(data);
+        console.log("API RESPONSE:", data);
 
         const orders = data.orders || [];
 
-        currentPage = data.currentPage;
-        totalPages = data.totalPages;
+        currentPage = data.currentPage || 1;
+        totalPages = data.totalPages || 1;
 
         renderRecentOrders(orders);
 
-        // PAGE INFO
         document.getElementById('pageInfo').textContent =
             `Page ${currentPage} of ${totalPages}`;
 
-        // BUTTON STATES
         document.getElementById('prevPageBtn').disabled =
-            currentPage <= 1;
+            currentPage === 1;
 
         document.getElementById('nextPageBtn').disabled =
-            currentPage >= totalPages;
+            currentPage === totalPages;
 
     } catch (error) {
 

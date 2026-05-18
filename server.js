@@ -966,23 +966,22 @@ app.get('/api/admin/recent-orders', async (req, res) => {
 
         const page = parseInt(req.query.page) || 1;
         const limit = 10;
-
         const offset = (page - 1) * limit;
 
-        // TOTAL ORDERS
-        const [countResult] = await db.query(`
+        // TOTAL COUNT
+        const [countRows] = await db.query(`
             SELECT COUNT(*) AS total
             FROM orders
         `);
 
-        const totalOrders = countResult[0].total;
+        const totalOrders = countRows[0].total;
 
-        // PAGINATED ORDERS
+        // LOAD ORDERS
         const [orders] = await db.query(`
-            SELECT
+            SELECT 
                 id,
                 order_number,
-                customer,
+                customer_name AS customer,
                 status,
                 total_amount,
                 created_at
@@ -991,7 +990,6 @@ app.get('/api/admin/recent-orders', async (req, res) => {
             LIMIT ? OFFSET ?
         `, [limit, offset]);
 
-        // FORMAT TIME
         const formattedOrders = orders.map(order => ({
             ...order,
             time_ago: new Date(order.created_at)
@@ -1001,8 +999,7 @@ app.get('/api/admin/recent-orders', async (req, res) => {
         res.json({
             orders: formattedOrders,
             currentPage: page,
-            totalPages: Math.ceil(totalOrders / limit),
-            totalOrders
+            totalPages: Math.ceil(totalOrders / limit)
         });
 
     } catch (error) {
