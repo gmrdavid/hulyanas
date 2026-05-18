@@ -290,13 +290,10 @@ async function exportReport(type) {
 
     try {
 
-        document.body.classList.add('loading');
-
         const response = await fetch(`/api/export/${type}`, {
             method: 'POST',
             headers: {
-                Authorization: `Bearer ${localStorage.getItem('token')}`,
-                'Content-Type': 'application/json'
+                Authorization: `Bearer ${localStorage.getItem('token')}`
             }
         });
 
@@ -313,9 +310,9 @@ async function exportReport(type) {
         a.href = url;
 
         a.download =
-            `hulyanas-${type}-report-${new Date()
+            `hulyanas-${type}-${new Date()
                 .toISOString()
-                .split('T')[0]}.${type === 'dashboard' ? 'pdf' : 'csv'}`;
+                .split('T')[0]}.${type === 'orders' ? 'xlsx' : 'csv'}`;
 
         document.body.appendChild(a);
 
@@ -325,19 +322,15 @@ async function exportReport(type) {
 
         window.URL.revokeObjectURL(url);
 
-        showToast(`✅ ${type.toUpperCase()} report downloaded!`);
+        showToast(`✅ ${type.toUpperCase()} exported successfully`);
 
     } catch (error) {
 
         console.error('Export error:', error);
 
         showToast(`❌ Failed to export ${type}`);
-
-    } finally {
-
-        document.body.classList.remove('loading');
     }
 }
 
-// ✅ MAKE GLOBAL
+// ✅ IMPORTANT
 window.exportReport = exportReport;
