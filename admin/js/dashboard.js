@@ -2,14 +2,12 @@
 // GLOBAL VARIABLES
 // ===============================
 
-let allOrders = [];
-
-let selectedStatus = 'all';
-
 let currentPage = 1;
 let totalPages = 1;
 let currentActivityPage = 1;
 let totalActivityPages = 1;
+
+let selectedStatus = 'all';
 
 // ===============================
 // ANIMATE COUNTERS
@@ -159,7 +157,7 @@ async function loadRecentOrders(page = 1) {
             currentPage === totalPages;
 
     } catch (error) {
-        console.error(error);
+        console.error("LOAD ORDERS ERROR:", error);
     }
 }
 
@@ -168,44 +166,35 @@ function renderRecentOrders(orders) {
     const tbody = document.getElementById('recentOrders');
 
     if (!orders.length) {
-
         tbody.innerHTML = `
             <tr>
-                <td colspan="5"
-                    style="text-align:center;padding:3rem;">
+                <td colspan="5" style="text-align:center;padding:3rem;">
                     No orders found
                 </td>
             </tr>
         `;
-
         return;
     }
 
     tbody.innerHTML = orders.map(order => `
-
         <tr>
 
             <td>
-                <strong>
-                    #${order.order_number || 'N/A'}
-                </strong>
+                <strong>#${order.order_number || 'N/A'}</strong>
             </td>
 
             <td>
-                ${order.customer_name || 'Unknown'}
+                ${order.customer_name || `${order.first_name || ''} ${order.last_name || ''}`.trim() || 'Unknown'}
             </td>
 
             <td>
                 <span class="order-status status-${order.status}">
-                    ${(order.status || 'unknown')
-                        .replace(/_/g, ' ')}
+                    ${(order.status || 'unknown').replace(/_/g, ' ')}
                 </span>
             </td>
 
             <td>
-                <strong>
-                    ₱${Number(order.total_amount || 0).toFixed(2)}
-                </strong>
+                <strong>₱${Number(order.total_amount || 0).toFixed(2)}</strong>
             </td>
 
             <td>
@@ -213,16 +202,14 @@ function renderRecentOrders(orders) {
             </td>
 
         </tr>
-
     `).join('');
 }
-
 
 // ===============================
 // FILTER BY STATUS
 // ===============================
 
-function filterOrdersByStatus(status) {
+//function filterOrdersByStatus(status) {
 
     if (!Array.isArray(allOrders)) return;
 
@@ -250,7 +237,7 @@ function filterOrdersByStatus(status) {
 
     document.getElementById('prevPageBtn').disabled = true;
     document.getElementById('nextPageBtn').disabled = true;
-}
+//}
 
 
 // ===============================
@@ -464,16 +451,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // FILTER EVENT
 
-    const filter =
-        document.getElementById('statusFilter');
+    document.getElementById('statusFilter').addEventListener('change', (e) => {
 
-    if (filter) {
+        selectedStatus = e.target.value;
+        currentPage = 1;
 
-        filter.addEventListener('change', (e) => {
-
-            filterOrdersByStatus(e.target.value);
-        });
-    }
+        loadRecentOrders(1);
+    });
 
     // PREVIOUS BUTTON
 
