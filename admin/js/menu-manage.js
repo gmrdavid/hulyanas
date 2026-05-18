@@ -11,7 +11,7 @@ async function loadMenuItems(page = 1) {
     try {
 
         const response = await fetch(
-            `/api/admin/menu?page=${page}&limit=3&category=${selectedCategory}`,
+            `/api/admin/menu?page=${page}&limit=10&category=${selectedCategory}`,
             {
                 headers: {
                     Authorization: `Bearer ${localStorage.getItem('token')}`

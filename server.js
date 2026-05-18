@@ -876,7 +876,7 @@ app.get('/api/admin/menu', authenticateToken, isAdmin, async (req, res) => {
     try {
 
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 3;
+        const limit = parseInt(req.query.limit) || 10;
 
         const offset = (page - 1) * limit;
 
@@ -1134,7 +1134,7 @@ app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
     try {
 
         const page = parseInt(req.query.page) || 1;
-        const limit = 6;
+        const limit = 8;
         const offset = (page - 1) * limit;
 
         // COUNT
