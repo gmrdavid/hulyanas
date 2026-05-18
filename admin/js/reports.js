@@ -81,118 +81,72 @@
 
         // Initialize charts with REAL database data
         function initCharts(data) {
-            // 1. Sales Trend Chart - Orders by DAY_OF_WEEK
+
+            // 🚨 IMPORTANT: prevent "canvas already in use"
+            destroyCharts();
+
+            // 1. Sales Chart
             const orderTrends = data.order_trends || [];
             salesChart = new Chart(document.getElementById('salesChart'), {
                 type: 'line',
                 data: {
-                    labels: orderTrends.map(item => item.day_name),
+                    labels: orderTrends.map(i => i.day_name),
                     datasets: [{
                         label: 'Orders',
-                        data: orderTrends.map(item => item.order_count),
+                        data: orderTrends.map(i => i.order_count),
                         borderColor: '#1a1a1a',
                         backgroundColor: 'rgba(26, 26, 26, 0.1)',
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.4,
-                        pointBackgroundColor: '#1a1a1a',
-                        pointBorderColor: '#fff',
-                        pointBorderWidth: 3,
-                        pointRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: '#f0f0f0' } },
-                        x: { grid: { display: false } }
-                    }
-                }
-            });
-
-            // 2. Revenue by Status (Pie Chart)
-            const revenueByStatus = data.revenue_by_status || [];
-            revenueChart = new Chart(document.getElementById('revenueChart'), {
-                type: 'doughnut',
-                data: {
-                    labels: revenueByStatus.map(item => item.status),
-                    datasets: [{
-                        data: revenueByStatus.map(item => item.total_amount),
-                        backgroundColor: ['#1a1a1a', '#28a745', '#007bff', '#ffc107', '#dc3545'],
-                        borderWidth: 0,
-                        borderRadius: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } }
-                }
-            });
-
-            // 3. Top Products (Bar Chart)
-            const topProducts = data.top_products || [];
-            productsChart = new Chart(document.getElementById('productsChart'), {
-                type: 'bar',
-                data: {
-                    labels: topProducts.map(item => item.name.slice(0, 15) + (item.name.length > 15 ? '...' : '')),
-                    datasets: [{
-                        label: 'Units Sold',
-                        data: topProducts.map(item => item.quantity),
-                        backgroundColor: '#1a1a1a',
-                        borderRadius: 8,
-                        borderSkipped: false
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: '#f0f0f0' } },
-                        x: { grid: { display: false } }
-                    }
-                }
-            });
-
-            // 4. Customer Orders (Line Chart)
-            const customerOrders = data.customer_orders || [];
-            customersChart = new Chart(document.getElementById('customersChart'), {
-                type: 'line',
-                data: {
-                    labels: customerOrders.map(item => item.username.slice(0, 8)),
-                    datasets: [{
-                        label: 'Orders',
-                        data: customerOrders.map(item => item.order_count),
-                        borderColor: '#28a745',
-                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
                         borderWidth: 3,
                         fill: true,
                         tension: 0.4
                     }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: '#f0f0f0' } },
-                        x: { grid: { display: false } }
-                    }
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // 2. Revenue Chart
+            const revenueByStatus = data.revenue_by_status || [];
+            revenueChart = new Chart(document.getElementById('revenueChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: revenueByStatus.map(i => i.status),
+                    datasets: [{
+                        data: revenueByStatus.map(i => i.total_amount),
+                        backgroundColor: ['#1a1a1a', '#28a745', '#007bff', '#ffc107', '#dc3545']
+                    }]
                 }
             });
 
-            // Update chart stats with real data
-            document.getElementById('peakOrderDay').textContent = data.peak_day || '-';
-            document.getElementById('avgOrderValueDb').textContent = `₱${(data.avg_order_value || 0).toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
-            document.getElementById('bestStatus').textContent = data.top_status || '-';
-            document.getElementById('deliveredRevenue').textContent = `₱${(data.delivered_revenue || 0).toLocaleString('en-PH', {minimumFractionDigits: 2})}`;
-            document.getElementById('topProductName').textContent = data.top_product_name || '-';
-            document.getElementById('totalItemsSold').textContent = data.total_items_sold || 0;
-            document.getElementById('topCustomer').textContent = data.top_customer || '-';
-            document.getElementById('repeatCustomers').textContent = data.repeat_customers || 0;
+            // 3. Products Chart
+            const topProducts = data.top_products || [];
+            productsChart = new Chart(document.getElementById('productsChart'), {
+                type: 'bar',
+                data: {
+                    labels: topProducts.map(i =>
+                        i.name.length > 15 ? i.name.slice(0, 15) + '...' : i.name
+                    ),
+                    datasets: [{
+                        label: 'Units Sold',
+                        data: topProducts.map(i => i.quantity),
+                        backgroundColor: '#1a1a1a'
+                    }]
+                }
+            });
+
+            // 4. Customers Chart
+            const customerOrders = data.customer_orders || [];
+            customersChart = new Chart(document.getElementById('customersChart'), {
+                type: 'line',
+                data: {
+                    labels: customerOrders.map(i => i.username.slice(0, 8)),
+                    datasets: [{
+                        label: 'Orders',
+                        data: customerOrders.map(i => i.order_count),
+                        borderColor: '#28a745',
+                        fill: true
+                    }]
+                }
+            });
         }
 
         // Load and display real database analytics
