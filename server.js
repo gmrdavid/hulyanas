@@ -971,7 +971,7 @@ app.get('/api/admin/recent-orders', async (req, res) => {
         const offset = (page - 1) * limit;
 
         // TOTAL COUNT
-        const [countRows] = await db.query(`
+        const [countRows] = await pool.query(`
             SELECT COUNT(*) AS total
             FROM orders
         `);
@@ -979,7 +979,7 @@ app.get('/api/admin/recent-orders', async (req, res) => {
         const totalOrders = countRows[0].total;
 
         // GET ORDERS
-        const [orders] = await db.query(`
+        const [orders] = await pool.query(`
             SELECT 
                 id,
                 order_number,
