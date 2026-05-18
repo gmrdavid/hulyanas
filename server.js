@@ -229,6 +229,114 @@ app.get('/api/user/:id/activity', authenticateToken, async (req, res) => {
     }
 });
 
+// =========================
+// EXPORT ORDERS EXCEL
+// =========================
+app.post('/api/export/orders', authenticateToken, isAdmin, async (req, res) => {
+
+    try {
+
+        const [orders] = await pool.execute(`
+            SELECT
+                order_number,
+                customer_name,
+                phone,
+                total_amount,
+                status,
+                payment_method,
+                created_at
+            FROM orders
+            ORDER BY created_at DESC
+        `);
+
+        const workbook = new ExcelJS.Workbook();
+
+        const worksheet = workbook.addWorksheet('Orders');
+
+        worksheet.columns = [
+            { header: 'Order #', key: 'order_number', width: 20 },
+            { header: 'Customer', key: 'customer_name', width: 25 },
+            { header: 'Phone', key: 'phone', width: 20 },
+            { header: 'Total', key: 'total_amount', width: 15 },
+            { header: 'Status', key: 'status', width: 20 },
+            { header: 'Payment', key: 'payment_method', width: 20 },
+            { header: 'Date', key: 'created_at', width: 25 }
+        ];
+
+        orders.forEach(order => {
+            worksheet.addRow(order);
+        });
+
+        res.setHeader(
+            'Content-Type',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        );
+
+        res.setHeader(
+            'Content-Disposition',
+            'attachment; filename=orders.xlsx'
+        );
+
+        await workbook.xlsx.write(res);
+
+        res.end();
+
+    } catch (error) {
+
+        console.error('Export Orders Error:', error);
+
+        res.status(500).json({
+            error: 'Failed to export orders'
+        });
+    }
+});
+
+// =========================
+// EXPORT SALES CSV
+// =========================
+app.post('/api/export/sales', authenticateToken, isAdmin, async (req, res) => {
+
+    try {
+
+        const [sales] = await pool.execute(`
+            SELECT
+                DATE(created_at) AS date,
+                COUNT(*) AS total_orders,
+                SUM(total_amount) AS revenue
+            FROM orders
+            WHERE LOWER(status) != 'cancelled'
+            GROUP BY DATE(created_at)
+            ORDER BY DATE(created_at) DESC
+        `);
+
+        let csv =
+            'Date,Total Orders,Revenue\n';
+
+        sales.forEach(item => {
+
+            csv +=
+                `${item.date},${item.total_orders},${item.revenue}\n`;
+        });
+
+        res.setHeader('Content-Type', 'text/csv');
+
+        res.setHeader(
+            'Content-Disposition',
+            'attachment; filename=sales.csv'
+        );
+
+        res.send(csv);
+
+    } catch (error) {
+
+        console.error('Export Sales Error:', error);
+
+        res.status(500).json({
+            error: 'Failed to export sales'
+        });
+    }
+});
+
 
 // ===== AUTHENTICATION ROUTES =====
 
