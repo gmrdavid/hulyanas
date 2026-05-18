@@ -72,18 +72,8 @@ function renderOrdersTable() {
         </td>
 
         <!-- ✅ NEW ITEMS COLUMN -->
-        <td>
-            <div style="max-width: 220px; font-size: 0.85rem; color: #444;">
-                ${
-                    order.items && Array.isArray(order.items)
-                        ? order.items.slice(0, 2).map(item =>
-                            `<div>• ${item.name} x${item.quantity}</div>`
-                        ).join('') + (order.items.length > 2 ? `<div>...</div>` : '')
-                        : order.order_items
-                            ? order.order_items
-                            : 'No items'
-                }
-            </div>
+       <td>
+            ${renderItemsCell(order)}
         </td>
 
         <td>${date}</td>
@@ -203,6 +193,71 @@ function loadStats() {
                 maximumFractionDigits: 2
             })}`;
     }
+}
+
+function toggleItems(orderId) {
+
+    const more = document.getElementById(`more-${orderId}`);
+    const btn = more?.nextElementSibling;
+
+    if (!more || !btn) return;
+
+    const isHidden = more.style.display === "none" || more.style.display === "";
+
+    if (isHidden) {
+        more.style.display = "block";
+        btn.textContent = "View less";
+    } else {
+        more.style.display = "none";
+        btn.textContent = btn.dataset.original || `View more`;
+    }
+}
+
+function renderItemsCell(order) {
+
+    const items = Array.isArray(order.items) ? order.items : [];
+
+    // fallback for old string format
+    if (!items.length && order.order_items) {
+        return `<span style="font-size:0.85rem;color:#444;">${order.order_items}</span>`;
+    }
+
+    if (!items.length) {
+        return `<span style="color:#999;">No items</span>`;
+    }
+
+    const previewCount = 2;
+    const hasMore = items.length > previewCount;
+
+    const preview = items.slice(0, previewCount);
+
+    return `
+        <div class="items-wrapper">
+
+            <div>
+                ${preview.map(item => `
+                    <div class="item-line">
+                        • ${item.menu_name || item.name} x${item.quantity}
+                    </div>
+                `).join('')}
+            </div>
+
+            ${hasMore ? `
+                <div id="more-${order.id}" style="display:none; margin-top:4px;">
+                    ${items.slice(previewCount).map(item => `
+                        <div class="item-line">
+                            • ${item.menu_name || item.name} x${item.quantity}
+                        </div>
+                    `).join('')}
+                </div>
+
+                <button class="view-more-btn" onclick="toggleItems(${order.id})">
+                    View more (${items.length - previewCount})
+                </button>
+            ` : ''}
+
+        </div>
+    `;
 }
 
 // VIEW ORDER MODAL

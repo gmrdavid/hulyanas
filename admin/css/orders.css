@@ -574,6 +574,30 @@
             text-align: center;
         }
 
+        .items-wrapper {
+            font-size: 0.85rem;
+            color: #444;
+            line-height: 1.4;
+        }
+
+        .item-line {
+            padding: 1px 0;
+        }
+
+        .view-more-btn {
+            margin-top: 6px;
+            background: none;
+            border: none;
+            color: #007bff;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .view-more-btn:hover {
+            text-decoration: underline;
+        }
 
 
 
