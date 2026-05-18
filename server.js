@@ -232,11 +232,17 @@ app.get('/api/user/:id/activity', authenticateToken, async (req, res) => {
 // =========================
 // EXPORT ORDERS EXCEL
 // =========================
+const ExcelJS = require('exceljs');
+
 app.post('/api/export/orders', authenticateToken, isAdmin, async (req, res) => {
+
+    let conn;
 
     try {
 
-        const [orders] = await pool.execute(`
+        conn = await pool.getConnection();
+
+        const [orders] = await conn.execute(`
             SELECT
                 order_number,
                 customer_name,
@@ -254,17 +260,25 @@ app.post('/api/export/orders', authenticateToken, isAdmin, async (req, res) => {
         const worksheet = workbook.addWorksheet('Orders');
 
         worksheet.columns = [
-            { header: 'Order #', key: 'order_number', width: 20 },
-            { header: 'Customer', key: 'customer_name', width: 25 },
+            { header: 'Order Number', key: 'order_number', width: 20 },
+            { header: 'Customer Name', key: 'customer_name', width: 25 },
             { header: 'Phone', key: 'phone', width: 20 },
-            { header: 'Total', key: 'total_amount', width: 15 },
+            { header: 'Total Amount', key: 'total_amount', width: 15 },
             { header: 'Status', key: 'status', width: 20 },
-            { header: 'Payment', key: 'payment_method', width: 20 },
-            { header: 'Date', key: 'created_at', width: 25 }
+            { header: 'Payment Method', key: 'payment_method', width: 20 },
+            { header: 'Created At', key: 'created_at', width: 25 }
         ];
 
         orders.forEach(order => {
-            worksheet.addRow(order);
+
+            worksheet.addRow({
+                ...order,
+                total_amount: `₱${Number(order.total_amount).toLocaleString('en-PH', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                })}`,
+                created_at: new Date(order.created_at).toLocaleString()
+            });
         });
 
         res.setHeader(
@@ -274,7 +288,7 @@ app.post('/api/export/orders', authenticateToken, isAdmin, async (req, res) => {
 
         res.setHeader(
             'Content-Disposition',
-            'attachment; filename=orders.xlsx'
+            'attachment; filename=hulyanas-orders.xlsx'
         );
 
         await workbook.xlsx.write(res);
@@ -283,11 +297,15 @@ app.post('/api/export/orders', authenticateToken, isAdmin, async (req, res) => {
 
     } catch (error) {
 
-        console.error('Export Orders Error:', error);
+        console.error('🚨 ORDERS EXPORT ERROR:', error);
 
         res.status(500).json({
-            error: 'Failed to export orders'
+            error: error.message
         });
+
+    } finally {
+
+        if (conn) conn.release();
     }
 });
 
