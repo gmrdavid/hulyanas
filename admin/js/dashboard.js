@@ -3,11 +3,9 @@
 // ===============================
 
 let allOrders = [];
-let filteredOrders = [];
 
 let currentPage = 1;
 let totalPages = 1;
-const ordersPerPage = 10;
 
 
 // ===============================
@@ -121,9 +119,6 @@ async function loadAdminStats() {
 // ===============================
 // LOAD RECENT ORDERS
 // ===============================
-
-let currentPage = 1;
-let totalPages = 1;
 
 async function loadRecentOrders(page = 1) {
 
