@@ -1476,44 +1476,186 @@ app.post(
     }
 );
 
-app.put('/api/menu/:id', authenticateToken, isAdmin, upload.single('image'), async (req, res) => {
-    let conn;
+app.put(
+    '/api/menu/:id',
+    authenticateToken,
+    isAdmin,
+    upload.single('image'),
+    async (req, res) => {
 
-    try {
-        const { id } = req.params;
-        const { name, description, price, category, is_available } = req.body;
+        let conn;
 
-        conn = await pool.getConnection();
+        try {
 
-        const [oldItem] = await conn.execute(
-            `SELECT image_url FROM menu_items WHERE id=?`,
-            [id]
-        );
+            const { id } = req.params;
 
-        let image_url = oldItem[0]?.image_url || null;
+            let {
+                name,
+                description,
+                price,
+                category,
+                is_available
+            } = req.body;
 
-        // ONLY replace if new image uploaded
-        if (req.file) {
-            image_url = req.file.path; // Cloudinary URL
+            // =========================
+            // SAFE VALUES
+            // =========================
+
+            name =
+                name?.trim() || null;
+
+            description =
+                description?.trim() || '';
+
+            price =
+                price !== undefined &&
+                price !== ''
+                    ? parseFloat(price)
+                    : 0;
+
+            category =
+                category?.trim() || 'main';
+
+            is_available =
+                is_available !== undefined
+                    ? parseInt(is_available)
+                    : 1;
+
+            conn =
+                await pool.getConnection();
+
+            // =========================
+            // GET OLD IMAGE
+            // =========================
+
+            const [oldItem] =
+                await conn.execute(
+                    `
+                    SELECT image_url
+                    FROM menu_items
+                    WHERE id = ?
+                    `,
+                    [id]
+                );
+
+            let image_url =
+                oldItem[0]?.image_url || null;
+
+            // =========================
+            // CLOUDINARY UPLOAD
+            // =========================
+
+            if (req.file) {
+
+                const uploadToCloudinary =
+                    (fileBuffer) => {
+
+                    return new Promise(
+                        (resolve, reject) => {
+
+                            const stream =
+                                cloudinary
+                                .uploader
+                                .upload_stream(
+                                    {
+                                        folder:
+                                            'hulyanas-menu'
+                                    },
+                                    (
+                                        error,
+                                        result
+                                    ) => {
+
+                                        if (error) {
+                                            reject(error);
+                                        } else {
+                                            resolve(result);
+                                        }
+                                    }
+                                );
+
+                            streamifier
+                                .createReadStream(
+                                    fileBuffer
+                                )
+                                .pipe(stream);
+                        }
+                    );
+                };
+
+                const result =
+                    await uploadToCloudinary(
+                        req.file.buffer
+                    );
+
+                image_url =
+                    result.secure_url;
+            }
+
+            // =========================
+            // DEBUG
+            // =========================
+
+            console.log({
+                name,
+                description,
+                price,
+                category,
+                image_url,
+                is_available,
+                id
+            });
+
+            // =========================
+            // UPDATE DATABASE
+            // =========================
+
+            await conn.execute(
+                `
+                UPDATE menu_items
+                SET
+                    name = ?,
+                    description = ?,
+                    price = ?,
+                    category = ?,
+                    image_url = ?,
+                    is_available = ?,
+                    updated_at = NOW()
+                WHERE id = ?
+                `,
+                [
+                    name,
+                    description,
+                    price,
+                    category,
+                    image_url,
+                    is_available,
+                    id
+                ]
+            );
+
+            res.json({
+                message:
+                    'Menu item updated successfully'
+            });
+
+        } catch (error) {
+
+            console.error(
+                'MENU UPDATE ERROR:',
+                error
+            );
+
+            res.status(500).json({
+                error: error.message
+            });
+
+        } finally {
+
+            if (conn) conn.release();
         }
-
-        await conn.execute(
-            `UPDATE menu_items
-             SET name=?, description=?, price=?, category=?, image_url=?, is_available=?, updated_at=NOW()
-             WHERE id=?`,
-            [name, description, parseFloat(price), category, image_url, parseInt(is_available), id]
-        );
-
-        res.json({ message: 'Menu item updated successfully' });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: error.message });
-
-    } finally {
-        if (conn) conn.release();
     }
-});
+);
 
 app.delete('/api/menu/:id', authenticateToken, isAdmin, async (req, res) => {
     let conn;
