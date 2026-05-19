@@ -1348,35 +1348,94 @@ app.get('/api/admin/activity', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Menu management (Admin only)
-app.post('/api/menu', authenticateToken, isAdmin, upload.single('image'), async (req, res) => {
-    let conn;
-    try {
-        const { name, description, price, category, is_available } = req.body;
+app.post(
+    '/api/menu',
+    authenticateToken,
+    isAdmin,
+    upload.single('image'),
+    async (req, res) => {
 
-        // ONLY CLOUDINARY URL
-        const image_url = req.file ? req.file.path : null;
+        let conn;
 
-        conn = await pool.getConnection();
+        try {
 
-        const [result] = await conn.execute(
-            `INSERT INTO menu_items (name, description, price, category, image_url, is_available)
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [name, description, parseFloat(price), category || 'main', image_url, parseInt(is_available)]
-        );
+            let {
+                name,
+                description,
+                price,
+                category,
+                is_available
+            } = req.body;
 
-        res.status(201).json({
-            message: 'Menu item added successfully',
-            id: result.insertId
-        });
+            // SAFE VALUES
 
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: error.message });
+            name = name?.trim() || null;
 
-    } finally {
-        if (conn) conn.release();
+            description =
+                description?.trim() || '';
+
+            price =
+                price !== undefined && price !== ''
+                    ? parseFloat(price)
+                    : 0;
+
+            category =
+                category?.trim() || 'main';
+
+            is_available =
+                is_available !== undefined
+                    ? parseInt(is_available)
+                    : 1;
+
+            // CLOUDINARY IMAGE
+
+            const image_url =
+                req.file?.path || null;
+
+            conn = await pool.getConnection();
+
+            const [result] = await conn.execute(
+                `
+                INSERT INTO menu_items
+                (
+                    name,
+                    description,
+                    price,
+                    category,
+                    image_url,
+                    is_available
+                )
+                VALUES (?, ?, ?, ?, ?, ?)
+                `,
+                [
+                    name,
+                    description,
+                    price,
+                    category,
+                    image_url,
+                    is_available
+                ]
+            );
+
+            res.status(201).json({
+                message: 'Menu item added successfully',
+                id: result.insertId
+            });
+
+        } catch (error) {
+
+            console.error('MENU INSERT ERROR:', error);
+
+            res.status(500).json({
+                error: error.message
+            });
+
+        } finally {
+
+            if (conn) conn.release();
+        }
     }
-});
+);
 
 app.put('/api/menu/:id', authenticateToken, isAdmin, upload.single('image'), async (req, res) => {
     let conn;
