@@ -1666,45 +1666,99 @@ app.delete('/api/menu/:id', authenticateToken, isAdmin, async (req, res) => {
         conn = await pool.getConnection();
         await conn.beginTransaction();
 
+        // Get menu item
         const [rows] = await conn.execute(
             `SELECT id, image_url FROM menu_items WHERE id = ?`,
             [id]
         );
 
         if (rows.length === 0) {
-            return res.status(404).json({ error: 'Menu item not found' });
+            return res.status(404).json({
+                error: 'Menu item not found'
+            });
         }
 
         const item = rows[0];
 
-        // delete image from cloudinary
+        // =========================
+        // DELETE IMAGE FROM CLOUDINARY
+        // =========================
         if (item.image_url) {
-            const url = item.image_url;
-            const parts = url.split('/');
-            const fileWithExt = parts[parts.length - 1];
-            const publicId = fileWithExt.split('.')[0];
 
-            await cloudinary.uploader.destroy(`hulyanas-menu/${publicId}`);
+            try {
+
+                // Example:
+                // https://res.cloudinary.com/.../hulyanas-menu/abc123.jpg
+
+                const urlParts = item.image_url.split('/');
+
+                const fileName =
+                    urlParts[urlParts.length - 1];
+
+                const publicId =
+                    fileName.split('.')[0];
+
+                await cloudinary.uploader.destroy(
+                    `hulyanas-menu/${publicId}`
+                );
+
+            } catch (cloudinaryError) {
+
+                console.error(
+                    'Cloudinary delete error:',
+                    cloudinaryError
+                );
+            }
         }
 
-        // soft delete instead of hard delete
+        // =========================
+        // DELETE RELATED ORDER ITEMS FIRST
+        // (Avoid foreign key errors)
+        // =========================
         await conn.execute(
-            `UPDATE menu_items SET is_available = 0 WHERE id = ?`,
+            `DELETE FROM order_items
+             WHERE menu_item_id = ?`,
+            [id]
+        );
+
+        // =========================
+        // DELETE RELATED CART ITEMS
+        // =========================
+        await conn.execute(
+            `DELETE FROM cart
+             WHERE menu_item_id = ?`,
+            [id]
+        );
+
+        // =========================
+        // DELETE MENU ITEM
+        // =========================
+        await conn.execute(
+            `DELETE FROM menu_items
+             WHERE id = ?`,
             [id]
         );
 
         await conn.commit();
 
         res.json({
-            message: 'Menu item disabled successfully',
+            success: true,
+            message: 'Menu item deleted permanently',
             id
         });
 
     } catch (error) {
+
         if (conn) await conn.rollback();
-        res.status(500).json({ error: error.message });
+
+        console.error('DELETE MENU ERROR:', error);
+
+        res.status(500).json({
+            error: error.message
+        });
 
     } finally {
+
         if (conn) conn.release();
     }
 });
